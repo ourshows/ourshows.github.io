@@ -1,18 +1,13 @@
-// ====== Firebase Config ======
-const firebaseConfig = {
-  apiKey: "AIzaSyD8AkvBgMIX6071ZJz_pbG5pwv_MEzauSk",
-  authDomain: "krishs-watchlist-vault.firebaseapp.com",
-  projectId: "krishs-watchlist-vault",
-  storageBucket: "krishs-watchlist-vault.firebasestorage.app",
-  messagingSenderId: "1085194969409",
-  appId: "1:1085194969409:web:45becd2ef6afe86e0741c0",
-  measurementId: "G-C8VJHYRDTQ",
-  databaseURL: "https://krishs-watchlist-vault-default-rtdb.asia-southeast1.firebasedatabase.app"
-};
+// ====== Firebase Modular ======
+// firebase-config.js (loaded before this file) initializes modular Firebase
+// and exposes `window.dbMod` (modular DB) and `window.authMod` (modular Auth).
+import { ref, push, onChildAdded, onValue, set, remove, onDisconnect } 
+  from 'https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js';
 
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+const db = window.dbMod;
+let typingDb = null; // will be set after DOM is ready
+
+console.log('community.js loaded. window.dbMod =', window.dbMod);
 
 // ====== DOM Elements ======
 const chatBox = document.getElementById("chat-box");
@@ -51,16 +46,34 @@ function sendMessage() {
     timestamp: Date.now()
   };
 
-  db.ref("globalChat").push(message); // ✅ Simpler path
+  if (!db) {
+    alert('Chat unavailable: Firebase not configured.');
+    return;
+  }
+
+  push(ref(db, 'globalChat'), message);
+    console.log('Message sent:', message);
   messageInput.value = "";
   stopTyping();
 }
 
 // ====== Display Messages ======
-db.ref("globalChat").on("child_added", (snapshot) => {
-  const msg = snapshot.val();
-  displayMessage(msg);
-});
+if (db) {
+    console.log('Setting up realtime listener for globalChat');
+  onChildAdded(ref(db, 'globalChat'), (snapshot) => {
+    const msg = snapshot.val();
+      console.log('New message received:', msg);
+    displayMessage(msg);
+  });
+} else {
+  // show an unobtrusive notice in the chat UI
+  if (chatBox) {
+    const notice = document.createElement('p');
+    notice.className = 'text-gray-400 text-sm italic';
+    notice.textContent = 'Chat unavailable (no Firebase).';
+    chatBox.appendChild(notice);
+  }
+}
 
 function displayMessage(msg) {
   const time = new Date(msg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -84,7 +97,6 @@ function displayMessage(msg) {
 }
 
 // ====== Typing Indicator ======
-const typingRef = db.ref("typing");
 const typingIndicator = document.createElement("p");
 typingIndicator.className = "text-gray-400 text-sm mt-2 italic hidden";
 typingIndicator.id = "typing-indicator";
@@ -99,13 +111,13 @@ messageInput.addEventListener("input", () => {
 });
 
 function setTypingStatus(isTyping) {
-  if (!username) return;
-  const userTypingRef = typingRef.child(username);
+  if (!username || !db) return;
+  const userTypingRef = ref(db, `typing/${username}`);
   if (isTyping) {
-    userTypingRef.set(true);
-    userTypingRef.onDisconnect().remove();
+    set(userTypingRef, true);
+    onDisconnect(userTypingRef).remove();
   } else {
-    userTypingRef.remove();
+    remove(userTypingRef);
   }
 }
 
@@ -113,17 +125,19 @@ function stopTyping() {
   setTypingStatus(false);
 }
 
-typingRef.on("value", (snapshot) => {
-  const typingUsers = snapshot.val();
-  if (typingUsers) {
-    const activeUsers = Object.keys(typingUsers).filter(u => u !== username);
-    if (activeUsers.length > 0) {
-      typingIndicator.textContent = `💬 ${activeUsers.join(", ")} ${activeUsers.length === 1 ? "is" : "are"} typing...`;
-      typingIndicator.classList.remove("hidden");
+if (db) {
+  onValue(ref(db, 'typing'), (snapshot) => {
+    const typingUsers = snapshot.val();
+    if (typingUsers) {
+      const activeUsers = Object.keys(typingUsers).filter(u => u !== username);
+      if (activeUsers.length > 0) {
+        typingIndicator.textContent = `💬 ${activeUsers.join(", ")} ${activeUsers.length === 1 ? "is" : "are"} typing...`;
+        typingIndicator.classList.remove("hidden");
+      } else {
+        typingIndicator.classList.add("hidden");
+      }
     } else {
       typingIndicator.classList.add("hidden");
     }
-  } else {
-    typingIndicator.classList.add("hidden");
-  }
-});
+  });
+}

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Firebase Test - OurShow</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="firebase-config.js"></script>
+</head>
+<body class="bg-gray-900 text-white font-sans p-4">
+  <div class="max-w-2xl mx-auto">
+    <h1 class="text-3xl font-bold mb-6">🔥 Firebase Connection Test</h1>
+
+    <div id="test-results" class="space-y-4">
+      <div id="test-db" class="p-4 bg-gray-800 rounded border border-gray-700">
+        <p class="font-semibold">Database Connection:</p>
+        <p id="db-status" class="text-sm text-gray-400">Checking...</p>
+      </div>
+
+      <div id="test-auth" class="p-4 bg-gray-800 rounded border border-gray-700">
+        <p class="font-semibold">Auth State:</p>
+        <p id="auth-status" class="text-sm text-gray-400">Checking...</p>
+      </div>
+
+      <div id="test-write" class="p-4 bg-gray-800 rounded border border-gray-700">
+        <p class="font-semibold">Test Write to globalChat:</p>
+        <button id="test-write-btn" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded mt-2">Send Test Message</button>
+        <p id="write-status" class="text-sm text-gray-400 mt-2">Waiting...</p>
+      </div>
+
+      <div id="test-read" class="p-4 bg-gray-800 rounded border border-gray-700">
+        <p class="font-semibold">Test Read from globalChat:</p>
+        <button id="test-read-btn" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded mt-2">Load Recent Messages</button>
+        <div id="read-status" class="text-sm text-gray-400 mt-2">
+          <p>Waiting...</p>
+        </div>
+      </div>
+
+      <div id="test-console" class="p-4 bg-gray-800 rounded border border-gray-700">
+        <p class="font-semibold mb-2">Console Output:</p>
+        <pre id="console-log" class="text-xs bg-gray-900 p-2 rounded overflow-auto max-h-64">Loading...</pre>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { getDatabase, ref, push, onValue, get, query, limitToLast } 
+      from 'https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js';
+    import { getAuth, onAuthStateChanged } 
+      from 'https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js';
+
+    const logs = [];
+    const consoleLog = (msg) => {
+      logs.push(msg);
+      document.getElementById('console-log').textContent = logs.join('\n');
+      console.log(msg);
+    };
+
+    // Intercept window.console.log
+    const originalLog = console.log;
+    console.log = function(...args) {
+      originalLog(...args);
+      logs.push(args.join(' '));
+      document.getElementById('console-log').textContent = logs.join('\n');
+    };
+
+    consoleLog('🔧 Firebase Test Started');
+    consoleLog('window.dbMod:', window.dbMod);
+    consoleLog('window.authMod:', window.authMod);
+
+    const db = window.dbMod || getDatabase();
+    const auth = window.authMod || getAuth();
+
+    // Test DB
+    if (db) {
+      document.getElementById('db-status').innerHTML = '<span class="text-green-400">✅ Database connected</span>';
+      consoleLog('✅ Database object is available');
+    } else {
+      document.getElementById('db-status').innerHTML = '<span class="text-red-400">❌ Database not available</span>';
+      consoleLog('❌ Database object is null/undefined');
+    }
+
+    // Test Auth
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        document.getElementById('auth-status').innerHTML = `<span class="text-green-400">✅ Logged in as: ${user.email}</span>`;
+        consoleLog(`✅ Auth: Logged in as ${user.email}`);
+      } else {
+        document.getElementById('auth-status').innerHTML = '<span class="text-yellow-400">⚠️ Not logged in (testing as guest)</span>';
+        consoleLog('⚠️ Auth: Not logged in');
+      }
+    });
+
+    // Test Write
+    document.getElementById('test-write-btn').addEventListener('click', async () => {
+      if (!db) {
+        document.getElementById('write-status').innerHTML = '<span class="text-red-400">❌ DB not available</span>';
+        return;
+      }
+
+      try {
+        document.getElementById('write-status').innerHTML = '<span class="text-gray-400">⏳ Sending...</span>';
+        const testMsg = {
+          name: 'Test User',
+          text: `Test message from firebase-test.html at ${new Date().toLocaleTimeString()}`,
+          timestamp: Date.now()
+        };
+        await push(ref(db, 'globalChat'), testMsg);
+        document.getElementById('write-status').innerHTML = '<span class="text-green-400">✅ Message sent successfully!</span>';
+        consoleLog('✅ Test message written to globalChat');
+      } catch (err) {
+        document.getElementById('write-status').innerHTML = `<span class="text-red-400">❌ Error: ${err.message}</span>`;
+        consoleLog(`❌ Write error: ${err.message}`);
+      }
+    });
+
+    // Test Read
+    document.getElementById('test-read-btn').addEventListener('click', async () => {
+      if (!db) {
+        document.getElementById('read-status').innerHTML = '<p class="text-red-400">❌ DB not available</p>';
+        return;
+      }
+
+      try {
+        document.getElementById('read-status').innerHTML = '<p class="text-gray-400">⏳ Loading...</p>';
+        const snapshot = await get(query(ref(db, 'globalChat'), limitToLast(5)));
+        
+        if (snapshot.exists()) {
+          const messages = snapshot.val();
+          const msgArray = Object.entries(messages).map(([id, msg]) => ({ id, ...msg })).reverse();
+          consoleLog(`✅ Loaded ${msgArray.length} messages from globalChat`);
+          
+          document.getElementById('read-status').innerHTML = 
+            '<p class="text-green-400">✅ Loaded messages:</p>' +
+            '<ul class="text-sm mt-2 space-y-1">' +
+            msgArray.map(m => `<li class="bg-gray-900 p-2 rounded"><strong>${m.name}:</strong> ${m.text}</li>`).join('') +
+            '</ul>';
+        } else {
+          document.getElementById('read-status').innerHTML = '<p class="text-yellow-400">⚠️ No messages yet</p>';
+          consoleLog('⚠️ No messages in globalChat');
+        }
+      } catch (err) {
+        document.getElementById('read-status').innerHTML = `<p class="text-red-400">❌ Error: ${err.message}</p>`;
+        consoleLog(`❌ Read error: ${err.message}`);
+      }
+    });
+
+    // Listen for real-time updates
+    if (db) {
+      consoleLog('Setting up real-time listener for globalChat...');
+      onValue(ref(db, 'globalChat'), (snapshot) => {
+        if (snapshot.exists()) {
+          consoleLog(`🔄 Real-time update: ${Object.keys(snapshot.val()).length} messages in globalChat`);
+        }
+      }, (err) => {
+        consoleLog(`❌ Real-time listener error: ${err.message}`);
+      });
+    }
+
+    consoleLog('🔧 Test setup complete');
+  </script>
+</body>
+</html>

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Posts - OurShow</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" href="favicon.ico" />
+  <script src="firebase-config.js"></script>
+  <script src="config.js"></script>
+</head>
+<body class="bg-gray-900 text-white font-sans">
+
+  <!-- Header -->
+  <header class="bg-gray-800 shadow-md p-4 sticky top-0 z-40">
+    <div class="max-w-4xl mx-auto flex items-center justify-between">
+      <h1 class="text-3xl font-bold select-none cursor-pointer" onclick="location.href='index.html'">
+        <span class="bg-white text-black px-2 py-1 rounded">Our</span><span class="text-red-500">Show</span>
+      </h1>
+      <div class="flex gap-2">
+        <a href="index.html" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">← Back to Home</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="p-4 max-w-4xl mx-auto">
+    <!-- Create Post Section -->
+    <section class="bg-gray-800 rounded-lg p-6 mb-6 shadow-lg">
+      <h2 class="text-xl font-semibold mb-4">Share Your Thoughts 💭</h2>
+      
+      <div id="auth-notice" class="hidden bg-yellow-900 border border-yellow-700 text-yellow-200 px-4 py-3 rounded mb-4">
+        Please <a href="login.html" class="underline font-semibold">log in</a> to post
+      </div>
+
+      <div id="create-post-form" class="hidden">
+        <textarea id="post-content" placeholder="What's on your mind? Share a thought about movies, shows, or anything!" 
+                  class="w-full p-3 rounded bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
+                  rows="4"></textarea>
+        <div class="mt-3 flex justify-end gap-2">
+          <button id="cancel-btn" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded transition">Cancel</button>
+          <button id="post-btn" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded transition font-semibold">Post</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Posts Feed -->
+    <section>
+      <h2 class="text-2xl font-semibold mb-6">Community Posts</h2>
+      <div id="posts-container" class="space-y-4">
+        <p class="text-gray-400 text-center py-8">Loading posts...</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Comment Modal -->
+  <div id="comment-modal" class="hidden fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
+    <div class="bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div class="p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-xl font-semibold">Comments</h3>
+          <button id="close-modal-btn" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+        </div>
+        
+        <div id="original-post" class="bg-gray-700 p-4 rounded mb-4 border-l-4 border-red-500"></div>
+        
+        <div id="comments-list" class="space-y-3 mb-4 max-h-64 overflow-y-auto"></div>
+        
+        <div id="comment-form" class="bg-gray-700 p-4 rounded">
+          <textarea id="comment-input" placeholder="Add a comment..." 
+                    class="w-full p-2 rounded bg-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
+                    rows="2"></textarea>
+          <button id="comment-submit-btn" class="mt-2 bg-red-600 hover:bg-red-700 px-4 py-2 rounded w-full font-semibold transition">Post Comment</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="post.js"></script>
+</body>
+</html>

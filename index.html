@@ -31,19 +31,12 @@
 
       <div class="hidden md:flex items-center gap-3">
         <a href="ai.html" class="btn-small"><i class="fas fa-robot"></i> AI</a>
+        <a href="post.html" class="btn-small"><i class="fas fa-comments"></i> Posts</a>
         <a href="community.html" class="btn-small"><i class="fas fa-comments"></i> Community</a>
         <a href="watch&download.html" class="btn-small"><i class="fas fa-download"></i> Download</a>
       </div>
 
       <nav class="hidden md:flex items-center gap-3">
-        <a class="nav-link" data-target="trending-movies">Trending Movies</a>
-        <a class="nav-link" data-target="trending-tv">Trending TV</a>
-        <a class="nav-link" data-target="best-english-movies">Best English Movies</a>
-        <a class="nav-link" data-target="best-hindi-movies">Best Hindi Movies</a>
-        <a class="nav-link" data-target="best-english-series">Best English Series</a>
-        <a class="nav-link" data-target="best-hindi-series">Best Hindi Series</a>
-        <a class="nav-link" data-target="best-kdrama">Best K-Dramas</a>
-        <a class="nav-link" data-target="best-cdrama">Best C-Dramas</a>
         <a href="watchlist.html" class="ml-2">⭐ <span id="watchlist-count" class="badge">0</span></a>
         <a href="watchlater.html" class="ml-2">⏳ <span id="watchlater-count" class="badge">0</span></a>
         <div id="profile-menu" class="ml-3 relative">
@@ -77,11 +70,9 @@
         </div>
         <nav class="flex flex-col gap-3">
           <a href="ai.html" class="py-2 px-3 hover:bg-gray-800 rounded">AI Recommender</a>
+          <a href="post.html" class="py-2 px-3 hover:bg-gray-800 rounded">Posts</a>
           <a href="community.html" class="py-2 px-3 hover:bg-gray-800 rounded">Community</a>
           <a href="watch&download.html" class="py-2 px-3 hover:bg-gray-800 rounded">Watch & Download</a>
-          <a class="py-2 px-3 hover:bg-gray-800 rounded nav-link" data-target="trending-movies">Trending Movies</a>
-          <a class="py-2 px-3 hover:bg-gray-800 rounded nav-link" data-target="trending-tv">Trending TV</a>
-          <!-- more items -->
           <a href="watchlist.html" class="py-2 px-3 hover:bg-gray-800 rounded">My Watchlist</a>
           <a href="watchlater.html" class="py-2 px-3 hover:bg-gray-800 rounded">My Watch Later</a>
         </nav>
@@ -133,6 +124,74 @@
   <!-- load main app logic -->
   <script src="main.js" defer></script>
 
+  <!-- Auth Gate: Check if user is logged in or guest -->
+  <script type="module">
+    import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js';
+
+    const auth = window.authMod || getAuth();
+    const isGuest = localStorage.getItem('ourshow_guest') === 'true';
+
+    // Check auth state
+    onAuthStateChanged(auth, (user) => {
+      if (!user && !isGuest) {
+        // Not logged in and not guest - redirect to login
+        window.location.href = 'login.html';
+        return;
+      }
+
+      // Gate features based on auth
+      window.isAuthenticated = !!user;
+      window.currentUser = user;
+
+      // Hide/disable guest-restricted features
+      if (!user) {
+        // Guest mode - disable Posts, Community, AI
+        const postLink = document.querySelector('a[href="post.html"]');
+        const communityLink = document.querySelector('a[href="community.html"]');
+        const aiLink = document.querySelector('a[href="ai.html"]');
+        const aiBanner = document.getElementById('ai-banner');
+
+        if (postLink) postLink.style.opacity = '0.5';
+        if (communityLink) communityLink.style.opacity = '0.5';
+        if (aiLink) aiLink.style.opacity = '0.5';
+        if (aiBanner) aiBanner.style.opacity = '0.5';
+
+        // Show warning on restricted pages
+        const restrictedPages = ['post.html', 'community.html', 'ai.html'];
+        if (restrictedPages.some(p => window.location.pathname.includes(p))) {
+          alert('⚠️ This feature requires login. Please sign in to continue.');
+          window.location.href = 'login.html';
+        }
+      }
+
+      // Update profile button
+      const profileName = document.getElementById('profile-name');
+      const profilePic = document.getElementById('profile-pic');
+      const logoutBtn = document.getElementById('logout-btn');
+
+      if (user) {
+        profileName.textContent = user.displayName || 'User';
+        if (user.photoURL) profilePic.src = user.photoURL;
+        
+        if (logoutBtn) {
+          logoutBtn.addEventListener('click', async () => {
+            await auth.signOut();
+            localStorage.removeItem('ourshow_guest');
+            window.location.href = 'login.html';
+          });
+        }
+      } else if (isGuest) {
+        profileName.textContent = 'Guest';
+        if (logoutBtn) {
+          logoutBtn.addEventListener('click', () => {
+            localStorage.removeItem('ourshow_guest');
+            window.location.href = 'login.html';
+          });
+        }
+      }
+    });
+  </script>
+
   <script>
     // tiny UI wiring (header)
     (function(){
@@ -147,15 +206,6 @@
       profileBtn?.addEventListener('click', ()=> profileDropdown.classList.toggle('hidden'));
       document.addEventListener('click', (e)=> {
         if (!profileBtn.contains(e.target) && !profileDropdown.contains(e.target)) profileDropdown.classList.add('hidden');
-      });
-
-      document.querySelectorAll('.nav-link').forEach(a=>{
-        a.addEventListener('click', ()=> {
-          const id = a.dataset.target;
-          const el = document.getElementById(id);
-          if (el) el.scrollIntoView({behavior:'smooth', block:'start'});
-          mobileMenu.classList.add('hidden');
-        });
       });
     })();
   </script>
