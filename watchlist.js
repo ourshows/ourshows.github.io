@@ -1,20 +1,8 @@
 // watchlist.js - Firebase-powered watchlist manager
-// Wait for Firebase to be ready
-async function waitForFirebase() {
-  let attempts = 0;
-  while (!window.dbMod && attempts < 50) {
-    await new Promise(resolve => setTimeout(resolve, 100));
-    attempts++;
-  }
-  if (!window.dbMod) {
-    console.warn('Firebase not available, using localStorage only');
-  }
-}
+import { waitForFirebase } from './firebase-config.js';
 
-// Initialize after Firebase is ready
-waitForFirebase().then(() => {
-  initWatchlist();
-});
+let currentUser = null;
+let watchlistItems = [];
 
 const container = document.getElementById('watchlist-container');
 const clearBtn = document.getElementById('clear-all-btn');
@@ -31,12 +19,32 @@ function esc(str) {
   }[m]));
 }
 
+// Initialize
+async function init() {
+  try {
+    // Wait for Firebase
+    await waitForFirebase();
+    
+    const { onAuthStateChanged } = await import('https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js');
+    const auth = window.authMod;
+    
+    onAuthStateChanged(auth, (user) => {
+      currentUser = user;
+      console.log('👤 Current user:', user?.email || 'Not logged in');
+      loadWatchlist();
+    });
+  } catch (error) {
+    console.error('❌ Firebase init error:', error);
+    loadWatchlist(); // Try with localStorage fallback
+  }
+}
+
 // Load watchlist from Firebase or localStorage
-async function loadWatchlist(user) {
-  console.log('Loading watchlist for:', user?.email || 'guest');
+async function loadWatchlist() {
+  console.log('📋 Loading watchlist...');
   
-  if (!user) {
-    container.innerHTML = '<p class="text-center text-gray-400 py-8">Please <a href="login.html" class="text-red-500 underline">log in</a> to view your watchlist</p>';
+  if (!currentUser) {
+    container.innerHTML = '<p class="text-center text-gray-400 py-8">Please <a href="login.html" class="text-red-500 underline hover:text-red-400">log in</a> to view your watchlist</p>';
     clearBtn.classList.add('hidden');
     return;
   }
@@ -51,15 +59,15 @@ async function loadWatchlist(user) {
   }));
   
   if (localItems.length > 0) {
-    console.log('Displaying from localStorage:', localItems.length, 'items');
-    displayWatchlist(localItems, user.uid);
+    console.log('✅ Displaying from localStorage:', localItems.length, 'items');
+    displayWatchlist(localItems);
   }
 
-  // Then try Firebase for sync
+  // Then sync with Firebase
   if (db) {
     try {
       const { ref, get } = await import('https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js');
-      const watchlistRef = ref(db, `ourshow/users/${user.uid}/watchlist`);
+      const watchlistRef = ref(db, `ourshow/users/${currentUser.uid}/watchlist`);
       const snapshot = await get(watchlistRef);
       
       if (snapshot.exists()) {
@@ -68,8 +76,8 @@ async function loadWatchlist(user) {
           ...value,
           key: key
         }));
-        console.log('Loaded from Firebase:', items.length, 'items');
-        displayWatchlist(items, user.uid);
+        console.log('✅ Synced from Firebase:', items.length, 'items');
+        displayWatchlist(items);
         
         // Sync to localStorage
         localStorage.setItem('ourshow_watchlist', JSON.stringify(data));
@@ -77,8 +85,7 @@ async function loadWatchlist(user) {
         displayEmptyState();
       }
     } catch (error) {
-      console.error('Firebase load error:', error);
-      // Continue with localStorage data
+      console.error('❌ Firebase load error:', error);
       if (localItems.length === 0) {
         displayEmptyState();
       }
@@ -90,21 +97,22 @@ async function loadWatchlist(user) {
 
 // Display empty state
 function displayEmptyState() {
-  container.innerHTML = '<p class="text-center text-gray-400 py-8">Your watchlist is empty. <a href="index.html" class="text-red-500 underline">Browse and add items</a></p>';
+  container.innerHTML = '<p class="text-center text-gray-400 py-8">Your watchlist is empty. <a href="index.html" class="text-red-500 underline hover:text-red-400">Browse and add items</a></p>';
   clearBtn.classList.add('hidden');
 }
 
 // Display watchlist items
-function displayWatchlist(items, userId) {
+function displayWatchlist(items) {
   if (!items || items.length === 0) {
     displayEmptyState();
     return;
   }
 
+  watchlistItems = items;
   clearBtn.classList.remove('hidden');
 
   container.innerHTML = items.map((item, idx) => `
-    <div class="bg-gray-800 rounded-lg p-4 flex gap-4 hover:bg-gray-750 transition" data-index="${idx}">
+    <div class="bg-gray-800 rounded-lg p-4 flex gap-4 hover:bg-gray-700 transition duration-200" data-index="${idx}">
       <img src="${item.posterUrl || 'https://placehold.co/100x150?text=No+Image'}" 
            alt="${esc(item.title)}" 
            class="w-24 h-32 object-cover rounded cursor-pointer hover:opacity-80 transition" 
@@ -119,34 +127,37 @@ function displayWatchlist(items, userId) {
           ${item.rating ? `<p>⭐ Rating: ${item.rating.toFixed(1)}</p>` : ''}
           ${item.popularity ? `<p>📊 Popularity: ${Math.round(item.popularity)}</p>` : ''}
         </div>
-        <div class="flex gap-2">
+        <div class="flex gap-2 flex-wrap">
           <button class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition" 
-                  onclick="moveToWatchLater('${item.key}', ${idx})">Move to Watch Later</button>
+                  onclick="moveToWatchLater('${item.key}', ${idx})">
+            ⏳ Move to Watch Later
+          </button>
           <button class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm transition" 
-                  onclick="removeItem('${item.key}')">Remove</button>
+                  onclick="removeItem('${item.key}')">
+            🗑️ Remove
+          </button>
         </div>
       </div>
     </div>
   `).join('');
-
-  // Store items globally for modal access
-  window.watchlistItems = items;
 }
 
 // Open item details modal
 window.openItemModal = function(index) {
-  const item = window.watchlistItems[index];
+  const item = watchlistItems[index];
   if (!item) return;
 
   itemModal.innerHTML = `
-    <div class="bg-gray-900 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto relative p-4 text-white">
+    <div class="bg-gray-900 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto relative p-6 m-4">
       <button onclick="closeModal()" 
-              class="absolute top-4 right-4 bg-red-600 hover:bg-red-700 text-white p-2 rounded z-50 transition">✕</button>
+              class="absolute top-4 right-4 bg-red-600 hover:bg-red-700 text-white w-10 h-10 rounded-full flex items-center justify-center z-50 transition text-xl font-bold">
+        ✕
+      </button>
       
-      <div class="flex gap-6 mt-8">
+      <div class="flex flex-col sm:flex-row gap-6 mt-8">
         <img src="${item.posterUrl || 'https://placehold.co/150x225?text=No+Image'}" 
              alt="${esc(item.title)}" 
-             class="w-32 h-48 object-cover rounded flex-shrink-0">
+             class="w-full sm:w-32 h-auto sm:h-48 object-cover rounded flex-shrink-0">
         
         <div class="flex-1">
           <h2 class="text-2xl font-bold text-white mb-2">${esc(item.title)}</h2>
@@ -155,9 +166,20 @@ window.openItemModal = function(index) {
           <p class="text-gray-400 mb-4">${esc(item.overview || item.description || 'No description available')}</p>
           
           <div class="text-sm text-gray-300 space-y-2 mb-4">
-            ${item.rating ? `<p><strong>Rating:</strong> ⭐ ${item.rating.toFixed(1)}</p>` : ''}
+            ${item.rating ? `<p><strong>Rating:</strong> ⭐ ${item.rating.toFixed(1)}/10</p>` : ''}
             ${item.popularity ? `<p><strong>Popularity:</strong> 📊 ${Math.round(item.popularity)}</p>` : ''}
             ${item.type ? `<p><strong>Type:</strong> ${esc(item.type === 'tv' ? 'TV Show' : 'Movie')}</p>` : ''}
+          </div>
+          
+          <div class="flex gap-2 flex-wrap mt-4">
+            <button onclick="moveToWatchLater('${item.key}', ${index})" 
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition">
+              ⏳ Move to Watch Later
+            </button>
+            <button onclick="removeItem('${item.key}')" 
+                    class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded transition">
+              🗑️ Remove
+            </button>
           </div>
         </div>
       </div>
@@ -175,9 +197,10 @@ window.closeModal = function() {
 window.removeItem = async function(key) {
   if (!confirm('Remove from watchlist?')) return;
   
-  const auth = window.authMod;
-  const user = auth?.currentUser;
-  if (!user) return;
+  if (!currentUser) {
+    alert('Please log in');
+    return;
+  }
 
   try {
     const db = window.dbMod;
@@ -185,31 +208,37 @@ window.removeItem = async function(key) {
     // Remove from Firebase
     if (db) {
       const { ref, remove } = await import('https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js');
-      const itemRef = ref(db, `ourshow/users/${user.uid}/watchlist/${key}`);
+      const itemRef = ref(db, `ourshow/users/${currentUser.uid}/watchlist/${key}`);
       await remove(itemRef);
+      console.log('✅ Removed from Firebase');
     }
     
     // Remove from localStorage
     const localData = JSON.parse(localStorage.getItem('ourshow_watchlist') || '{}');
     delete localData[key];
     localStorage.setItem('ourshow_watchlist', JSON.stringify(localData));
+    console.log('✅ Removed from localStorage');
     
-    // Reload page
-    location.reload();
+    // Reload watchlist
+    await loadWatchlist();
+    
+    // Close modal if open
+    closeModal();
   } catch (error) {
-    console.error('Error removing item:', error);
+    console.error('❌ Error removing item:', error);
     alert('Failed to remove item. Please try again.');
   }
 };
 
 // Move item to watch later
 window.moveToWatchLater = async function(key, index) {
-  const item = window.watchlistItems[index];
+  const item = watchlistItems[index];
   if (!item) return;
   
-  const auth = window.authMod;
-  const user = auth?.currentUser;
-  if (!user) return;
+  if (!currentUser) {
+    alert('Please log in');
+    return;
+  }
 
   try {
     const db = window.dbMod;
@@ -218,12 +247,14 @@ window.moveToWatchLater = async function(key, index) {
       const { ref, set, remove } = await import('https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js');
       
       // Add to watch later
-      const watchLaterRef = ref(db, `ourshow/users/${user.uid}/watchlater/${key}`);
+      const watchLaterRef = ref(db, `ourshow/users/${currentUser.uid}/watchlater/${key}`);
       await set(watchLaterRef, item);
+      console.log('✅ Added to Watch Later (Firebase)');
       
       // Remove from watchlist
-      const watchlistRef = ref(db, `ourshow/users/${user.uid}/watchlist/${key}`);
+      const watchlistRef = ref(db, `ourshow/users/${currentUser.uid}/watchlist/${key}`);
       await remove(watchlistRef);
+      console.log('✅ Removed from Watchlist (Firebase)');
     }
     
     // Update localStorage
@@ -235,11 +266,17 @@ window.moveToWatchLater = async function(key, index) {
     
     localStorage.setItem('ourshow_watchlist', JSON.stringify(watchlist));
     localStorage.setItem('ourshow_watchlater', JSON.stringify(watchlater));
+    console.log('✅ Updated localStorage');
     
     alert('✅ Moved to Watch Later!');
-    location.reload();
+    
+    // Reload watchlist
+    await loadWatchlist();
+    
+    // Close modal if open
+    closeModal();
   } catch (error) {
-    console.error('Error moving item:', error);
+    console.error('❌ Error moving item:', error);
     alert('Failed to move item. Please try again.');
   }
 };
@@ -248,24 +285,28 @@ window.moveToWatchLater = async function(key, index) {
 clearBtn.addEventListener('click', async () => {
   if (!confirm('Clear entire watchlist? This cannot be undone.')) return;
   
-  const auth = window.authMod;
-  const user = auth?.currentUser;
-  if (!user) return;
+  if (!currentUser) {
+    alert('Please log in');
+    return;
+  }
 
   try {
     const db = window.dbMod;
     
     if (db) {
       const { ref, remove } = await import('https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js');
-      const watchlistRef = ref(db, `ourshow/users/${user.uid}/watchlist`);
+      const watchlistRef = ref(db, `ourshow/users/${currentUser.uid}/watchlist`);
       await remove(watchlistRef);
+      console.log('✅ Cleared Firebase watchlist');
     }
     
     localStorage.removeItem('ourshow_watchlist');
+    console.log('✅ Cleared localStorage');
+    
     alert('✅ Watchlist cleared');
-    location.reload();
+    await loadWatchlist();
   } catch (error) {
-    console.error('Error clearing watchlist:', error);
+    console.error('❌ Error clearing watchlist:', error);
     alert('Failed to clear watchlist. Please try again.');
   }
 });
@@ -277,29 +318,5 @@ itemModal.addEventListener('click', (e) => {
   }
 });
 
-// Initialize on auth state change
-async function initWatchlist() {
-  const auth = window.authMod;
-  
-  if (!auth) {
-    console.warn('Auth not available yet, using localStorage');
-    const localData = JSON.parse(localStorage.getItem('ourshow_watchlist') || '{}');
-    const items = Object.entries(localData).map(([key, value]) => ({ ...value, key }));
-    displayWatchlist(items, 'local');
-    return;
-  }
-  
-  // Import onAuthStateChanged
-  try {
-    const { onAuthStateChanged } = await import('https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js');
-    onAuthStateChanged(auth, (user) => {
-      loadWatchlist(user);
-    });
-  } catch (error) {
-    console.error('Failed to load auth:', error);
-    // Fallback to localStorage
-    const localData = JSON.parse(localStorage.getItem('ourshow_watchlist') || '{}');
-    const items = Object.entries(localData).map(([key, value]) => ({ ...value, key }));
-    displayWatchlist(items, 'local');
-  }
-}
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', init);
