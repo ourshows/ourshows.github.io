@@ -8,6 +8,15 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>OurShow</title>
   <meta name="theme-color" content="#ef4444" />
+  
+  <!-- ✅ PWA META TAGS -->
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="OurShow">
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+  <link rel="icon" href="/icons/icon-192x192.png">
+  
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.tailwindcss.com"></script>
 
@@ -422,5 +431,8 @@
       });
     })();
   </script>
+  
+  <!-- ✅ PWA Install Script -->
+  <script src="pwa-install.js"></script>
 </body>
 </html>

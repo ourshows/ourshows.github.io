@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OurShow Icon Generator - Professional</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+      background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+      color: white;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px;
+    }
+    h1 {
+      color: #ef4444;
+      font-size: 2.5em;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+    .subtitle {
+      text-align: center;
+      color: #9ca3af;
+      margin-bottom: 40px;
+      font-size: 1.1em;
+    }
+    .designs-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 30px;
+      margin-bottom: 40px;
+    }
+    .design-card {
+      background: rgba(31, 41, 55, 0.5);
+      border-radius: 20px;
+      padding: 30px;
+      text-align: center;
+      transition: all 0.3s ease;
+      border: 2px solid transparent;
+      cursor: pointer;
+    }
+    .design-card:hover {
+      transform: translateY(-5px);
+      border-color: #ef4444;
+      box-shadow: 0 20px 60px rgba(239, 68, 68, 0.3);
+    }
+    .design-card.selected {
+      border-color: #10b981;
+      background: rgba(16, 185, 129, 0.1);
+    }
+    .design-card h3 {
+      color: #ef4444;
+      margin-bottom: 20px;
+      font-size: 1.3em;
+    }
+    canvas {
+      border: 3px solid #374151;
+      border-radius: 20px;
+      margin: 15px 0;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+      width: 192px;
+      height: 192px;
+    }
+    button {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 600;
+      margin: 5px;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(239, 68, 68, 0.6);
+    }
+    .download-all {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      padding: 18px 40px;
+      font-size: 18px;
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+      display: block;
+      margin: 40px auto;
+      max-width: 400px;
+      width: 100%;
+    }
+    .badge {
+      display: inline-block;
+      background: #10b981;
+      color: white;
+      padding: 5px 15px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+    .instructions {
+      background: rgba(55, 65, 81, 0.3);
+      border-left: 4px solid #ef4444;
+      border-radius: 10px;
+      padding: 25px;
+      margin-top: 40px;
+    }
+    @media (max-width: 768px) {
+      .designs-grid { grid-template-columns: 1fr; }
+      h1 { font-size: 2em; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎬 OurShow Icon Designer</h1>
+    <p class="subtitle">Choose your favorite design or use all!</p>
+    
+    <div class="designs-grid">
+      <!-- Design 1: Modern Gradient -->
+      <div class="design-card" onclick="selectDesign(1)">
+        <h3>Modern Gradient</h3>
+        <canvas id="design1" width="512" height="512"></canvas>
+        <button onclick="downloadDesign(1); event.stopPropagation();">Download</button>
+        <span class="badge">Recommended</span>
+      </div>
+      
+      <!-- Design 2: Minimalist -->
+      <div class="design-card" onclick="selectDesign(2)">
+        <h3>Minimalist Clean</h3>
+        <canvas id="design2" width="512" height="512"></canvas>
+        <button onclick="downloadDesign(2); event.stopPropagation();">Download</button>
+      </div>
+      
+      <!-- Design 3: Bold & Playful -->
+      <div class="design-card" onclick="selectDesign(3)">
+        <h3>Bold & Playful</h3>
+        <canvas id="design3" width="512" height="512"></canvas>
+        <button onclick="downloadDesign(3); event.stopPropagation();">Download</button>
+      </div>
+      
+      <!-- Design 4: Cinema Classic -->
+      <div class="design-card" onclick="selectDesign(4)">
+        <h3>Cinema Classic</h3>
+        <canvas id="design4" width="512" height="512"></canvas>
+        <button onclick="downloadDesign(4); event.stopPropagation();">Download</button>
+      </div>
+      
+      <!-- Design 5: Neon Glow -->
+      <div class="design-card" onclick="selectDesign(5)">
+        <h3>Neon Glow</h3>
+        <canvas id="design5" width="512" height="512"></canvas>
+        <button onclick="downloadDesign(5); event.stopPropagation();">Download</button>
+      </div>
+      
+      <!-- Design 6: 3D Style -->
+      <div class="design-card" onclick="selectDesign(6)">
+        <h3>3D Modern</h3>
+        <canvas id="design6" width="512" height="512"></canvas>
+        <button onclick="downloadDesign(6); event.stopPropagation();">Download</button>
+      </div>
+    </div>
+    
+    <button class="download-all" onclick="downloadSelected()">
+      📥 Download Selected Design (Both Sizes)
+    </button>
+    
+    <div class="instructions">
+      <h2>📋 How to Use</h2>
+      <ol style="padding-left: 25px; line-height: 2;">
+        <li>Click on your favorite design above (it will be highlighted)</li>
+        <li>Click "Download Selected Design" button</li>
+        <li>You'll get both icon-192x192.png and icon-512x512.png</li>
+        <li>Create an <code style="background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 5px;">icons/</code> folder in your project</li>
+        <li>Place both PNG files in the icons/ folder</li>
+        <li>Done! Your professional app icon is ready 🎉</li>
+      </ol>
+    </div>
+  </div>
+
+  <script>
+    let selectedDesign = 1;
+
+    function selectDesign(num) {
+      selectedDesign = num;
+      document.querySelectorAll('.design-card').forEach((card, idx) => {
+        card.classList.toggle('selected', idx + 1 === num);
+      });
+    }
+
+    // Design 1: Modern Gradient with Film Strip
+    function generateDesign1(ctx, size) {
+      // Radial gradient background
+      const gradient = ctx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size);
+      gradient.addColorStop(0, '#ef4444');
+      gradient.addColorStop(0.5, '#dc2626');
+      gradient.addColorStop(1, '#b91c1c');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, size, size);
+      
+      // Film strip holes at top and bottom
+      ctx.fillStyle = 'rgba(0,0,0,0.2)';
+      const holeSize = size * 0.05;
+      const spacing = size * 0.12;
+      for (let i = 0; i < 6; i++) {
+        const x = spacing + i * spacing;
+        ctx.fillRect(x, size * 0.08, holeSize, holeSize * 2);
+        ctx.fillRect(x, size * 0.85, holeSize, holeSize * 2);
+      }
+      
+      // Central circle
+      ctx.beginPath();
+      ctx.arc(size/2, size/2, size * 0.35, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,255,255,0.15)';
+      ctx.fill();
+      
+      // Play button triangle
+      ctx.beginPath();
+      const triSize = size * 0.15;
+      ctx.moveTo(size/2 - triSize/2, size/2 - triSize);
+      ctx.lineTo(size/2 - triSize/2, size/2 + triSize);
+      ctx.lineTo(size/2 + triSize, size/2);
+      ctx.closePath();
+      ctx.fillStyle = 'white';
+      ctx.fill();
+      
+      // Text
+      ctx.fillStyle = 'white';
+      ctx.font = `bold ${size * 0.08}px Arial`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('OURSHOW', size/2, size * 0.25);
+    }
+
+    // Design 2: Minimalist Clean
+    function generateDesign2(ctx, size) {
+      // Clean background
+      ctx.fillStyle = '#1f2937';
+      ctx.fillRect(0, 0, size, size);
+      
+      // Red accent bar
+      ctx.fillStyle = '#ef4444';
+      ctx.fillRect(0, 0, size, size * 0.15);
+      
+      // Large "O" letter
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = size * 0.06;
+      ctx.beginPath();
+      ctx.arc(size/2, size * 0.55, size * 0.25, 0, Math.PI * 2);
+      ctx.stroke();
+      
+      // Text below
+      ctx.fillStyle = 'white';
+      ctx.font = `bold ${size * 0.08}px Arial`;
+      ctx.textAlign = 'center';
+      ctx.fillText('OurShow', size/2, size * 0.88);
+    }
+
+    // Design 3: Bold & Playful
+    function generateDesign3(ctx, size) {
+      // Colorful gradient
+      const gradient = ctx.createLinearGradient(0, 0, size, size);
+      gradient.addColorStop(0, '#ef4444');
+      gradient.addColorStop(0.5, '#f59e0b');
+      gradient.addColorStop(1, '#ef4444');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, size, size);
+      
+      // Rounded square frame
+      const padding = size * 0.15;
+      const radius = size * 0.08;
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = size * 0.04;
+      ctx.beginPath();
+      ctx.roundRect(padding, padding, size - padding * 2, size - padding * 2, radius);
+      ctx.stroke();
+      
+      // Popcorn emoji style
+      ctx.font = `${size * 0.3}px Arial`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('🎬', size/2, size * 0.45);
+      
+      // Bold text
+      ctx.fillStyle = 'white';
+      ctx.font = `bold ${size * 0.12}px Arial`;
+      ctx.fillText('OurShow', size/2, size * 0.75);
+    }
+
+    // Design 4: Cinema Classic
+    function generateDesign4(ctx, size) {
+      // Dark elegant background
+      ctx.fillStyle = '#0f0f0f';
+      ctx.fillRect(0, 0, size, size);
+      
+      // Gold curtain top
+      const curtainGradient = ctx.createLinearGradient(0, 0, 0, size * 0.2);
+      curtainGradient.addColorStop(0, '#fbbf24');
+      curtainGradient.addColorStop(1, '#f59e0b');
+      ctx.fillStyle = curtainGradient;
+      ctx.fillRect(0, 0, size, size * 0.15);
+      
+      // Red curtain sides
+      ctx.fillStyle = '#dc2626';
+      ctx.fillRect(0, size * 0.15, size * 0.15, size * 0.85);
+      ctx.fillRect(size * 0.85, size * 0.15, size * 0.15, size * 0.85);
+      
+      // Center screen
+      ctx.fillStyle = '#1f2937';
+      ctx.fillRect(size * 0.2, size * 0.25, size * 0.6, size * 0.5);
+      
+      // Film reel
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = size * 0.03;
+      ctx.beginPath();
+      ctx.arc(size/2, size/2, size * 0.15, 0, Math.PI * 2);
+      ctx.stroke();
+      
+      // Text
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = `bold ${size * 0.08}px Georgia`;
+      ctx.textAlign = 'center';
+      ctx.fillText('OurShow', size/2, size * 0.88);
+    }
+
+    // Design 5: Neon Glow
+    function generateDesign5(ctx, size) {
+      // Dark background
+      ctx.fillStyle = '#050505';
+      ctx.fillRect(0, 0, size, size);
+      
+      // Neon glow effect
+      ctx.shadowBlur = size * 0.08;
+      ctx.shadowColor = '#ef4444';
+      
+      // Neon "O" 
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = size * 0.05;
+      ctx.beginPath();
+      ctx.arc(size/2, size/2, size * 0.28, 0, Math.PI * 2);
+      ctx.stroke();
+      
+      // Inner glow
+      ctx.shadowColor = '#fbbf24';
+      ctx.strokeStyle = '#fbbf24';
+      ctx.lineWidth = size * 0.02;
+      ctx.beginPath();
+      ctx.arc(size/2, size/2, size * 0.22, 0, Math.PI * 2);
+      ctx.stroke();
+      
+      ctx.shadowBlur = 0;
+      
+      // Neon text
+      ctx.fillStyle = '#ef4444';
+      ctx.font = `bold ${size * 0.1}px Arial`;
+      ctx.textAlign = 'center';
+      ctx.shadowBlur = size * 0.04;
+      ctx.shadowColor = '#ef4444';
+      ctx.fillText('OURSHOW', size/2, size * 0.85);
+      ctx.shadowBlur = 0;
+    }
+
+    // Design 6: 3D Modern
+    function generateDesign6(ctx, size) {
+      // Background gradient
+      const bg = ctx.createLinearGradient(0, 0, size, size);
+      bg.addColorStop(0, '#1f2937');
+      bg.addColorStop(1, '#111827');
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, size, size);
+      
+      // 3D cube effect
+      const centerX = size / 2;
+      const centerY = size / 2;
+      const cubeSize = size * 0.3;
+      
+      // Shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.fillRect(centerX - cubeSize, centerY + cubeSize * 0.2, cubeSize * 2, size * 0.05);
+      
+      // Front face (red)
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath();
+      ctx.moveTo(centerX - cubeSize, centerY - cubeSize * 0.5);
+      ctx.lineTo(centerX + cubeSize, centerY - cubeSize * 0.5);
+      ctx.lineTo(centerX + cubeSize, centerY + cubeSize * 0.5);
+      ctx.lineTo(centerX - cubeSize, centerY + cubeSize * 0.5);
+      ctx.closePath();
+      ctx.fill();
+      
+      // Top face (lighter red)
+      ctx.fillStyle = '#f87171';
+      ctx.beginPath();
+      ctx.moveTo(centerX - cubeSize, centerY - cubeSize * 0.5);
+      ctx.lineTo(centerX, centerY - cubeSize);
+      ctx.lineTo(centerX + cubeSize * 2, centerY - cubeSize);
+      ctx.lineTo(centerX + cubeSize, centerY - cubeSize * 0.5);
+      ctx.closePath();
+      ctx.fill();
+      
+      // Side face (darker red)
+      ctx.fillStyle = '#dc2626';
+      ctx.beginPath();
+      ctx.moveTo(centerX + cubeSize, centerY - cubeSize * 0.5);
+      ctx.lineTo(centerX + cubeSize * 2, centerY - cubeSize);
+      ctx.lineTo(centerX + cubeSize * 2, centerY);
+      ctx.lineTo(centerX + cubeSize, centerY + cubeSize * 0.5);
+      ctx.closePath();
+      ctx.fill();
+      
+      // Play button
+      ctx.fillStyle = 'white';
+      ctx.beginPath();
+      const triSize = size * 0.08;
+      ctx.moveTo(centerX - triSize * 0.3, centerY - triSize * 0.8);
+      ctx.lineTo(centerX - triSize * 0.3, centerY + triSize * 0.2);
+      ctx.lineTo(centerX + triSize * 0.7, centerY - triSize * 0.3);
+      ctx.closePath();
+      ctx.fill();
+      
+      // Text with shadow
+      ctx.shadowColor = 'rgba(0,0,0,0.5)';
+      ctx.shadowBlur = size * 0.02;
+      ctx.shadowOffsetX = size * 0.01;
+      ctx.shadowOffsetY = size * 0.01;
+      ctx.fillStyle = 'white';
+      ctx.font = `bold ${size * 0.09}px Arial`;
+      ctx.textAlign = 'center';
+      ctx.fillText('OurShow', size/2, size * 0.85);
+    }
+
+    // Generate all designs
+    function generateAllDesigns() {
+      const designs = [
+        generateDesign1,
+        generateDesign2,
+        generateDesign3,
+        generateDesign4,
+        generateDesign5,
+        generateDesign6
+      ];
+      
+      designs.forEach((designFn, idx) => {
+        const canvas = document.getElementById(`design${idx + 1}`);
+        const ctx = canvas.getContext('2d');
+        designFn(ctx, 512);
+      });
+    }
+
+    function downloadDesign(designNum, size = 512) {
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      
+      const designs = [
+        generateDesign1,
+        generateDesign2,
+        generateDesign3,
+        generateDesign4,
+        generateDesign5,
+        generateDesign6
+      ];
+      
+      designs[designNum - 1](ctx, size);
+      
+      canvas.toBlob((blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `icon-${size}x${size}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+    }
+
+    async function downloadSelected() {
+      // Download both sizes
+      downloadDesign(selectedDesign, 192);
+      await new Promise(resolve => setTimeout(resolve, 300));
+      downloadDesign(selectedDesign, 512);
+      
+      alert('✅ Both icons downloaded!\n\n📁 Create "icons" folder and place them there.\n\nFiles:\n• icon-192x192.png\n• icon-512x512.png');
+    }
+
+    // Initialize
+    window.addEventListener('load', () => {
+      generateAllDesigns();
+      selectDesign(1);
+    });
+  </script>
+</body>
+</html>
