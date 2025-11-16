@@ -4,6 +4,9 @@ let firebaseReady = false;
 let currentUser = null;
 let currentPostId = null;
 let deletePostId = null;
+let editPostId = null;
+let editCommentData = null;
+let deleteCommentData = null;
 
 // Wait for Firebase to be initialized
 async function initFirebase() {
@@ -87,7 +90,12 @@ function getUserDisplayName() {
 // Create post HTML
 function createPostHtml(post, postId) {
     const isOwn = currentUser && post.userId === currentUser.uid;
-    const avatar = post.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(post.author)}&background=6366f1&color=fff&size=128`;
+    const isAnonymous = post.isAnonymous === true;
+    const displayName = isAnonymous ? 'Anonymous' : post.author;
+    const avatar = isAnonymous 
+        ? 'https://ui-avatars.com/api/?name=Anonymous&background=gray&color=fff&size=128'
+        : (post.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(post.author)}&background=6366f1&color=fff&size=128`);
+    
     const likeCount = post.likeCount || 0;
     const commentCount = post.commentCount || 0;
     const isLiked = currentUser && post.likedBy && post.likedBy[currentUser.uid];
@@ -95,21 +103,31 @@ function createPostHtml(post, postId) {
     return `
         <div class="post-card bg-gray-900/95 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-gray-800 shadow-lg" data-post-id="${postId}">
             <div class="flex items-start gap-3 mb-4">
-                <img src="${avatar}" alt="${escapeHtml(post.author)}" 
+                <img src="${avatar}" alt="${escapeHtml(displayName)}" 
                      class="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-indigo-500/30 flex-shrink-0"
-                     onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(post.author)}&background=6366f1&color=fff&size=128'">
+                     onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=6366f1&color=fff&size=128'">
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center justify-between">
                         <div>
-                            <h3 class="font-semibold text-sm sm:text-base text-gray-100 truncate">${escapeHtml(post.author)}</h3>
+                            <h3 class="font-semibold text-sm sm:text-base text-gray-100 truncate flex items-center gap-2">
+                                ${escapeHtml(displayName)}
+                                ${isAnonymous ? '<span class="text-xs bg-gray-700 px-2 py-0.5 rounded">🕶️ Anonymous</span>' : ''}
+                            </h3>
                             <p class="text-xs text-gray-500">${formatTime(post.timestamp)}</p>
                         </div>
                         ${isOwn ? `
-                            <button class="delete-post-btn text-gray-500 hover:text-red-500 transition p-2" data-post-id="${postId}">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                </svg>
-                            </button>
+                            <div class="flex gap-1">
+                                <button class="edit-post-btn text-gray-500 hover:text-blue-500 transition p-2" data-post-id="${postId}">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                </button>
+                                <button class="delete-post-btn text-gray-500 hover:text-red-500 transition p-2" data-post-id="${postId}">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                </button>
+                            </div>
                         ` : ''}
                     </div>
                 </div>
@@ -177,12 +195,15 @@ function attachPostEventListeners(postId) {
     const shareBtn = postCard.querySelector('.share-btn');
     if (shareBtn) shareBtn.onclick = () => sharePost(postId);
     
+    const editBtn = postCard.querySelector('.edit-post-btn');
+    if (editBtn) editBtn.onclick = () => openEditPostModal(postId);
+    
     const deleteBtn = postCard.querySelector('.delete-post-btn');
     if (deleteBtn) deleteBtn.onclick = () => confirmDeletePost(postId);
 }
 
 // Create post
-async function createPost(content) {
+async function createPost(content, isAnonymous = false) {
     if (!content.trim()) return false;
     
     if (!currentUser) {
@@ -196,10 +217,11 @@ async function createPost(content) {
         content: content.trim(),
         timestamp: Date.now(),
         userId: currentUser.uid,
-        photoURL: currentUser.photoURL || null,
+        photoURL: isAnonymous ? null : (currentUser.photoURL || null),
         likeCount: 0,
         commentCount: 0,
-        likedBy: {}
+        likedBy: {},
+        isAnonymous: isAnonymous
     };
     
     if (firebaseReady) {
@@ -219,7 +241,82 @@ async function createPost(content) {
     }
 }
 
-// Toggle like
+// Open edit post modal
+async function openEditPostModal(postId) {
+    if (!firebaseReady) return;
+    
+    try {
+        const { ref, get } = await import('https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js');
+        const postRef = ref(dbMod, `ourshow/posts/${postId}`);
+        const snapshot = await get(postRef);
+        
+        if (!snapshot.exists()) return;
+        
+        const post = snapshot.val();
+        if (post.userId !== currentUser.uid) return;
+        
+        editPostId = postId;
+        const input = document.getElementById('post-input');
+        input.value = post.content;
+        input.focus();
+        
+        const postBtn = document.getElementById('post-btn');
+        postBtn.textContent = 'Update Post';
+        postBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+        postBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+        
+        // Show cancel button
+        let cancelBtn = document.getElementById('cancel-edit-btn');
+        if (!cancelBtn) {
+            cancelBtn = document.createElement('button');
+            cancelBtn.id = 'cancel-edit-btn';
+            cancelBtn.className = 'px-4 sm:px-6 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-semibold transition text-sm sm:text-base';
+            cancelBtn.textContent = 'Cancel';
+            cancelBtn.onclick = cancelEdit;
+            postBtn.parentNode.insertBefore(cancelBtn, postBtn);
+        }
+        
+        document.getElementById('post-char-count').textContent = `${post.content.length}/1000`;
+    } catch (error) {
+        console.error('❌ Error loading post for edit:', error);
+    }
+}
+
+// Cancel edit
+function cancelEdit() {
+    editPostId = null;
+    document.getElementById('post-input').value = '';
+    document.getElementById('post-char-count').textContent = '0/1000';
+    
+    const postBtn = document.getElementById('post-btn');
+    postBtn.textContent = 'Post';
+    postBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+    postBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+    
+    const cancelBtn = document.getElementById('cancel-edit-btn');
+    if (cancelBtn) cancelBtn.remove();
+}
+
+// Update post
+async function updatePost(postId, content) {
+    if (!firebaseReady) return false;
+    
+    try {
+        const { ref, update } = await import('https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js');
+        const postRef = ref(dbMod, `ourshow/posts/${postId}`);
+        await update(postRef, {
+            content: content.trim(),
+            edited: true,
+            editedAt: Date.now()
+        });
+        return true;
+    } catch (error) {
+        console.error('❌ Error updating post:', error);
+        return false;
+    }
+}
+
+// Toggle like with real-time sync fix
 async function toggleLike(postId) {
     if (!currentUser) {
         alert('Please log in to like posts');
@@ -247,6 +344,8 @@ async function toggleLike(postId) {
             }
             return post;
         });
+        
+        console.log('✅ Like toggled');
     } catch (error) {
         console.error('❌ Error toggling like:', error);
     }
@@ -266,15 +365,19 @@ async function openCommentModal(postId) {
         if (!snapshot.exists()) return;
         
         const post = snapshot.val();
-        const avatar = post.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(post.author)}&background=6366f1&color=fff&size=128`;
+        const isAnonymous = post.isAnonymous === true;
+        const displayName = isAnonymous ? 'Anonymous' : post.author;
+        const avatar = isAnonymous 
+            ? 'https://ui-avatars.com/api/?name=Anonymous&background=gray&color=fff&size=128'
+            : (post.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(post.author)}&background=6366f1&color=fff&size=128`);
         
         document.getElementById('modal-original-post').innerHTML = `
             <div class="flex gap-3">
-                <img src="${avatar}" alt="${escapeHtml(post.author)}" 
+                <img src="${avatar}" alt="${escapeHtml(displayName)}" 
                      class="w-10 h-10 rounded-full border-2 border-indigo-500/30"
-                     onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(post.author)}&background=6366f1&color=fff&size=128'">
+                     onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=6366f1&color=fff&size=128'">
                 <div>
-                    <h3 class="font-semibold text-sm text-gray-100">${escapeHtml(post.author)}</h3>
+                    <h3 class="font-semibold text-sm text-gray-100">${escapeHtml(displayName)}</h3>
                     <p class="text-sm text-gray-300 mt-1 whitespace-pre-wrap">${escapeHtml(post.content)}</p>
                 </div>
             </div>
@@ -313,6 +416,7 @@ async function loadComments(postId) {
         comments.sort((a, b) => a.timestamp - b.timestamp);
         
         comments.forEach(comment => {
+            const isOwn = currentUser && comment.userId === currentUser.uid;
             const avatar = comment.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(comment.author)}&background=6366f1&color=fff&size=128`;
             const div = document.createElement('div');
             div.className = 'flex gap-3';
@@ -323,17 +427,102 @@ async function loadComments(postId) {
                 <div class="flex-1 bg-gray-800/50 rounded-lg p-3">
                     <div class="flex items-center justify-between mb-1">
                         <h4 class="font-semibold text-sm text-gray-100">${escapeHtml(comment.author)}</h4>
-                        <span class="text-xs text-gray-500">${formatTime(comment.timestamp)}</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-gray-500">${formatTime(comment.timestamp)}</span>
+                            ${isOwn ? `
+                                <button class="edit-comment-btn text-gray-500 hover:text-blue-500 transition" data-comment-id="${comment.id}">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                </button>
+                                <button class="delete-comment-btn text-gray-500 hover:text-red-500 transition" data-comment-id="${comment.id}">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                </button>
+                            ` : ''}
+                        </div>
                     </div>
                     <p class="text-sm text-gray-300 whitespace-pre-wrap">${escapeHtml(comment.text)}</p>
                 </div>
             `;
             commentsList.appendChild(div);
+            
+            // Attach comment action listeners
+            if (isOwn) {
+                div.querySelector('.edit-comment-btn').onclick = () => editComment(comment.id, comment.text);
+                div.querySelector('.delete-comment-btn').onclick = () => confirmDeleteComment(comment.id);
+            }
         });
         
         setTimeout(() => commentsList.scrollTop = commentsList.scrollHeight, 100);
     } catch (error) {
         console.error('❌ Error loading comments:', error);
+    }
+}
+
+// Edit comment
+function editComment(commentId, currentText) {
+    const input = document.getElementById('comment-input');
+    input.value = currentText;
+    input.focus();
+    
+    editCommentData = { commentId, originalText: currentText };
+    
+    const commentBtn = document.getElementById('comment-btn');
+    commentBtn.textContent = 'Update';
+    commentBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+}
+
+// Update comment
+async function updateComment(commentId, newText) {
+    if (!currentPostId || !firebaseReady) return false;
+    
+    try {
+        const { ref, update } = await import('https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js');
+        const commentRef = ref(dbMod, `ourshow/posts/${currentPostId}/comments/${commentId}`);
+        await update(commentRef, {
+            text: newText.trim(),
+            edited: true,
+            editedAt: Date.now()
+        });
+        return true;
+    } catch (error) {
+        console.error('❌ Error updating comment:', error);
+        return false;
+    }
+}
+
+// Confirm delete comment
+function confirmDeleteComment(commentId) {
+    deleteCommentData = { commentId };
+    if (confirm('Delete this comment?')) {
+        deleteComment(commentId);
+    }
+}
+
+// Delete comment
+async function deleteComment(commentId) {
+    if (!currentPostId || !firebaseReady) return;
+    
+    try {
+        const { ref, remove, runTransaction } = await import('https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js');
+        const commentRef = ref(dbMod, `ourshow/posts/${currentPostId}/comments/${commentId}`);
+        await remove(commentRef);
+        
+        // Update comment count
+        const postRef = ref(dbMod, `ourshow/posts/${currentPostId}`);
+        await runTransaction(postRef, (post) => {
+            if (post && post.commentCount > 0) {
+                post.commentCount--;
+            }
+            return post;
+        });
+        
+        await loadComments(currentPostId);
+        console.log('✅ Comment deleted');
+    } catch (error) {
+        console.error('❌ Error deleting comment:', error);
     }
 }
 
@@ -344,6 +533,20 @@ async function addComment() {
     const input = document.getElementById('comment-input');
     const text = input.value.trim();
     if (!text) return;
+    
+    // Check if editing
+    if (editCommentData) {
+        const success = await updateComment(editCommentData.commentId, text);
+        if (success) {
+            input.value = '';
+            editCommentData = null;
+            const commentBtn = document.getElementById('comment-btn');
+            commentBtn.textContent = 'Post';
+            commentBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+            await loadComments(currentPostId);
+        }
+        return;
+    }
     
     const comment = {
         author: getUserDisplayName(),
@@ -484,15 +687,32 @@ function setupEventListeners() {
         if (!content) return;
         
         postBtn.disabled = true;
+        const btnText = postBtn.textContent;
         postBtn.textContent = 'Posting...';
         
-        if (await createPost(content)) {
-            postInput.value = '';
-            charCount.textContent = '0/1000';
+        let success = false;
+        
+        if (editPostId) {
+            // Update existing post
+            success = await updatePost(editPostId, content);
+            if (success) {
+                cancelEdit();
+            }
+        } else {
+            // Create new post - check if anonymous
+            const anonymousCheckbox = document.getElementById('anonymous-checkbox');
+            const isAnonymous = anonymousCheckbox ? anonymousCheckbox.checked : false;
+            success = await createPost(content, isAnonymous);
+            
+            if (success) {
+                postInput.value = '';
+                charCount.textContent = '0/1000';
+                if (anonymousCheckbox) anonymousCheckbox.checked = false;
+            }
         }
         
         postBtn.disabled = false;
-        postBtn.textContent = 'Post';
+        postBtn.textContent = btnText;
     });
     
     postInput.addEventListener('keydown', (e) => {
@@ -502,12 +722,18 @@ function setupEventListeners() {
     document.getElementById('close-modal').addEventListener('click', () => {
         document.getElementById('comment-modal').classList.add('hidden');
         currentPostId = null;
+        editCommentData = null;
+        const commentBtn = document.getElementById('comment-btn');
+        commentBtn.textContent = 'Post';
+        commentBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+        document.getElementById('comment-input').value = '';
     });
     
     document.getElementById('comment-modal').addEventListener('click', (e) => {
         if (e.target.id === 'comment-modal') {
             document.getElementById('comment-modal').classList.add('hidden');
             currentPostId = null;
+            editCommentData = null;
         }
     });
     
