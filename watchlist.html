@@ -5,10 +5,6 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>My Watchlist - OurShow</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="manifest" href="/manifest.webmanifest" />
-  <link rel="icon" href="favicon.ico" />
-  <script src="firebase-config.js"></script>
-  <script src="config.js"></script>
 </head>
 <body class="bg-gray-900 text-white font-sans">
 
@@ -39,6 +35,10 @@
     <!-- Content filled by JavaScript -->
   </div>
 
-  <script type="module" src="watchlist.js"></script>
+  <!-- Load Firebase config first -->
+  <script src="firebase-config.js"></script>
+  
+  <!-- Load watchlist.js after Firebase is ready -->
+  <script src="watchlist.js"></script>
 </body>
 </html>

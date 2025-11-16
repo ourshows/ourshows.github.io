@@ -1,9 +1,21 @@
 // watchlist.js - Firebase-powered watchlist manager
-import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js';
-import { getDatabase, ref, get, remove, set } from 'https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js';
+// Wait for Firebase to be ready
+async function waitForFirebase() {
+  let attempts = 0;
+  while (!window.dbMod && attempts < 50) {
+    await new Promise(resolve => setTimeout(resolve, 100));
+    attempts++;
+  }
+  if (!window.dbMod) {
+    console.warn('Firebase not available, using localStorage only');
+  }
+}
 
-const auth = window.authMod || getAuth();
-const db = window.dbMod || getDatabase();
+// Initialize after Firebase is ready
+waitForFirebase().then(() => {
+  initWatchlist();
+});
+
 const container = document.getElementById('watchlist-container');
 const clearBtn = document.getElementById('clear-all-btn');
 const itemModal = document.getElementById('item-modal');
@@ -21,15 +33,32 @@ function esc(str) {
 
 // Load watchlist from Firebase or localStorage
 async function loadWatchlist(user) {
+  console.log('Loading watchlist for:', user?.email || 'guest');
+  
   if (!user) {
     container.innerHTML = '<p class="text-center text-gray-400 py-8">Please <a href="login.html" class="text-red-500 underline">log in</a> to view your watchlist</p>';
     clearBtn.classList.add('hidden');
     return;
   }
 
-  try {
-    // Try Firebase first
-    if (db) {
+  const db = window.dbMod;
+  
+  // Try localStorage first for immediate display
+  const localData = JSON.parse(localStorage.getItem('ourshow_watchlist') || '{}');
+  const localItems = Object.entries(localData).map(([key, value]) => ({
+    ...value,
+    key: key
+  }));
+  
+  if (localItems.length > 0) {
+    console.log('Displaying from localStorage:', localItems.length, 'items');
+    displayWatchlist(localItems, user.uid);
+  }
+
+  // Then try Firebase for sync
+  if (db) {
+    try {
+      const { ref, get } = await import('https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js');
       const watchlistRef = ref(db, `ourshow/users/${user.uid}/watchlist`);
       const snapshot = await get(watchlistRef);
       
@@ -39,49 +68,23 @@ async function loadWatchlist(user) {
           ...value,
           key: key
         }));
+        console.log('Loaded from Firebase:', items.length, 'items');
         displayWatchlist(items, user.uid);
-      } else {
-        // Check localStorage as fallback
-        const localData = JSON.parse(localStorage.getItem('ourshow_watchlist') || '{}');
-        if (Object.keys(localData).length > 0) {
-          // Migrate localStorage to Firebase
-          await migrateToFirebase(user.uid, localData, 'watchlist');
-          const items = Object.entries(localData).map(([key, value]) => ({
-            ...value,
-            key: key
-          }));
-          displayWatchlist(items, user.uid);
-        } else {
-          displayEmptyState();
-        }
+        
+        // Sync to localStorage
+        localStorage.setItem('ourshow_watchlist', JSON.stringify(data));
+      } else if (localItems.length === 0) {
+        displayEmptyState();
       }
-    } else {
-      // Fallback to localStorage only
-      const localData = JSON.parse(localStorage.getItem('ourshow_watchlist') || '{}');
-      const items = Object.entries(localData).map(([key, value]) => ({
-        ...value,
-        key: key
-      }));
-      displayWatchlist(items, user.uid);
+    } catch (error) {
+      console.error('Firebase load error:', error);
+      // Continue with localStorage data
+      if (localItems.length === 0) {
+        displayEmptyState();
+      }
     }
-  } catch (error) {
-    console.error('Error loading watchlist:', error);
-    container.innerHTML = '<p class="text-center text-red-400 py-8">Error loading watchlist. Please try refreshing.</p>';
-  }
-}
-
-// Migrate localStorage data to Firebase
-async function migrateToFirebase(userId, data, type) {
-  if (!db) return;
-  
-  try {
-    for (const [key, value] of Object.entries(data)) {
-      const itemRef = ref(db, `ourshow/users/${userId}/${type}/${key}`);
-      await set(itemRef, value);
-    }
-    console.log(`✅ Migrated ${type} to Firebase`);
-  } catch (error) {
-    console.error(`❌ Migration failed for ${type}:`, error);
+  } else if (localItems.length === 0) {
+    displayEmptyState();
   }
 }
 
@@ -114,7 +117,7 @@ function displayWatchlist(items, userId) {
         <p class="text-sm text-gray-400 mb-3 line-clamp-2">${esc(item.overview || item.description || 'No description')}</p>
         <div class="text-xs text-gray-500 mb-3 space-y-1">
           ${item.rating ? `<p>⭐ Rating: ${item.rating.toFixed(1)}</p>` : ''}
-          ${item.popularity ? `<p>📊 Popularity: ${item.popularity.toFixed(0)}</p>` : ''}
+          ${item.popularity ? `<p>📊 Popularity: ${Math.round(item.popularity)}</p>` : ''}
         </div>
         <div class="flex gap-2">
           <button class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition" 
@@ -153,7 +156,7 @@ window.openItemModal = function(index) {
           
           <div class="text-sm text-gray-300 space-y-2 mb-4">
             ${item.rating ? `<p><strong>Rating:</strong> ⭐ ${item.rating.toFixed(1)}</p>` : ''}
-            ${item.popularity ? `<p><strong>Popularity:</strong> 📊 ${item.popularity.toFixed(0)}</p>` : ''}
+            ${item.popularity ? `<p><strong>Popularity:</strong> 📊 ${Math.round(item.popularity)}</p>` : ''}
             ${item.type ? `<p><strong>Type:</strong> ${esc(item.type === 'tv' ? 'TV Show' : 'Movie')}</p>` : ''}
           </div>
         </div>
@@ -172,16 +175,21 @@ window.closeModal = function() {
 window.removeItem = async function(key) {
   if (!confirm('Remove from watchlist?')) return;
   
-  const user = auth.currentUser;
+  const auth = window.authMod;
+  const user = auth?.currentUser;
   if (!user) return;
 
   try {
+    const db = window.dbMod;
+    
+    // Remove from Firebase
     if (db) {
+      const { ref, remove } = await import('https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js');
       const itemRef = ref(db, `ourshow/users/${user.uid}/watchlist/${key}`);
       await remove(itemRef);
     }
     
-    // Also remove from localStorage
+    // Remove from localStorage
     const localData = JSON.parse(localStorage.getItem('ourshow_watchlist') || '{}');
     delete localData[key];
     localStorage.setItem('ourshow_watchlist', JSON.stringify(localData));
@@ -199,11 +207,16 @@ window.moveToWatchLater = async function(key, index) {
   const item = window.watchlistItems[index];
   if (!item) return;
   
-  const user = auth.currentUser;
+  const auth = window.authMod;
+  const user = auth?.currentUser;
   if (!user) return;
 
   try {
+    const db = window.dbMod;
+    
     if (db) {
+      const { ref, set, remove } = await import('https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js');
+      
       // Add to watch later
       const watchLaterRef = ref(db, `ourshow/users/${user.uid}/watchlater/${key}`);
       await set(watchLaterRef, item);
@@ -235,11 +248,15 @@ window.moveToWatchLater = async function(key, index) {
 clearBtn.addEventListener('click', async () => {
   if (!confirm('Clear entire watchlist? This cannot be undone.')) return;
   
-  const user = auth.currentUser;
+  const auth = window.authMod;
+  const user = auth?.currentUser;
   if (!user) return;
 
   try {
+    const db = window.dbMod;
+    
     if (db) {
+      const { ref, remove } = await import('https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js');
       const watchlistRef = ref(db, `ourshow/users/${user.uid}/watchlist`);
       await remove(watchlistRef);
     }
@@ -261,6 +278,28 @@ itemModal.addEventListener('click', (e) => {
 });
 
 // Initialize on auth state change
-onAuthStateChanged(auth, (user) => {
-  loadWatchlist(user);
-});
+async function initWatchlist() {
+  const auth = window.authMod;
+  
+  if (!auth) {
+    console.warn('Auth not available yet, using localStorage');
+    const localData = JSON.parse(localStorage.getItem('ourshow_watchlist') || '{}');
+    const items = Object.entries(localData).map(([key, value]) => ({ ...value, key }));
+    displayWatchlist(items, 'local');
+    return;
+  }
+  
+  // Import onAuthStateChanged
+  try {
+    const { onAuthStateChanged } = await import('https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js');
+    onAuthStateChanged(auth, (user) => {
+      loadWatchlist(user);
+    });
+  } catch (error) {
+    console.error('Failed to load auth:', error);
+    // Fallback to localStorage
+    const localData = JSON.parse(localStorage.getItem('ourshow_watchlist') || '{}');
+    const items = Object.entries(localData).map(([key, value]) => ({ ...value, key }));
+    displayWatchlist(items, 'local');
+  }
+}
