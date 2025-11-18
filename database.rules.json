@@ -1,6 +1,97 @@
 {
   "rules": {
-    ".read": "now < 1765736100000",
-    ".write": "now < 1765736100000"
+    "ourshow": {
+      "users": {
+        "$uid": {
+          ".read": "$uid === auth.uid",
+          ".write": "$uid === auth.uid"
+        }
+      },
+      "notifications": {
+        "$uid": {
+          ".read": "$uid === auth.uid",
+          ".write": "$uid === auth.uid"
+        }
+      },
+      "reviews": {
+        "$movieId": {
+          ".read": true,
+          ".write": "auth != null"
+        }
+      },
+      "posts": {
+        ".read": true,
+        ".write": "auth != null",
+        "$postId": {
+          ".read": true,
+          ".write": "auth != null",
+          "author": {
+            ".validate": "newData.isString()"
+          },
+          "content": {
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 1000"
+          },
+          "timestamp": {
+            ".validate": "newData.isNumber()"
+          },
+          "userId": {
+            ".validate": "newData.isString()"
+          },
+          "likedBy": {
+            ".read": true,
+            ".write": "auth != null",
+            "$uid": {
+              ".validate": "newData.isBoolean()"
+            }
+          },
+          "likeCount": {
+            ".validate": "newData.isNumber()"
+          },
+          "commentCount": {
+            ".validate": "newData.isNumber()"
+          },
+          "comments": {
+            ".read": true,
+            ".write": "auth != null",
+            "$commentId": {
+              ".read": true,
+              ".write": "auth != null",
+              "author": {
+                ".validate": "newData.isString()"
+              },
+              "text": {
+                ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 500"
+              },
+              "timestamp": {
+                ".validate": "newData.isNumber()"
+              },
+              "userId": {
+                ".validate": "newData.isString()"
+              }
+            }
+          }
+        }
+      }
+    },
+    "globalChat": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$messageId": {
+        ".validate": "newData.hasChildren(['username', 'text', 'timestamp'])",
+        "username": {
+          ".validate": "newData.isString()"
+        },
+        "text": {
+          ".validate": "newData.isString()"
+        },
+        "timestamp": {
+          ".validate": "newData.isNumber()"
+        }
+      }
+    },
+    "typing": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    }
   }
 }

@@ -38,11 +38,10 @@
   <div id="item-modal" class="hidden fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 overflow-y-auto"></div>
 
   <script type="module">
+    import { waitForFirebase } from './firebase-config.js';
     import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js';
     import { getDatabase, ref, get, remove } from 'https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js';
 
-    const auth = window.authMod || getAuth();
-    const db = window.dbMod;
     const container = document.getElementById('watchlater-container');
     const clearBtn = document.getElementById('clear-all-btn');
     const itemModal = document.getElementById('item-modal');
@@ -57,113 +56,127 @@
       }[m]));
     }
 
-    async function loadWatchLater(user) {
-      if (!user) {
-        container.innerHTML = '<p class="text-center text-gray-400">Please <a href="login.html" class="text-red-500 underline">log in</a> first</p>';
-        return;
+    (async () => {
+      try {
+        await waitForFirebase();
+      } catch (err) {
+        console.warn('Firebase not fully ready yet:', err);
       }
 
-      try {
-        if (!db) {
-          container.innerHTML = '<p class="text-center text-gray-400">Firebase not available. Using local storage...</p>';
-          const local = JSON.parse(localStorage.getItem('ourshow_watchlater') || '{}');
-          displayWatchLater(Object.entries(local).map(([k, v]) => ({ ...v, key: k })));
+      const auth = window.authMod || getAuth();
+      const db = window.dbMod || getDatabase();
+
+      async function loadWatchLater(user) {
+        if (!user) {
+          container.innerHTML = '<p class="text-center text-gray-400">Please <a href="login.html" class="text-red-500 underline">log in</a> first</p>';
+          clearBtn.classList.add('hidden');
           return;
         }
 
-        const snapshot = await get(ref(db, `ourshow/users/${user.uid}/watchlater`));
-        const items = snapshot.exists() ? Object.entries(snapshot.val()).map(([k, v]) => ({ ...v, key: k })) : [];
-        displayWatchLater(items);
-      } catch (error) {
-        console.error('Error loading watch later:', error);
-        container.innerHTML = '<p class="text-center text-red-400 py-8">Error loading watch later list</p>';
+        try {
+          if (!db) {
+            const local = JSON.parse(localStorage.getItem('ourshow_watchlater') || '{}');
+            displayWatchLater(Object.entries(local).map(([k, v]) => ({ ...v, key: k })));
+            return;
+          }
+
+          const snapshot = await get(ref(db, `ourshow/users/${user.uid}/watchlater`));
+          const items = snapshot.exists() ? Object.entries(snapshot.val()).map(([k, v]) => ({ ...v, key: k })) : [];
+          displayWatchLater(items);
+
+          // keep local storage in sync
+          localStorage.setItem('ourshow_watchlater', JSON.stringify(snapshot.val() || {}));
+        } catch (error) {
+          console.error('Error loading watch later:', error);
+          container.innerHTML = '<p class="text-center text-red-400 py-8">Error loading watch later list</p>';
+        }
       }
-    }
 
-    function displayWatchLater(items) {
-      if (!items.length) {
-        container.innerHTML = '<p class="text-center text-gray-400 py-8">Your watch later list is empty. <a href="index.html" class="text-red-500 underline">Browse and add items</a></p>';
-        clearBtn.classList.add('hidden');
-        return;
-      }
+      function displayWatchLater(items) {
+        if (!items.length) {
+          container.innerHTML = '<p class="text-center text-gray-400 py-8">Your watch later list is empty. <a href="index.html" class="text-red-500 underline">Browse and add items</a></p>';
+          clearBtn.classList.add('hidden');
+          return;
+        }
 
-      clearBtn.classList.remove('hidden');
+        clearBtn.classList.remove('hidden');
 
-      container.innerHTML = items.map((item, idx) => `
-        <div class="bg-gray-800 rounded-lg p-4 flex gap-4 hover:bg-gray-750 transition">
-          <img src="${item.posterUrl || 'https://via.placeholder.com/100x150'}" alt="${esc(item.title)}" class="w-24 h-32 object-cover rounded cursor-pointer hover:opacity-80" onclick="openItemModal(${idx})">
-          <div class="flex-1">
-            <h3 class="text-xl font-semibold mb-1 cursor-pointer hover:text-red-500" onclick="openItemModal(${idx})">${esc(item.title)}</h3>
-            <p class="text-gray-400 mb-2">📅 ${esc(item.year || 'N/A')}</p>
-            <p class="text-sm text-gray-400 mb-3 line-clamp-2">${esc(item.overview || 'No description')}</p>
-            <div class="text-xs text-gray-500 mb-3 space-y-1">
-              ${item.rating ? `<p>⭐ ${item.rating.toFixed(1)}</p>` : ''}
-              ${item.popularity ? `<p>📊 ${item.popularity.toFixed(0)}</p>` : ''}
+        container.innerHTML = items.map((item, idx) => `
+          <div class="bg-gray-800 rounded-lg p-4 flex gap-4 hover:bg-gray-750 transition">
+            <img src="${item.posterUrl || 'https://via.placeholder.com/100x150'}" alt="${esc(item.title)}" class="w-24 h-32 object-cover rounded cursor-pointer hover:opacity-80" onclick="openItemModal(${idx})">
+            <div class="flex-1">
+              <h3 class="text-xl font-semibold mb-1 cursor-pointer hover:text-red-500" onclick="openItemModal(${idx})">${esc(item.title)}</h3>
+              <p class="text-gray-400 mb-2">📅 ${esc(item.year || 'N/A')}</p>
+              <p class="text-sm text-gray-400 mb-3 line-clamp-2">${esc(item.overview || 'No description')}</p>
+              <div class="text-xs text-gray-500 mb-3 space-y-1">
+                ${item.rating ? `<p>⭐ ${item.rating.toFixed(1)}</p>` : ''}
+                ${item.popularity ? `<p>📊 ${Math.round(item.popularity)}</p>` : ''}
+              </div>
+              <button class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm" onclick="removeItem('${item.key}')">Remove</button>
             </div>
-            <button class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm" onclick="removeItem('${item.key}')">Remove</button>
           </div>
-        </div>
-      `).join('');
+        `).join('');
 
-      window.openItemModal = (idx) => {
-        const item = items[idx];
-        if (!item) return;
-        itemModal.innerHTML = `
-          <div class="bg-gray-900 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto relative p-4 text-white">
-            <button onclick="document.getElementById('item-modal').classList.add('hidden')" class="absolute top-4 right-4 bg-red-600 text-white p-2 rounded">✕</button>
-            <div class="flex gap-6">
-              <img src="${item.posterUrl || 'https://via.placeholder.com/150x225'}" alt="${esc(item.title)}" class="w-32 h-48 object-cover rounded">
-              <div class="flex-1">
-                <h2 class="text-2xl font-bold mb-2">${esc(item.title)}</h2>
-                <p class="text-gray-300 mb-4">📅 ${esc(item.year || 'N/A')}</p>
-                <p class="text-gray-400 mb-4">${esc(item.overview || 'No description')}</p>
-                <div class="text-sm text-gray-300 space-y-2">
-                  ${item.rating ? `<p>⭐ Rating: ${item.rating.toFixed(1)}</p>` : ''}
-                  ${item.popularity ? `<p>📊 Popularity: ${item.popularity.toFixed(0)}</p>` : ''}
+        window.openItemModal = (idx) => {
+          const item = items[idx];
+          if (!item) return;
+          itemModal.innerHTML = `
+            <div class="bg-gray-900 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto relative p-4 text-white">
+              <button onclick="document.getElementById('item-modal').classList.add('hidden')" class="absolute top-4 right-4 bg-red-600 text-white p-2 rounded">✕</button>
+              <div class="flex gap-6">
+                <img src="${item.posterUrl || 'https://via.placeholder.com/150x225'}" alt="${esc(item.title)}" class="w-32 h-48 object-cover rounded">
+                <div class="flex-1">
+                  <h2 class="text-2xl font-bold mb-2">${esc(item.title)}</h2>
+                  <p class="text-gray-300 mb-4">📅 ${esc(item.year || 'N/A')}</p>
+                  <p class="text-gray-400 mb-4">${esc(item.overview || 'No description')}</p>
+                  <div class="text-sm text-gray-300 space-y-2">
+                    ${item.rating ? `<p>⭐ Rating: ${item.rating.toFixed(1)}</p>` : ''}
+                    ${item.popularity ? `<p>📊 Popularity: ${Math.round(item.popularity)}</p>` : ''}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        `;
-        itemModal.classList.remove('hidden');
-      };
+          `;
+          itemModal.classList.remove('hidden');
+        };
 
-      window.removeItem = async (key) => {
-        if (!confirm('Remove from watch later?')) return;
+        window.removeItem = async (key) => {
+          if (!confirm('Remove from watch later?')) return;
+          const user = auth.currentUser;
+          if (db && user) {
+            await remove(ref(db, `ourshow/users/${user.uid}/watchlater/${key}`));
+            loadWatchLater(user);
+          } else {
+            const local = JSON.parse(localStorage.getItem('ourshow_watchlater') || '{}');
+            delete local[key];
+            localStorage.setItem('ourshow_watchlater', JSON.stringify(local));
+            displayWatchLater(Object.entries(local).map(([k, v]) => ({ ...v, key: k })));
+          }
+        };
+      }
+
+      onAuthStateChanged(auth, (user) => {
+        loadWatchLater(user);
+      });
+
+      clearBtn.addEventListener('click', async () => {
+        if (!confirm('Clear entire watch later list?')) return;
         const user = auth.currentUser;
         if (db && user) {
-          await remove(ref(db, `ourshow/users/${user.uid}/watchlater/${key}`));
-          location.reload();
+          await remove(ref(db, `ourshow/users/${user.uid}/watchlater`));
+          loadWatchLater(user);
         } else {
-          const local = JSON.parse(localStorage.getItem('ourshow_watchlater') || '{}');
-          delete local[key];
-          localStorage.setItem('ourshow_watchlater', JSON.stringify(local));
-          location.reload();
+          localStorage.removeItem('ourshow_watchlater');
+          displayWatchLater([]);
         }
-      };
-    }
+      });
 
-    onAuthStateChanged(auth, (user) => {
-      loadWatchLater(user);
-    });
-
-    clearBtn.addEventListener('click', async () => {
-      if (!confirm('Clear entire watch later list?')) return;
-      const user = auth.currentUser;
-      if (db && user) {
-        await remove(ref(db, `ourshow/users/${user.uid}/watchlater`));
-        location.reload();
-      } else {
-        localStorage.removeItem('ourshow_watchlater');
-        location.reload();
-      }
-    });
-
-    itemModal.addEventListener('click', (e) => {
-      if (e.target === itemModal) {
-        itemModal.classList.add('hidden');
-      }
-    });
+      itemModal.addEventListener('click', (e) => {
+        if (e.target === itemModal) {
+          itemModal.classList.add('hidden');
+        }
+      });
+    })();
   </script>
 </body>
 </html>

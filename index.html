@@ -227,6 +227,10 @@
           <span>📥</span>
           <span class="font-semibold">Download</span>
         </a>
+        <button id="collections-link" class="px-4 py-2 rounded-lg bg-pink-600/20 hover:bg-pink-600/30 border border-pink-500/30 transition-all duration-200 flex items-center gap-2">
+          <span>🎛️</span>
+          <span class="font-semibold">Collections</span>
+        </button>
       </div>
 
       <!-- Header Actions -->
@@ -234,6 +238,10 @@
         <button id="surprise-btn-header" class="px-4 py-2 rounded-lg bg-orange-600/20 hover:bg-orange-600/40 border border-orange-500/40 text-sm font-semibold transition-all duration-200 flex items-center gap-2">
           <span>🎲</span>
           <span>Surprise Me</span>
+        </button>
+        <button id="install-app-btn" class="hidden px-4 py-2 rounded-lg bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/40 text-sm font-semibold transition-colors duration-200 flex items-center gap-2">
+          <span>📱</span>
+          <span>Install App</span>
         </button>
         <div class="relative" id="notification-wrapper">
           <button id="notification-bell" class="relative px-3 py-2 rounded-lg bg-gray-700/60 hover:bg-gray-700 border border-gray-600 transition-all duration-200 flex items-center gap-2">
@@ -341,6 +349,9 @@
           <a href="watch&download.html" class="py-3 px-4 hover:bg-red-600/20 rounded-lg transition-colors border border-transparent hover:border-red-500/30">
             <span class="mr-3">📥</span>Watch & Download
           </a>
+          <button id="collections-link-mobile" class="py-3 px-4 hover:bg-pink-600/20 rounded-lg transition-colors border border-transparent hover:border-pink-500/30 text-left flex items-center gap-2">
+            <span class="mr-3">🎛️</span>Collections
+          </button>
           <button id="mobile-surprise-btn" class="py-3 px-4 rounded-lg transition-colors border border-orange-500/40 bg-orange-600/20 hover:bg-orange-600/30 text-left flex items-center gap-2">
             <span>🎲</span>
             <span>Surprise Me</span>
@@ -361,6 +372,10 @@
               <button class="mobile-theme-btn flex-1 px-3 py-2 rounded-lg bg-gray-900 border border-gray-700" data-theme="auto">Auto</button>
             </div>
           </div>
+          <button id="mobile-install-btn" class="mt-4 flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-purple-600/20 border border-purple-500/40 text-sm font-semibold hidden">
+            <span>📱</span>
+            <span>Add to Home</span>
+          </button>
         </nav>
       </div>
     </div>
@@ -640,12 +655,35 @@
       const closeMobile = document.getElementById('close-mobile');
       const profileBtn = document.getElementById('profile-btn');
       const profileDropdown = document.getElementById('profile-dropdown');
+      const collectionsBtn = document.getElementById('collections-link');
+      const collectionsBtnMobile = document.getElementById('collections-link-mobile');
 
       menuBtn?.addEventListener('click', ()=> mobileMenu.classList.toggle('hidden'));
       closeMobile?.addEventListener('click', ()=> mobileMenu.classList.add('hidden'));
       profileBtn?.addEventListener('click', ()=> profileDropdown.classList.toggle('hidden'));
       document.addEventListener('click', (e)=> {
-        if (!profileBtn.contains(e.target) && !profileDropdown.contains(e.target)) profileDropdown.classList.add('hidden');
+        if (profileBtn && profileDropdown && !profileBtn.contains(e.target) && !profileDropdown.contains(e.target)) {
+          profileDropdown.classList.add('hidden');
+        }
+      });
+
+      function goToCollections(fromMobile = false) {
+        const scrolled = typeof window.scrollToCollectionsSection === 'function' && window.scrollToCollectionsSection();
+        if (!scrolled) {
+          if (fromMobile) mobileMenu?.classList.add('hidden');
+          window.location.href = 'index.html#collections';
+        } else if (fromMobile) {
+          mobileMenu?.classList.add('hidden');
+        }
+      }
+
+      collectionsBtn?.addEventListener('click', (e) => {
+        e.preventDefault();
+        goToCollections(false);
+      });
+      collectionsBtnMobile?.addEventListener('click', (e) => {
+        e.preventDefault();
+        goToCollections(true);
       });
     })();
   </script>

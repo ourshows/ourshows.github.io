@@ -3,6 +3,9 @@
   'use strict';
   
   let deferredPrompt;
+  const headerBtn = document.getElementById('install-app-btn');
+  const mobileBtn = document.getElementById('mobile-install-btn');
+  bindInstallButtons();
   
   // Register service worker
   if ('serviceWorker' in navigator) {
@@ -22,21 +25,16 @@
   
   // Show install button
   function showInstallButton() {
-    const btn = document.createElement('button');
-    btn.id = 'pwa-install-btn';
-    btn.innerHTML = '📱 Install App';
-    btn.className = 'fixed bottom-6 right-6 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg shadow-2xl z-50 font-semibold transition-all duration-300 hover:scale-105';
-    btn.onclick = installApp;
-    document.body.appendChild(btn);
-    
-    // Bounce animation for 5 seconds
-    btn.style.animation = 'bounce 1s infinite';
-    setTimeout(() => btn.style.animation = '', 5000);
+    headerBtn?.classList.remove('hidden');
+    mobileBtn?.classList.remove('hidden');
   }
   
   // Install app
   async function installApp() {
-    if (!deferredPrompt) return;
+    if (!deferredPrompt) {
+      alert('Install prompt not available yet. If you already installed the app, you can open it from your home screen.');
+      return;
+    }
     
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
@@ -47,7 +45,7 @@
     }
     
     deferredPrompt = null;
-    document.getElementById('pwa-install-btn')?.remove();
+    hideInstallButtons();
   }
   
   // Success message
@@ -61,17 +59,16 @@
   
   // Hide install button after installation
   window.addEventListener('appinstalled', () => {
-    document.getElementById('pwa-install-btn')?.remove();
+    hideInstallButtons();
   });
   
-  // Add bounce animation CSS
-  const style = document.createElement('style');
-  style.textContent = `
-    @keyframes bounce {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-10px); }
-    }
-  `;
-  document.head.appendChild(style);
-  
+  function bindInstallButtons() {
+    headerBtn?.addEventListener('click', installApp);
+    mobileBtn?.addEventListener('click', installApp);
+  }
+
+  function hideInstallButtons() {
+    headerBtn?.classList.add('hidden');
+    mobileBtn?.classList.add('hidden');
+  }
 })();
