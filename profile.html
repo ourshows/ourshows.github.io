@@ -58,6 +58,18 @@
 
       <!-- Status Message -->
       <p id="status-msg" class="mt-4 text-center text-sm text-gray-400"></p>
+
+      <!-- Stats -->
+      <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="bg-gray-900 rounded-xl p-4 border border-gray-700">
+          <p class="text-xs uppercase tracking-wide text-gray-400">Total Watchlist</p>
+          <p id="stat-watchlist" class="text-3xl font-bold mt-2">0</p>
+        </div>
+        <div class="bg-gray-900 rounded-xl p-4 border border-gray-700">
+          <p class="text-xs uppercase tracking-wide text-gray-400">Reviews Written</p>
+          <p id="stat-reviews" class="text-3xl font-bold mt-2">0</p>
+        </div>
+      </div>
     </div>
   </main>
 
@@ -65,8 +77,10 @@
     // Firebase modular (firebase-config.js loads first and exposes window.authMod, window.dbMod)
     import { getAuth, onAuthStateChanged, updateProfile, signOut, setPersistence, browserLocalPersistence } 
       from 'https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js';
-    import { getDatabase, ref, update } 
+    import { getDatabase, ref, update, get } 
       from 'https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js';
+    import { getStorage, ref as storageRef, uploadBytes, getDownloadURL }
+      from 'https://www.gstatic.com/firebasejs/12.6.0/firebase-storage.js';
 
     // Use modular instances from firebase-config.js
     const auth = window.authMod || getAuth();
@@ -77,6 +91,10 @@
     const profilePic = document.getElementById("profile-pic");
     const fileInput = document.getElementById("pic-upload");
     const statusMsg = document.getElementById("status-msg");
+    const statWatchlist = document.getElementById("stat-watchlist");
+    const statReviews = document.getElementById("stat-reviews");
+    const storage = getStorage();
+    let pendingFile = null;
 
     // prefer persistent auth
     try { 
@@ -89,6 +107,7 @@
         displayNameInput.value = user.displayName || "";
         emailInput.value = user.email || "";
         profilePic.src = user.photoURL || "https://via.placeholder.com/100";
+        loadStats(user.uid);
 
         // store in ourshow/users and localStorage for global use
         const obj = { uid: user.uid, name: user.displayName || user.email, email: user.email, photo: user.photoURL || "" };
@@ -122,6 +141,7 @@
     fileInput.addEventListener("change", (e) => {
       const file = e.target.files[0];
       if (file) {
+        pendingFile = file;
         const reader = new FileReader();
         reader.onload = (event) => {
           profilePic.src = event.target.result;
@@ -134,10 +154,17 @@
     document.getElementById("save-profile").addEventListener("click", async () => {
       const user = auth.currentUser;
       const newName = displayNameInput.value.trim();
-      const newPhoto = profilePic.src;
+      let newPhoto = profilePic.src;
 
       if(user){
         try{
+          if (pendingFile) {
+            const avatarRef = storageRef(storage, `avatars/${user.uid}/${pendingFile.name}`);
+            const snap = await uploadBytes(avatarRef, pendingFile);
+            newPhoto = await getDownloadURL(snap.ref);
+            pendingFile = null;
+          }
+
           await updateProfile(user, { displayName: newName || user.displayName, photoURL: newPhoto || user.photoURL });
           // update ourshow_user in localStorage
           const obj = { uid: user.uid, name: newName || user.displayName || user.email, email: user.email, photo: newPhoto || user.photoURL || "" };
@@ -151,7 +178,7 @@
           statusMsg.textContent = "✅ Profile updated successfully!";
           statusMsg.classList.remove('text-red-400'); statusMsg.classList.add('text-green-400');
           setTimeout(()=> statusMsg.textContent = '', 3000);
-        }catch(e){
+        } catch(e){
           console.error(e);
           statusMsg.textContent = "❌ Error updating profile.";
           statusMsg.classList.remove('text-green-400'); statusMsg.classList.add('text-red-400');
@@ -166,6 +193,29 @@
         setTimeout(()=> statusMsg.textContent = '', 3000);
       }
     });
+
+    async function loadStats(uid){
+      if (!db || !uid) return;
+      try{
+        const watchlistSnap = await get(ref(db, `ourshow/users/${uid}/watchlist`));
+        const watchCount = watchlistSnap.exists() ? Object.keys(watchlistSnap.val()).length : 0;
+        statWatchlist.textContent = watchCount;
+
+        const reviewsSnap = await get(ref(db, `ourshow/reviews`));
+        let reviewCount = 0;
+        if (reviewsSnap.exists()) {
+          reviewsSnap.forEach(movieNode => {
+            movieNode.forEach(reviewNode => {
+              if (reviewNode.val().userId === uid) reviewCount++;
+            });
+          });
+        }
+        statReviews.textContent = reviewCount;
+      } catch(err){
+        console.error('Stats error', err);
+      }
+    }
+
 
     // logout helper
     function logout(){
@@ -182,6 +232,7 @@
         window.location.href = "login.html";
       });
     }
+    window.logout = logout;
   </script>
 </body>
 </html>
