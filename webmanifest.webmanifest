@@ -2,7 +2,7 @@
   "name": "OurShow - Movies & TV Shows",
   "short_name": "OurShow",
   "description": "Discover, discuss, and share movies and TV shows with AI recommendations",
-  "start_url": "/",
+  "start_url": "/watch&download.html",
   "display": "standalone",
   "background_color": "#111827",
   "theme_color": "#ef4444",
