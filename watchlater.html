@@ -29,7 +29,49 @@
 
   <main class="p-4 max-w-6xl mx-auto">
     <h1 class="text-4xl font-bold mb-6">⏰ Watch Later</h1>
-    <div id="watchlater-container" class="space-y-4 min-h-96">
+    
+    <!-- Stats Bar -->
+    <div class="flex gap-4 mb-6 flex-wrap">
+      <div class="bg-yellow-600/20 border border-yellow-500/30 px-4 py-2 rounded-lg">
+        <span class="text-sm text-gray-400">Movies: </span>
+        <span id="movies-count" class="font-bold text-yellow-500">0</span>
+      </div>
+      <div class="bg-cyan-600/20 border border-cyan-500/30 px-4 py-2 rounded-lg">
+        <span class="text-sm text-gray-400">Series: </span>
+        <span id="series-count" class="font-bold text-cyan-500">0</span>
+      </div>
+      <div class="bg-gray-700/50 border border-gray-600 px-4 py-2 rounded-lg">
+        <span class="text-sm text-gray-400">Total: </span>
+        <span id="total-count" class="font-bold text-white">0</span>
+      </div>
+    </div>
+
+    <!-- Movies Section -->
+    <div class="mb-8">
+      <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+        <span>🎬</span>
+        <span>Movies</span>
+        <span class="text-sm font-normal text-gray-400">(<span id="movies-section-count">0</span>)</span>
+      </h2>
+      <div id="movies-container" class="space-y-4 min-h-32">
+        <p class="text-gray-400 text-center py-4">Loading movies...</p>
+      </div>
+    </div>
+
+    <!-- Series Section -->
+    <div class="mb-8">
+      <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+        <span>📺</span>
+        <span>TV Series</span>
+        <span class="text-sm font-normal text-gray-400">(<span id="series-section-count">0</span>)</span>
+      </h2>
+      <div id="series-container" class="space-y-4 min-h-32">
+        <p class="text-gray-400 text-center py-4">Loading series...</p>
+      </div>
+    </div>
+
+    <!-- Fallback container -->
+    <div id="watchlater-container" class="hidden space-y-4 min-h-96">
       <p class="text-gray-400 text-center py-8">Loading...</p>
     </div>
   </main>
@@ -94,14 +136,77 @@
 
       function displayWatchLater(items) {
         if (!items.length) {
-          container.innerHTML = '<p class="text-center text-gray-400 py-8">Your watch later list is empty. <a href="index.html" class="text-red-500 underline">Browse and add items</a></p>';
+          const moviesContainer = document.getElementById('movies-container');
+          const seriesContainer = document.getElementById('series-container');
+          if (moviesContainer) moviesContainer.innerHTML = '<p class="text-gray-400 text-center py-4">No movies in your watch later list yet.</p>';
+          if (seriesContainer) seriesContainer.innerHTML = '<p class="text-gray-400 text-center py-4">No series in your watch later list yet.</p>';
+          if (container) container.innerHTML = '<p class="text-center text-gray-400 py-8">Your watch later list is empty. <a href="index.html" class="text-red-500 underline">Browse and add items</a></p>';
           clearBtn.classList.add('hidden');
+          
+          // Update counts to 0
+          updateCounts(0, 0, 0);
           return;
         }
 
         clearBtn.classList.remove('hidden');
 
-        container.innerHTML = items.map((item, idx) => `
+        // Separate movies and series
+        const movies = [];
+        const series = [];
+
+        items.forEach((item, idx) => {
+          const type = item.type || item.media_type || '';
+          if (type === 'tv' || type === 'series') {
+            series.push({ ...item, displayIndex: idx });
+          } else {
+            movies.push({ ...item, displayIndex: idx });
+          }
+        });
+
+        // Update counts
+        updateCounts(movies.length, series.length, items.length);
+
+        // Store items globally for modal access
+        watchLaterItems = items;
+
+        // Display movies
+        const moviesContainer = document.getElementById('movies-container');
+        if (moviesContainer) {
+          if (movies.length === 0) {
+            moviesContainer.innerHTML = '<p class="text-gray-400 text-center py-4">No movies in your watch later list yet.</p>';
+          } else {
+            moviesContainer.innerHTML = movies.map((item) => renderWatchLaterCard(item, items)).join('');
+          }
+        }
+
+        // Display series
+        const seriesContainer = document.getElementById('series-container');
+        if (seriesContainer) {
+          if (series.length === 0) {
+            seriesContainer.innerHTML = '<p class="text-gray-400 text-center py-4">No series in your watch later list yet.</p>';
+          } else {
+            seriesContainer.innerHTML = series.map((item) => renderWatchLaterCard(item, items)).join('');
+          }
+        }
+      }
+
+      function updateCounts(moviesCount, seriesCount, totalCount) {
+        const moviesCountEl = document.getElementById('movies-count');
+        const seriesCountEl = document.getElementById('series-count');
+        const totalCountEl = document.getElementById('total-count');
+        const moviesSectionCountEl = document.getElementById('movies-section-count');
+        const seriesSectionCountEl = document.getElementById('series-section-count');
+
+        if (moviesCountEl) moviesCountEl.textContent = moviesCount;
+        if (seriesCountEl) seriesCountEl.textContent = seriesCount;
+        if (totalCountEl) totalCountEl.textContent = totalCount;
+        if (moviesSectionCountEl) moviesSectionCountEl.textContent = moviesCount;
+        if (seriesSectionCountEl) seriesSectionCountEl.textContent = seriesCount;
+      }
+
+      function renderWatchLaterCard(item, allItems) {
+        const idx = item.displayIndex !== undefined ? item.displayIndex : allItems.findIndex(i => i.key === item.key);
+        return `
           <div class="bg-gray-800 rounded-lg p-4 flex gap-4 hover:bg-gray-750 transition">
             <img src="${item.posterUrl || 'https://via.placeholder.com/100x150'}" alt="${esc(item.title)}" class="w-24 h-32 object-cover rounded cursor-pointer hover:opacity-80" onclick="openItemModal(${idx})">
             <div class="flex-1">
@@ -111,14 +216,17 @@
               <div class="text-xs text-gray-500 mb-3 space-y-1">
                 ${item.rating ? `<p>⭐ ${item.rating.toFixed(1)}</p>` : ''}
                 ${item.popularity ? `<p>📊 ${Math.round(item.popularity)}</p>` : ''}
+                ${item.type ? `<p>🎬 Type: ${esc(item.type === 'tv' ? 'TV Show' : 'Movie')}</p>` : ''}
               </div>
               <button class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm" onclick="removeItem('${item.key}')">Remove</button>
             </div>
           </div>
-        `).join('');
+        `;
+      }
 
+        let watchLaterItems = [];
         window.openItemModal = (idx) => {
-          const item = items[idx];
+          const item = watchLaterItems[idx] || items[idx];
           if (!item) return;
           itemModal.innerHTML = `
             <div class="bg-gray-900 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto relative p-4 text-white">
@@ -132,6 +240,7 @@
                   <div class="text-sm text-gray-300 space-y-2">
                     ${item.rating ? `<p>⭐ Rating: ${item.rating.toFixed(1)}</p>` : ''}
                     ${item.popularity ? `<p>📊 Popularity: ${Math.round(item.popularity)}</p>` : ''}
+                    ${item.type ? `<p>🎬 Type: ${esc(item.type === 'tv' ? 'TV Show' : 'Movie')}</p>` : ''}
                   </div>
                 </div>
               </div>
@@ -150,7 +259,8 @@
             const local = JSON.parse(localStorage.getItem('ourshow_watchlater') || '{}');
             delete local[key];
             localStorage.setItem('ourshow_watchlater', JSON.stringify(local));
-            displayWatchLater(Object.entries(local).map(([k, v]) => ({ ...v, key: k })));
+            const items = Object.entries(local).map(([k, v]) => ({ ...v, key: k }));
+            displayWatchLater(items);
           }
         };
       }

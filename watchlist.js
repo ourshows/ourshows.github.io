@@ -105,7 +105,32 @@ async function loadWatchlist() {
 
 // Display empty state
 function displayEmptyState() {
-  container.innerHTML = '<p class="text-center text-gray-400 py-8">Your watchlist is empty. <a href="index.html" class="text-red-500 underline hover:text-red-400">Browse and add items</a></p>';
+  const moviesContainer = document.getElementById('movies-container');
+  const seriesContainer = document.getElementById('series-container');
+  
+  if (moviesContainer) {
+    moviesContainer.innerHTML = '<p class="text-gray-400 text-center py-4">No movies in your watchlist yet.</p>';
+  }
+  if (seriesContainer) {
+    seriesContainer.innerHTML = '<p class="text-gray-400 text-center py-4">No series in your watchlist yet.</p>';
+  }
+  if (container) {
+    container.innerHTML = '<p class="text-center text-gray-400 py-8">Your watchlist is empty. <a href="index.html" class="text-red-500 underline hover:text-red-400">Browse and add items</a></p>';
+  }
+  
+  // Update counts to 0
+  const moviesCountEl = document.getElementById('movies-count');
+  const seriesCountEl = document.getElementById('series-count');
+  const totalCountEl = document.getElementById('total-count');
+  const moviesSectionCountEl = document.getElementById('movies-section-count');
+  const seriesSectionCountEl = document.getElementById('series-section-count');
+
+  if (moviesCountEl) moviesCountEl.textContent = '0';
+  if (seriesCountEl) seriesCountEl.textContent = '0';
+  if (totalCountEl) totalCountEl.textContent = '0';
+  if (moviesSectionCountEl) moviesSectionCountEl.textContent = '0';
+  if (seriesSectionCountEl) seriesSectionCountEl.textContent = '0';
+  
   clearBtn.classList.add('hidden');
 }
 
@@ -119,7 +144,66 @@ function displayWatchlist(items) {
   watchlistItems = items;
   clearBtn.classList.remove('hidden');
 
-  container.innerHTML = items.map((item, idx) => `
+  // Separate movies and series
+  const movies = [];
+  const series = [];
+  const other = [];
+
+  items.forEach((item, idx) => {
+    const type = item.type || item.media_type || '';
+    if (type === 'tv' || type === 'series') {
+      series.push({ ...item, displayIndex: idx });
+    } else if (type === 'movie' || !type) {
+      // Default to movie if no type specified
+      movies.push({ ...item, displayIndex: idx });
+    } else {
+      other.push({ ...item, displayIndex: idx });
+    }
+  });
+
+  // Update counts
+  const moviesCountEl = document.getElementById('movies-count');
+  const seriesCountEl = document.getElementById('series-count');
+  const totalCountEl = document.getElementById('total-count');
+  const moviesSectionCountEl = document.getElementById('movies-section-count');
+  const seriesSectionCountEl = document.getElementById('series-section-count');
+
+  if (moviesCountEl) moviesCountEl.textContent = movies.length;
+  if (seriesCountEl) seriesCountEl.textContent = series.length;
+  if (totalCountEl) totalCountEl.textContent = items.length;
+  if (moviesSectionCountEl) moviesSectionCountEl.textContent = movies.length;
+  if (seriesSectionCountEl) seriesSectionCountEl.textContent = series.length;
+
+  // Display movies
+  const moviesContainer = document.getElementById('movies-container');
+  if (moviesContainer) {
+    if (movies.length === 0) {
+      moviesContainer.innerHTML = '<p class="text-gray-400 text-center py-4">No movies in your watchlist yet.</p>';
+    } else {
+      moviesContainer.innerHTML = movies.map((item) => renderItemCard(item)).join('');
+    }
+  }
+
+  // Display series
+  const seriesContainer = document.getElementById('series-container');
+  if (seriesContainer) {
+    if (series.length === 0) {
+      seriesContainer.innerHTML = '<p class="text-gray-400 text-center py-4">No series in your watchlist yet.</p>';
+    } else {
+      seriesContainer.innerHTML = series.map((item) => renderItemCard(item)).join('');
+    }
+  }
+
+  // Display other items if any
+  if (other.length > 0 && container) {
+    container.innerHTML = other.map((item) => renderItemCard(item)).join('');
+  }
+}
+
+// Render individual item card
+function renderItemCard(item) {
+  const idx = item.displayIndex !== undefined ? item.displayIndex : watchlistItems.findIndex(i => i.key === item.key);
+  return `
     <div class="bg-gray-800 rounded-lg p-4 flex gap-4 hover:bg-gray-700 transition duration-200" data-index="${idx}">
       <img src="${item.posterUrl || 'https://placehold.co/100x150?text=No+Image'}" 
            alt="${esc(item.title)}" 
@@ -134,6 +218,7 @@ function displayWatchlist(items) {
         <div class="text-xs text-gray-500 mb-3 space-y-1">
           ${item.rating ? `<p>⭐ Rating: ${item.rating.toFixed(1)}</p>` : ''}
           ${item.popularity ? `<p>📊 Popularity: ${Math.round(item.popularity)}</p>` : ''}
+          ${item.type ? `<p>🎬 Type: ${esc(item.type === 'tv' ? 'TV Show' : 'Movie')}</p>` : ''}
         </div>
         <div class="flex gap-2 flex-wrap">
           <button class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition" 
@@ -147,7 +232,7 @@ function displayWatchlist(items) {
         </div>
       </div>
     </div>
-  `).join('');
+  `;
 }
 
 // Open item details modal

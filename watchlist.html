@@ -27,7 +27,48 @@
   <main class="p-4 max-w-6xl mx-auto">
     <h1 class="text-4xl font-bold mb-6">🎬 My Watchlist</h1>
     
-    <div id="watchlist-container" class="space-y-4 min-h-96">
+    <!-- Stats Bar -->
+    <div class="flex gap-4 mb-6 flex-wrap">
+      <div class="bg-yellow-600/20 border border-yellow-500/30 px-4 py-2 rounded-lg">
+        <span class="text-sm text-gray-400">Movies: </span>
+        <span id="movies-count" class="font-bold text-yellow-500">0</span>
+      </div>
+      <div class="bg-cyan-600/20 border border-cyan-500/30 px-4 py-2 rounded-lg">
+        <span class="text-sm text-gray-400">Series: </span>
+        <span id="series-count" class="font-bold text-cyan-500">0</span>
+      </div>
+      <div class="bg-gray-700/50 border border-gray-600 px-4 py-2 rounded-lg">
+        <span class="text-sm text-gray-400">Total: </span>
+        <span id="total-count" class="font-bold text-white">0</span>
+      </div>
+    </div>
+
+    <!-- Movies Section -->
+    <div class="mb-8">
+      <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+        <span>🎬</span>
+        <span>Movies</span>
+        <span class="text-sm font-normal text-gray-400">(<span id="movies-section-count">0</span>)</span>
+      </h2>
+      <div id="movies-container" class="space-y-4 min-h-32">
+        <p class="text-gray-400 text-center py-4">Loading movies...</p>
+      </div>
+    </div>
+
+    <!-- Series Section -->
+    <div class="mb-8">
+      <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+        <span>📺</span>
+        <span>TV Series</span>
+        <span class="text-sm font-normal text-gray-400">(<span id="series-section-count">0</span>)</span>
+      </h2>
+      <div id="series-container" class="space-y-4 min-h-32">
+        <p class="text-gray-400 text-center py-4">Loading series...</p>
+      </div>
+    </div>
+
+    <!-- Fallback container for items without type -->
+    <div id="watchlist-container" class="hidden space-y-4 min-h-96">
       <p class="text-gray-400 text-center py-8">Loading your watchlist...</p>
     </div>
   </main>
