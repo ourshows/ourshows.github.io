@@ -19,6 +19,30 @@ function esc(str) {
   }[m]));
 }
 
+// Update watchlist heading with username
+function updateWatchlistHeading(user) {
+  const headingEl = document.getElementById('watchlist-heading');
+  if (!headingEl) return;
+  
+  let username = 'My';
+  
+  if (user) {
+    username = user.displayName || user.email?.split('@')[0] || 'My';
+  } else {
+    // Try localStorage
+    const storedUser = JSON.parse(localStorage.getItem('ourshow_user') || '{}');
+    const storedUsername = localStorage.getItem('ourshow_username');
+    username = storedUser.name || storedUsername || 'My';
+  }
+  
+  // Format: "username's Watchlist" or "My Watchlist" if no username
+  if (username === 'My') {
+    headingEl.textContent = '🎬 My Watchlist';
+  } else {
+    headingEl.textContent = `🎬 ${esc(username)}'s Watchlist`;
+  }
+}
+
 // Initialize
 async function init() {
   try {
@@ -28,11 +52,22 @@ async function init() {
     const { onAuthStateChanged } = await import('https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js');
     const auth = window.authMod;
     
+    // Update heading immediately
+    if (auth) {
+      updateWatchlistHeading(auth.currentUser);
+    }
+    
     onAuthStateChanged(auth, (user) => {
       currentUser = user;
       console.log('👤 Current user:', user?.email || 'Not logged in');
+      updateWatchlistHeading(user);
       loadWatchlist();
     });
+    
+    // Also update heading if not logged in (localStorage fallback)
+    if (!auth.currentUser) {
+      updateWatchlistHeading(null);
+    }
   } catch (error) {
     console.error('❌ Firebase init error:', error);
     loadWatchlist(); // Try with localStorage fallback

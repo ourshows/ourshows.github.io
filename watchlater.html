@@ -28,7 +28,7 @@
   </header>
 
   <main class="p-4 max-w-6xl mx-auto">
-    <h1 class="text-4xl font-bold mb-6">⏰ Watch Later</h1>
+    <h1 id="watchlater-heading" class="text-4xl font-bold mb-6">⏰ Watch Later</h1>
     
     <!-- Stats Bar -->
     <div class="flex gap-4 mb-6 flex-wrap">
@@ -98,6 +98,30 @@
       }[m]));
     }
 
+    // Update watchlater heading with username
+    function updateWatchLaterHeading(user) {
+      const headingEl = document.getElementById('watchlater-heading');
+      if (!headingEl) return;
+      
+      let username = 'My';
+      
+      if (user) {
+        username = user.displayName || user.email?.split('@')[0] || 'My';
+      } else {
+        // Try localStorage
+        const storedUser = JSON.parse(localStorage.getItem('ourshow_user') || '{}');
+        const storedUsername = localStorage.getItem('ourshow_username');
+        username = storedUser.name || storedUsername || 'My';
+      }
+      
+      // Format: "username's Watch Later" or "My Watch Later" if no username
+      if (username === 'My') {
+        headingEl.textContent = '⏰ Watch Later';
+      } else {
+        headingEl.textContent = `⏰ ${esc(username)}'s Watch Later`;
+      }
+    }
+
     (async () => {
       try {
         await waitForFirebase();
@@ -107,6 +131,9 @@
 
       const auth = window.authMod || getAuth();
       const db = window.dbMod || getDatabase();
+
+      // Update heading immediately
+      updateWatchLaterHeading(auth.currentUser);
 
       async function loadWatchLater(user) {
         if (!user) {
@@ -266,6 +293,7 @@
       }
 
       onAuthStateChanged(auth, (user) => {
+        updateWatchLaterHeading(user);
         loadWatchLater(user);
       });
 

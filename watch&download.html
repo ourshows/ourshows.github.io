@@ -83,48 +83,6 @@
       font-size: 1.1rem;
     }
 
-    .stats-bar {
-      display: flex;
-      gap: 1rem;
-      justify-content: center;
-      margin-bottom: 3rem;
-      flex-wrap: wrap;
-    }
-
-    .stat-badge {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.75rem 1.5rem;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--card-border);
-      border-radius: 50px;
-      transition: all 0.3s;
-    }
-
-    .stat-badge:hover {
-      background: rgba(255, 255, 255, 0.1);
-      transform: translateY(-2px);
-      box-shadow: 0 5px 15px rgba(0, 234, 255, 0.3);
-    }
-
-    .stat-badge.watchlist {
-      border-color: rgba(255, 215, 0, 0.5);
-    }
-
-    .stat-badge.watchlater {
-      border-color: rgba(0, 234, 255, 0.5);
-    }
-
-    .stat-count {
-      background: linear-gradient(90deg, var(--primary-neon), var(--secondary-neon));
-      color: var(--dark-bg);
-      padding: 0.25rem 0.75rem;
-      border-radius: 20px;
-      font-weight: 700;
-      font-size: 0.9rem;
-    }
-
     .links-section {
       background: linear-gradient(135deg, rgba(18, 18, 22, 0.9), rgba(30, 30, 40, 0.9));
       backdrop-filter: blur(10px);
@@ -296,20 +254,6 @@
       <p>Your Portal to Unlimited Entertainment</p>
     </header>
 
-    <!-- Stats Bar -->
-    <div class="stats-bar">
-      <a href="watchlist.html" class="stat-badge watchlist">
-        <span class="text-xl">⭐</span>
-        <span>Watchlist</span>
-        <span id="watchlist-count" class="stat-count">0</span>
-      </a>
-      <a href="watchlater.html" class="stat-badge watchlater">
-        <span class="text-xl">⏳</span>
-        <span>Watch Later</span>
-        <span id="watchlater-count" class="stat-count">0</span>
-      </a>
-    </div>
-
     <!-- Download Our Show App (Top) -->
     <div class="links-section premium">
       <h2 class="section-title">📱 Download Our Show App</h2>
@@ -372,25 +316,6 @@
 
   <script src="firebase-config.js"></script>
   <script type="module">
-    // Update watchlist and watchlater counts
-    function updateCounts() {
-      try {
-        const watchlist = JSON.parse(localStorage.getItem('ourshow_watchlist') || '{}');
-        const watchlater = JSON.parse(localStorage.getItem('ourshow_watchlater') || '{}');
-        
-        const watchlistCount = document.getElementById('watchlist-count');
-        const watchlaterCount = document.getElementById('watchlater-count');
-        
-        if (watchlistCount) watchlistCount.textContent = Object.keys(watchlist).length;
-        if (watchlaterCount) watchlaterCount.textContent = Object.keys(watchlater).length;
-      } catch (e) {
-        console.error('Error updating counts:', e);
-      }
-    }
-
-    // Update counts on load
-    updateCounts();
-
     // PWA Install functionality
     let deferredPrompt;
     const installBtn = document.getElementById('install-pwa-btn');
