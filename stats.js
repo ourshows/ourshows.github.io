@@ -183,20 +183,25 @@ function calculateStats() {
     if (type === 'tv' || type === 'series') {
       stats.seriesWatched++;
       let episodes = parseInt(item.number_of_episodes);
-      if (!episodes || isNaN(episodes)) episodes = 10;
 
-      const hours = (episodes * 0.75);
-      stats.seriesHours += hours;
-      stats.totalHours += hours;
+      // Only count hours if we have valid episode data
+      if (episodes && !isNaN(episodes) && episodes > 0) {
+        const hours = (episodes * 0.75);
+        stats.seriesHours += hours;
+        stats.totalHours += hours;
+      }
     } else {
       stats.moviesWatched++;
       let runtime = parseInt(item.runtime);
-      if (!runtime || isNaN(runtime)) runtime = 120;
 
-      const hours = (runtime / 60);
-      stats.movieHours += hours;
-      stats.totalHours += hours;
+      // Only count hours if we have valid runtime data
+      if (runtime && !isNaN(runtime) && runtime > 0) {
+        const hours = (runtime / 60);
+        stats.movieHours += hours;
+        stats.totalHours += hours;
+      }
     }
+
 
     // Track genres
     if (item.genres && Array.isArray(item.genres)) {
