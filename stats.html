@@ -74,7 +74,7 @@
   <!-- Main Content -->
   <main class="max-w-6xl mx-auto p-4 space-y-6">
     <!-- Overview Stats -->
-    <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       <div class="stat-card">
         <div class="text-sm text-gray-400 mb-1">Total Watched</div>
         <div class="text-3xl font-bold text-red-500" id="total-watched">0</div>
@@ -90,6 +90,14 @@
       <div class="stat-card">
         <div class="text-sm text-gray-400 mb-1">Total Hours</div>
         <div class="text-3xl font-bold text-green-500" id="total-hours">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="text-sm text-gray-400 mb-1">Movie Hours</div>
+        <div class="text-3xl font-bold text-blue-400" id="movie-hours">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="text-sm text-gray-400 mb-1">Series Hours</div>
+        <div class="text-3xl font-bold text-purple-400" id="series-hours">0</div>
       </div>
     </section>
 
@@ -252,6 +260,8 @@
       document.getElementById('movies-watched').textContent = stats.moviesWatched;
       document.getElementById('series-watched').textContent = stats.seriesWatched;
       document.getElementById('total-hours').textContent = Math.round(stats.totalHours);
+      document.getElementById('movie-hours').textContent = Math.round(stats.movieHours);
+      document.getElementById('series-hours').textContent = Math.round(stats.seriesHours);
       document.getElementById('watch-streak').textContent = stats.watchStreak;
       
       // Favorite genres

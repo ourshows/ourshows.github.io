@@ -168,6 +168,8 @@ function calculateStats() {
     moviesWatched: 0,
     seriesWatched: 0,
     totalHours: 0,
+    movieHours: 0,
+    seriesHours: 0,
     favoriteGenres: {},
     watchStreak: 0,
     yearlyStats: {},
@@ -180,17 +182,16 @@ function calculateStats() {
     const type = item.type || item.media_type || 'movie';
     if (type === 'tv' || type === 'series') {
       stats.seriesWatched++;
+      const episodes = item.number_of_episodes || 10;
+      const hours = (episodes * 0.75);
+      stats.seriesHours += hours;
+      stats.totalHours += hours;
     } else {
       stats.moviesWatched++;
-    }
-    
-    // Calculate hours (assuming average 2h for movies, 45min for episodes)
-    if (type === 'tv' || type === 'series') {
-      const episodes = item.number_of_episodes || 10;
-      stats.totalHours += (episodes * 0.75);
-    } else {
       const runtime = item.runtime || 120;
-      stats.totalHours += (runtime / 60);
+      const hours = (runtime / 60);
+      stats.movieHours += hours;
+      stats.totalHours += hours;
     }
     
     // Track genres
