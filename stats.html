@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,21 +16,25 @@
       padding: 1.5rem;
       transition: transform 0.2s, box-shadow 0.2s;
     }
+
     .stat-card:hover {
       transform: translateY(-2px);
       box-shadow: 0 12px 30px rgba(239, 68, 68, 0.2);
     }
+
     .progress-bar {
       height: 8px;
       background: rgba(148, 163, 184, 0.2);
       border-radius: 4px;
       overflow: hidden;
     }
+
     .progress-fill {
       height: 100%;
       background: linear-gradient(90deg, #ef4444, #ec4899);
       transition: width 0.3s ease;
     }
+
     .calendar-day {
       width: 32px;
       height: 32px;
@@ -41,32 +46,40 @@
       cursor: pointer;
       transition: all 0.2s;
     }
+
     .calendar-day.has-watched {
       background: rgba(239, 68, 68, 0.3);
       border: 1px solid rgba(239, 68, 68, 0.5);
     }
+
     .calendar-day.has-watched:hover {
       background: rgba(239, 68, 68, 0.5);
       transform: scale(1.1);
     }
   </style>
 </head>
+
 <body class="bg-gray-900 text-white font-sans">
   <!-- Header -->
-  <header class="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 shadow-xl p-4 sticky top-0 z-50 border-b border-red-600/30">
+  <header
+    class="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 shadow-xl p-4 sticky top-0 z-50 border-b border-red-600/30">
     <div class="max-w-6xl mx-auto flex items-center justify-between">
       <a href="index.html" class="flex items-center gap-3 hover:scale-105 transition-transform">
-        <div class="logo-badge flex items-center justify-center rounded-lg bg-gradient-to-br from-red-600 to-red-700 px-3 py-2 shadow-lg">
+        <div
+          class="logo-badge flex items-center justify-center rounded-lg bg-gradient-to-br from-red-600 to-red-700 px-3 py-2 shadow-lg">
           <span class="text-white font-extrabold text-lg">OUR</span>
         </div>
         <div>
-          <div class="text-2xl font-extrabold bg-gradient-to-r from-red-500 to-pink-500 bg-clip-text text-transparent">Show</div>
+          <div class="text-2xl font-extrabold bg-gradient-to-r from-red-500 to-pink-500 bg-clip-text text-transparent">
+            Show</div>
           <div class="text-xs text-gray-400">📊 My Statistics</div>
         </div>
       </a>
       <nav class="flex items-center gap-3">
         <a href="index.html" class="px-4 py-2 rounded-lg bg-gray-700/50 hover:bg-gray-700 transition">← Home</a>
-        <a href="watchlist.html" class="px-4 py-2 rounded-lg bg-yellow-600/20 hover:bg-yellow-600/40 border border-yellow-500/30 transition">⭐ Watchlist</a>
+        <a href="watchlist.html"
+          class="px-4 py-2 rounded-lg bg-yellow-600/20 hover:bg-yellow-600/40 border border-yellow-500/30 transition">⭐
+          Watchlist</a>
       </nav>
     </div>
   </header>
@@ -141,7 +154,8 @@
     <section class="stat-card">
       <h2 class="text-xl font-bold mb-4">📅 Calendar View</h2>
       <div class="mb-4 flex items-center gap-4">
-        <button onclick="changeCalendarMonth(-1)" class="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600">← Prev</button>
+        <button onclick="changeCalendarMonth(-1)" class="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600">←
+          Prev</button>
         <span class="font-semibold" id="calendar-month-year"></span>
         <button onclick="changeCalendarMonth(1)" class="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600">Next →</button>
       </div>
@@ -173,22 +187,22 @@
   <script src="stats.js"></script>
   <script type="module">
     import { waitForFirebase } from './firebase-config.js';
-    
+
     let currentCalendarDate = new Date();
     let watchedItems = [];
-    
+
     // Wait for Firebase and auth before loading stats
     async function initializeStatsPage() {
       try {
         await waitForFirebase();
         const { onAuthStateChanged } = await import('https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js');
         const auth = window.authMod;
-        
+
         if (!auth) {
           console.error('Auth not available');
           return;
         }
-        
+
         // Wait for auth state
         onAuthStateChanged(auth, async (user) => {
           if (user) {
@@ -206,7 +220,7 @@
             await loadStats();
           }
         });
-        
+
         // Also try immediately if user is already logged in
         if (auth.currentUser) {
           console.log('✅ User already logged in, initializing...');
@@ -225,18 +239,18 @@
         await loadStats();
       }
     }
-    
+
     async function loadStats() {
       console.log('📊 Loading stats...');
-      
+
       // Get watched items from stats.js
       if (typeof window.loadWatchedItems === 'function') {
         await window.loadWatchedItems();
       }
-      
+
       // Wait a moment for data to sync
       await new Promise(resolve => setTimeout(resolve, 300));
-      
+
       // Get watched items array
       if (typeof window.getWatchedItems === 'function') {
         watchedItems = window.getWatchedItems();
@@ -245,16 +259,33 @@
         const localWatchlist = JSON.parse(localStorage.getItem('ourshow_watchlist') || '{}');
         watchedItems = Object.values(localWatchlist);
       }
-      
+
       console.log('📦 Watched items loaded:', watchedItems.length, watchedItems);
-      
+
       if (typeof window.calculateStats !== 'function') {
         console.error('calculateStats function not available');
         return;
       }
-      
-      const stats = window.calculateStats();
-      
+
+      // Initial stats calculation
+      let stats = window.calculateStats();
+      updateStatsUI(stats);
+
+      // Enrich data in background (fetch missing runtimes/episodes)
+      if (typeof window.enrichWatchedItems === 'function') {
+        console.log('✨ Starting background enrichment...');
+        const updated = await window.enrichWatchedItems();
+        if (updated) {
+          console.log('🔄 Data updated, refreshing stats...');
+          // Reload items to get updates
+          watchedItems = window.getWatchedItems();
+          stats = window.calculateStats();
+          updateStatsUI(stats);
+        }
+      }
+    }
+
+    function updateStatsUI(stats) {
       // Update overview
       document.getElementById('total-watched').textContent = stats.totalWatched;
       document.getElementById('movies-watched').textContent = stats.moviesWatched;
@@ -263,7 +294,7 @@
       document.getElementById('movie-hours').textContent = Math.round(stats.movieHours);
       document.getElementById('series-hours').textContent = Math.round(stats.seriesHours);
       document.getElementById('watch-streak').textContent = stats.watchStreak;
-      
+
       // Favorite genres
       const genresEl = document.getElementById('favorite-genres');
       if (Object.keys(stats.favoriteGenres).length > 0) {
@@ -280,7 +311,7 @@
             </div>
           `).join('');
       }
-      
+
       // Yearly stats
       const yearlyEl = document.getElementById('yearly-stats');
       const currentYear = new Date().getFullYear();
@@ -290,7 +321,7 @@
           <div class="text-sm text-gray-400">titles watched this year</div>
         `;
       }
-      
+
       // Monthly stats
       const monthlyEl = document.getElementById('monthly-stats');
       const currentMonth = `${currentYear}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
@@ -300,33 +331,29 @@
           <div class="text-sm text-gray-400">titles watched this month</div>
         `;
       }
-      
-      // Note: Watchlist items are displayed in watchlist.html, not here
-      // Stats page only uses watchlist data for calculations (totals, genres, hours, etc.)
-      
+
       // Calendar view
       renderCalendar(stats.calendarView);
-      
+
       // Series progress
-      await loadSeriesProgress();
-      renderSeriesProgress();
+      loadSeriesProgress().then(() => renderSeriesProgress());
     }
-    
+
     function renderCalendar(calendarData) {
       const year = currentCalendarDate.getFullYear();
       const month = currentCalendarDate.getMonth();
-      
-      document.getElementById('calendar-month-year').textContent = 
+
+      document.getElementById('calendar-month-year').textContent =
         currentCalendarDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-      
+
       const firstDay = new Date(year, month, 1);
       const lastDay = new Date(year, month + 1, 0);
       const daysInMonth = lastDay.getDate();
       const startingDayOfWeek = firstDay.getDay();
-      
+
       const calendarEl = document.getElementById('calendar-view');
       calendarEl.innerHTML = '';
-      
+
       // Day labels
       ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(day => {
         const label = document.createElement('div');
@@ -334,18 +361,18 @@
         label.textContent = day;
         calendarEl.appendChild(label);
       });
-      
+
       // Empty cells for days before month starts
       for (let i = 0; i < startingDayOfWeek; i++) {
         const empty = document.createElement('div');
         calendarEl.appendChild(empty);
       }
-      
+
       // Days of month
       for (let day = 1; day <= daysInMonth; day++) {
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         const hasWatched = calendarData[dateStr] && calendarData[dateStr].length > 0;
-        
+
         const dayEl = document.createElement('div');
         dayEl.className = `calendar-day ${hasWatched ? 'has-watched' : ''}`;
         dayEl.textContent = day;
@@ -356,29 +383,29 @@
         calendarEl.appendChild(dayEl);
       }
     }
-    
+
     function changeCalendarMonth(direction) {
       currentCalendarDate.setMonth(currentCalendarDate.getMonth() + direction);
       loadStats();
     }
-    
+
     function showDayDetails(dateStr, items) {
       alert(`Watched on ${dateStr}:\n${items.map(i => `• ${i.title}`).join('\n')}`);
     }
-    
+
     // Note: Watchlist items are displayed in watchlist.html, not here
     // This function is not used since we removed the "Recently Watched" section
-    
+
     async function renderSeriesProgress() {
       const progress = getSeriesProgress();
       const section = document.getElementById('series-progress-section');
       const list = document.getElementById('series-progress-list');
-      
+
       if (Object.keys(progress).length === 0) {
         section.style.display = 'none';
         return;
       }
-      
+
       section.style.display = 'block';
       list.innerHTML = Object.entries(progress).map(([key, prog]) => `
         <div class="bg-gray-800 rounded-lg p-4">
@@ -400,12 +427,12 @@
         </div>
       `).join('');
     }
-    
+
     // Initialize on page load
     window.addEventListener('load', () => {
       initializeStatsPage();
     });
   </script>
 </body>
-</html>
 
+</html>

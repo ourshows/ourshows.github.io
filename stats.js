@@ -257,6 +257,86 @@ function calculateStats() {
 }
 
 // Export functions
+// Save updated item
+async function saveItemUpdate(item) {
+  if (!item.id) return;
+
+  try {
+    if (db && currentUser) {
+      const { ref, set } = await import('https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js');
+      const watchlistRef = ref(db, `ourshow/users/${currentUser.uid}/watchlist/${item.id}`);
+      await set(watchlistRef, item);
+    }
+
+    // Update localStorage
+    const localWatchlist = JSON.parse(localStorage.getItem('ourshow_watchlist') || '{}');
+    localWatchlist[item.id] = item;
+    localStorage.setItem('ourshow_watchlist', JSON.stringify(localWatchlist));
+  } catch (error) {
+    console.error('Error saving item update:', error);
+  }
+}
+
+// Enrich watched items with missing data (runtime/episodes)
+async function enrichWatchedItems() {
+  console.log('✨ Enriching watched items with TMDB data...');
+  let updated = false;
+
+  // Helper to delay to avoid rate limits
+  const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+  for (let i = 0; i < watchedItems.length; i++) {
+    const item = watchedItems[i];
+    const type = item.type || item.media_type || 'movie';
+    let itemUpdated = false;
+
+    try {
+      if (type === 'movie') {
+        // Check if runtime is missing or default (120)
+        if (!item.runtime || item.runtime === 120) {
+          if (typeof tmdbFetch === 'function') {
+            const details = await tmdbFetch(`/movie/${item.id}`);
+            if (details && details.runtime) {
+              item.runtime = details.runtime;
+              itemUpdated = true;
+              console.log(`Updated runtime for ${item.title}: ${item.runtime}m`);
+            }
+          }
+        }
+      } else if (type === 'tv' || type === 'series') {
+        // Check if episodes count is missing or default (10)
+        if (!item.number_of_episodes || item.number_of_episodes === 10) {
+          if (typeof tmdbFetch === 'function') {
+            const details = await tmdbFetch(`/tv/${item.id}`);
+            if (details && details.number_of_episodes) {
+              item.number_of_episodes = details.number_of_episodes;
+              // Also get runtime if possible (average runtime)
+              if (details.episode_run_time && details.episode_run_time.length > 0) {
+                // Average of runtimes
+                const avg = details.episode_run_time.reduce((a, b) => a + b, 0) / details.episode_run_time.length;
+                item.runtime = Math.round(avg);
+              }
+              itemUpdated = true;
+              console.log(`Updated episodes for ${item.name || item.title}: ${item.number_of_episodes}`);
+            }
+          }
+        }
+      }
+
+      if (itemUpdated) {
+        await saveItemUpdate(item);
+        updated = true;
+        // Small delay to be nice to API
+        await delay(200);
+      }
+    } catch (err) {
+      console.error(`Error enriching item ${item.title}:`, err);
+    }
+  }
+
+  return updated;
+}
+
 window.markAsWatched = markAsWatched;
 window.updateSeriesProgress = updateSeriesProgress;
 window.getWatchedItems = () => watchedItems;
@@ -264,6 +344,7 @@ window.getSeriesProgress = () => seriesProgress;
 window.calculateStats = calculateStats;
 window.loadWatchedItems = loadWatchedItems;
 window.initStats = initStats;
+window.enrichWatchedItems = enrichWatchedItems;
 
 // Initialize on load
 if (typeof waitForFirebase === 'function') {
