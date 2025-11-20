@@ -1,7 +1,6 @@
 // recommendations.js - Advanced Recommendation System
 // Collaborative filtering, mood-based, seasonal recommendations
 
-let db, auth, currentUser;
 let userPreferences = {};
 let similarUsers = [];
 
@@ -11,15 +10,13 @@ async function initRecommendations() {
     if (typeof waitForFirebase === 'function') {
       await waitForFirebase();
     }
-    const { getAuth } = await import('https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js');
-    const { getDatabase } = await import('https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js');
-    
-    auth = window.authMod || getAuth();
-    db = window.dbMod || getDatabase();
-    
+
+    const auth = window.authMod;
+    const db = window.dbMod;
+
     if (auth) {
       auth.onAuthStateChanged((user) => {
-        currentUser = user;
+        window.currentUser = user;
         if (user) {
           loadUserPreferences();
           findSimilarUsers();
@@ -34,12 +31,12 @@ async function initRecommendations() {
 // Load user preferences from watched items
 async function loadUserPreferences() {
   const watchedItems = window.getWatchedItems ? window.getWatchedItems() : [];
-  
+
   // Analyze preferences
   const genres = {};
   const ratings = [];
   const years = [];
-  
+
   watchedItems.forEach(item => {
     // Track genres
     if (item.genres && Array.isArray(item.genres)) {
@@ -48,18 +45,18 @@ async function loadUserPreferences() {
         genres[genreName] = (genres[genreName] || 0) + 1;
       });
     }
-    
+
     // Track ratings
     if (item.rating) {
       ratings.push(item.rating);
     }
-    
+
     // Track years
     if (item.year) {
       years.push(parseInt(item.year));
     }
   });
-  
+
   userPreferences = {
     favoriteGenres: Object.entries(genres)
       .sort((a, b) => b[1] - a[1])
@@ -75,15 +72,18 @@ async function loadUserPreferences() {
 
 // Find users with similar tastes (collaborative filtering)
 async function findSimilarUsers() {
+  const db = window.dbMod;
+  const currentUser = window.currentUser;
+
   if (!db || !currentUser) return;
-  
+
   try {
     const { ref, get } = await import('https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js');
     const usersRef = ref(db, 'ourshow/users');
     const snapshot = await get(usersRef);
-    
+
     if (!snapshot.exists()) return;
-    
+
     const currentWatched = window.getWatchedItems ? window.getWatchedItems() : [];
     const currentGenres = new Set();
     currentWatched.forEach(item => {
@@ -91,13 +91,13 @@ async function findSimilarUsers() {
         item.genres.forEach(g => currentGenres.add(g.name || g));
       }
     });
-    
+
     const users = snapshot.val();
     const similarities = [];
-    
+
     Object.entries(users).forEach(([userId, userData]) => {
       if (userId === currentUser.uid) return;
-      
+
       const userWatched = userData.watched || {};
       const userGenres = new Set();
       Object.values(userWatched).forEach(item => {
@@ -105,17 +105,17 @@ async function findSimilarUsers() {
           item.genres.forEach(g => userGenres.add(g.name || g));
         }
       });
-      
+
       // Calculate similarity (Jaccard similarity)
       const intersection = new Set([...currentGenres].filter(x => userGenres.has(x)));
       const union = new Set([...currentGenres, ...userGenres]);
       const similarity = union.size > 0 ? intersection.size / union.size : 0;
-      
+
       if (similarity > 0.2) { // At least 20% genre overlap
         similarities.push({ userId, similarity, watched: userWatched });
       }
     });
-    
+
     similarUsers = similarities.sort((a, b) => b.similarity - a.similarity).slice(0, 10);
   } catch (error) {
     console.error('Error finding similar users:', error);
@@ -125,13 +125,13 @@ async function findSimilarUsers() {
 // Get recommendations based on watched item
 async function getRecommendationsBasedOn(itemId, itemData) {
   const recommendations = [];
-  
+
   // Get similar items from TMDB
   try {
     const type = itemData.type || itemData.media_type || 'movie';
     const endpoint = type === 'tv' ? `/tv/${itemId}/similar` : `/movie/${itemId}/similar`;
     const similar = await tmdbFetch(endpoint);
-    
+
     if (similar && similar.results) {
       recommendations.push(...similar.results.slice(0, 10).map(item => ({
         ...item,
@@ -142,7 +142,7 @@ async function getRecommendationsBasedOn(itemId, itemData) {
   } catch (error) {
     console.error('Error fetching similar items:', error);
   }
-  
+
   // Get recommendations from similar users
   similarUsers.forEach(({ watched }) => {
     Object.values(watched).forEach(watchedItem => {
@@ -158,7 +158,7 @@ async function getRecommendationsBasedOn(itemId, itemData) {
       }
     });
   });
-  
+
   return recommendations.sort((a, b) => b.score - a.score).slice(0, 20);
 }
 
@@ -172,13 +172,13 @@ async function getMoodBasedRecommendations(mood) {
     'scared': { genres: [27, 53], keywords: 'horror, thriller, suspense' },
     'romantic': { genres: [10749, 18], keywords: 'romance, drama, love' }
   };
-  
+
   const moodConfig = moodMap[mood.toLowerCase()] || moodMap['happy'];
-  
+
   try {
     const endpoint = `/discover/movie?with_genres=${moodConfig.genres.join(',')}&sort_by=popularity.desc&vote_average.gte=7`;
     const results = await tmdbFetch(endpoint);
-    
+
     if (results && results.results) {
       return results.results.slice(0, 20).map(item => ({
         ...item,
@@ -189,7 +189,7 @@ async function getMoodBasedRecommendations(mood) {
   } catch (error) {
     console.error('Error fetching mood recommendations:', error);
   }
-  
+
   return [];
 }
 
@@ -197,7 +197,7 @@ async function getMoodBasedRecommendations(mood) {
 async function getTimeBasedRecommendations() {
   const hour = new Date().getHours();
   const recommendations = [];
-  
+
   // Morning (6-12): Light, uplifting content
   if (hour >= 6 && hour < 12) {
     try {
@@ -258,7 +258,7 @@ async function getTimeBasedRecommendations() {
       console.error('Error fetching night recommendations:', error);
     }
   }
-  
+
   return recommendations;
 }
 
@@ -266,7 +266,7 @@ async function getTimeBasedRecommendations() {
 async function getSeasonalRecommendations() {
   const month = new Date().getMonth() + 1;
   const recommendations = [];
-  
+
   // Holiday seasons
   if (month === 12) {
     // Christmas movies
@@ -297,7 +297,7 @@ async function getSeasonalRecommendations() {
       console.error('Error fetching summer recommendations:', error);
     }
   }
-  
+
   return recommendations;
 }
 
@@ -306,7 +306,7 @@ async function getGroupRecommendations(userIds) {
   // Get watched items from all users
   const allWatched = new Set();
   const commonGenres = new Map();
-  
+
   // This would need to fetch from Firebase for each user
   // For now, return popular items that appeal to broad audiences
   try {
@@ -321,7 +321,7 @@ async function getGroupRecommendations(userIds) {
   } catch (error) {
     console.error('Error fetching group recommendations:', error);
   }
-  
+
   return [];
 }
 
