@@ -165,10 +165,10 @@ async function getUserProfile(userId) {
       
       const userData = userSnapshot.val();
       
-      // Get watched items
-      const watchedRef = ref(db, `ourshow/users/${userId}/watched`);
-      const watchedSnapshot = await get(watchedRef);
-      const watched = watchedSnapshot.exists() ? Object.values(watchedSnapshot.val()) : [];
+      // Get watched items (from watchlist path)
+      const watchlistRef = ref(db, `ourshow/users/${userId}/watchlist`);
+      const watchlistSnapshot = await get(watchlistRef);
+      const watched = watchlistSnapshot.exists() ? Object.values(watchlistSnapshot.val()) : [];
       
       // Calculate stats
       const stats = {
@@ -222,12 +222,12 @@ async function loadActivityFeed() {
       const { ref, get } = await import('https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js');
       
       for (const userId of followingIds) {
-        // Get recent watched items
-        const watchedRef = ref(db, `ourshow/users/${userId}/watched`);
-        const watchedSnapshot = await get(watchedRef);
+        // Get recent watched items (from watchlist path)
+        const watchlistRef = ref(db, `ourshow/users/${userId}/watchlist`);
+        const watchlistSnapshot = await get(watchlistRef);
         
-        if (watchedSnapshot.exists()) {
-          const watched = Object.values(watchedSnapshot.val())
+        if (watchlistSnapshot.exists()) {
+          const watched = Object.values(watchlistSnapshot.val())
             .sort((a, b) => (b.watchedTimestamp || 0) - (a.watchedTimestamp || 0))
             .slice(0, 5);
           
@@ -279,9 +279,9 @@ function startActivityListener() {
   followingIds.forEach(async (userId) => {
     try {
       const { ref, onValue } = await import('https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js');
-      const watchedRef = ref(db, `ourshow/users/${userId}/watched`);
+      const watchlistRef = ref(db, `ourshow/users/${userId}/watchlist`);
       
-      onValue(watchedRef, (snapshot) => {
+      onValue(watchlistRef, (snapshot) => {
         if (snapshot.exists()) {
           // Update activity feed when followed user watches something
           loadActivityFeed();
