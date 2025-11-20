@@ -487,66 +487,8 @@
             Show
           </div>
           <div class="text-xs text-gray-400 tracking-wide">
-            🎬 discover • 💬 discuss • 🤖 recommend
-          </div>
-        </div>
-      </a>
-
-      <!-- Desktop Navigation -->
-      <div class="hidden md:flex items-center gap-2">
-        <a href="ai.html"
-          class="px-4 py-2 rounded-lg bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 transition-all duration-200 flex items-center gap-2">
-          <span>🤖</span>
-          <span class="font-semibold">AI</span>
-        </a>
-        <a href="post.html"
-          class="px-4 py-2 rounded-lg bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/30 transition-all duration-200 flex items-center gap-2">
-          <span>📝</span>
-          <span class="font-semibold">Posts</span>
-        </a>
-        <a href="community.html"
-          class="px-4 py-2 rounded-lg bg-green-600/20 hover:bg-green-600/40 border border-green-500/30 transition-all duration-200 flex items-center gap-2">
-          <span>💬</span>
-          <span class="font-semibold">Chat</span>
-        </a>
-        <a href="watch&download.html"
-          class="px-4 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/40 border border-red-500/30 transition-all duration-200 flex items-center gap-2">
-          <span>📥</span>
-          <span class="font-semibold">Download</span>
-          <span>🎲</span>
-          <span>Surprise Me</span>
-          </button>
-          <button id="install-app-btn"
-            class="hidden px-4 py-2 rounded-lg bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/40 text-sm font-semibold transition-colors duration-200 flex items-center gap-2">
-            <span>📱</span>
-            <span>Install App</span>
-          </button>
-          <div class="relative" id="notification-wrapper">
-            <button id="notification-bell"
-              class="relative px-3 py-2 rounded-lg bg-gray-700/60 hover:bg-gray-700 border border-gray-600 transition-all duration-200 flex items-center gap-2">
-              <span>🔔</span>
-              <span class="text-sm font-semibold">Alerts</span>
-              <span id="notification-count"
-                class="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] leading-none px-1.5 py-0.5 rounded-full font-bold hidden">0</span>
-            </button>
-            <div id="notifications-panel"
-              class="hidden absolute right-0 mt-2 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl w-72 overflow-hidden z-50">
-              <div class="flex items-center justify-between px-4 py-3 border-b border-gray-700">
-                <p class="font-semibold">Notifications</p>
-                <button id="mark-notifications-read" class="text-xs text-red-400 hover:text-red-300">Mark all</button>
-              </div>
-              <div id="notifications-list" class="max-h-80 overflow-y-auto divide-y divide-gray-800">
-                <p class="text-xs text-gray-400 px-4 py-4">No alerts yet. You’re all caught up!</p>
-              </div>
-            </div>
-          </div>
-      </div>
-
-      <!-- User Section -->
-      <nav class="hidden md:flex items-center gap-3">
-        <a href="watchlist.html" class="relative group">
-          <div
-            class="px-3 py-2 rounded-lg bg-yellow-600/20 hover:bg-yellow-600/40 border border-yellow-500/30 transition-all duration-200 flex items-center gap-2">
+            class="px-3 py-2 rounded-lg bg-yellow-600/20 hover:bg-yellow-600/40 border border-yellow-500/30
+            transition-all duration-200 flex items-center gap-2">
             <span class="text-xl">⭐</span>
             <span id="watchlist-count"
               class="bg-yellow-600 text-white px-2 py-0.5 rounded-full text-xs font-bold">0</span>
@@ -555,48 +497,46 @@
             class="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-gray-800 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
             Watchlist
           </span>
-        </a>
+      </a>
 
-        <a href="watchlater.html" class="relative group">
-          <div
-            class="px-3 py-2 rounded-lg bg-cyan-600/20 hover:bg-cyan-600/40 border border-cyan-500/30 transition-all duration-200 flex items-center gap-2">
-            <span class="text-xl">⏳</span>
-            <span id="watchlater-count"
-              class="bg-cyan-600 text-white px-2 py-0.5 rounded-full text-xs font-bold">0</span>
-          </div>
-          <span
-            class="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-gray-800 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-            Watch Later
-          </span>
-        </a>
-
-        <div id="profile-menu" class="ml-3 relative">
-          <button id="profile-btn"
-            class="flex items-center gap-2 bg-gray-700/50 hover:bg-gray-700 px-3 py-2 rounded-lg border border-gray-600/50 transition-all duration-200 hover:scale-105">
-            <img id="profile-pic" src="https://via.placeholder.com/36"
-              class="w-8 h-8 rounded-full border-2 border-red-500/50" alt="profile">
-            <span id="profile-name" class="text-sm font-semibold">Guest</span>
-            <span class="text-xs opacity-70">▼</span>
-          </button>
-          <div id="profile-dropdown"
-            class="hidden absolute right-0 mt-2 bg-gray-800 border border-gray-700 rounded-lg shadow-2xl w-48 overflow-hidden">
-            <a href="profile.html" class="block px-4 py-3 hover:bg-gray-700 transition-colors border-b border-gray-700">
-              <span class="mr-2">👤</span>Edit Profile
-            </a>
-            <a href="watchlist.html"
-              class="block px-4 py-3 hover:bg-gray-700 transition-colors border-b border-gray-700">
-              <span class="mr-2">⭐</span>My Watchlist
-            </a>
-            <a href="watchlater.html"
-              class="block px-4 py-3 hover:bg-gray-700 transition-colors border-b border-gray-700">
-              <span class="mr-2">⏳</span>My Watch Later
-            </a>
-            <button id="logout-btn"
-              class="w-full text-left px-4 py-3 text-red-400 hover:bg-red-900/30 transition-colors font-semibold">
-              <span class="mr-2">🚪</span>Logout
-            </button>
-          </div>
+      <a href="watchlater.html" class="relative group">
+        <div
+          class="px-3 py-2 rounded-lg bg-cyan-600/20 hover:bg-cyan-600/40 border border-cyan-500/30 transition-all duration-200 flex items-center gap-2">
+          <span class="text-xl">⏳</span>
+          <span id="watchlater-count" class="bg-cyan-600 text-white px-2 py-0.5 rounded-full text-xs font-bold">0</span>
         </div>
+        <span
+          class="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-gray-800 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+          Watch Later
+        </span>
+      </a>
+
+      <div id="profile-menu" class="ml-3 relative">
+        <button id="profile-btn"
+          class="flex items-center gap-2 bg-gray-700/50 hover:bg-gray-700 px-3 py-2 rounded-lg border border-gray-600/50 transition-all duration-200 hover:scale-105">
+          <img id="profile-pic" src="https://via.placeholder.com/36"
+            class="w-8 h-8 rounded-full border-2 border-red-500/50" alt="profile">
+          <span id="profile-name" class="text-sm font-semibold">Guest</span>
+          <span class="text-xs opacity-70">▼</span>
+        </button>
+        <div id="profile-dropdown"
+          class="hidden absolute right-0 mt-2 bg-gray-800 border border-gray-700 rounded-lg shadow-2xl w-48 overflow-hidden">
+          <a href="profile.html" class="block px-4 py-3 hover:bg-gray-700 transition-colors border-b border-gray-700">
+            <span class="mr-2">👤</span>Edit Profile
+          </a>
+          <a href="watchlist.html" class="block px-4 py-3 hover:bg-gray-700 transition-colors border-b border-gray-700">
+            <span class="mr-2">⭐</span>My Watchlist
+          </a>
+          <a href="watchlater.html"
+            class="block px-4 py-3 hover:bg-gray-700 transition-colors border-b border-gray-700">
+            <span class="mr-2">⏳</span>My Watch Later
+          </a>
+          <button id="logout-btn"
+            class="w-full text-left px-4 py-3 text-red-400 hover:bg-red-900/30 transition-colors font-semibold">
+            <span class="mr-2">🚪</span>Logout
+          </button>
+        </div>
+      </div>
       </nav>
 
       <!-- Mobile Menu Button -->
