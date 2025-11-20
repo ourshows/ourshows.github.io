@@ -1,0 +1,239 @@
+// export-sharing.js - Export & Sharing System
+// CSV/JSON export, shareable images, QR codes, social media
+
+// Export watchlist/watch later as CSV
+function exportToCSV(data, filename = 'ourshow-export.csv') {
+  if (!data || data.length === 0) {
+    alert('No data to export');
+    return;
+  }
+  
+  // Get headers from first item
+  const headers = Object.keys(data[0]);
+  
+  // Create CSV content
+  let csv = headers.join(',') + '\n';
+  
+  data.forEach(item => {
+    const row = headers.map(header => {
+      const value = item[header];
+      // Escape commas and quotes
+      if (typeof value === 'string') {
+        return `"${value.replace(/"/g, '""')}"`;
+      }
+      return value || '';
+    });
+    csv += row.join(',') + '\n';
+  });
+  
+  // Download
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+// Export as JSON
+function exportToJSON(data, filename = 'ourshow-export.json') {
+  if (!data) {
+    alert('No data to export');
+    return;
+  }
+  
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], { type: 'application/json;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+// Export all user data
+async function exportAllUserData() {
+  const data = {
+    watchlist: JSON.parse(localStorage.getItem('ourshow_watchlist') || '{}'),
+    watchLater: JSON.parse(localStorage.getItem('ourshow_watchlater') || '{}'),
+    watched: JSON.parse(localStorage.getItem('ourshow_watched') || '{}'),
+    seriesProgress: JSON.parse(localStorage.getItem('ourshow_seriesProgress') || '{}'),
+    customLists: JSON.parse(localStorage.getItem('ourshow_customLists') || '[]'),
+    challenges: JSON.parse(localStorage.getItem('ourshow_challengeProgress') || '{}'),
+    badges: JSON.parse(localStorage.getItem('ourshow_badges') || '[]'),
+    collections: JSON.parse(localStorage.getItem('ourshow_collections') || '[]'),
+    exportDate: new Date().toISOString()
+  };
+  
+  exportToJSON(data, `ourshow-backup-${new Date().toISOString().split('T')[0]}.json`);
+}
+
+// Generate shareable profile link
+function generateProfileLink(userId = null) {
+  const baseUrl = window.location.origin;
+  if (userId) {
+    return `${baseUrl}/profile.html?user=${userId}`;
+  }
+  return `${baseUrl}/profile.html`;
+}
+
+// Generate shareable image (My 2024 in Movies)
+async function generateYearInReviewImage(year = new Date().getFullYear()) {
+  const watchedItems = window.getWatchedItems ? window.getWatchedItems() : [];
+  const stats = window.calculateStats ? window.calculateStats() : {};
+  
+  const yearItems = watchedItems.filter(item => {
+    if (!item.watchedDate) return false;
+    const itemYear = new Date(item.watchedDate).getFullYear();
+    return itemYear === year;
+  });
+  
+  // Create canvas
+  const canvas = document.createElement('canvas');
+  canvas.width = 1200;
+  canvas.height = 1600;
+  const ctx = canvas.getContext('2d');
+  
+  // Background gradient
+  const gradient = ctx.createLinearGradient(0, 0, 0, 1600);
+  gradient.addColorStop(0, '#1a1a2e');
+  gradient.addColorStop(1, '#16213e');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, 1200, 1600);
+  
+  // Title
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 48px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText(`My ${year} in Movies`, 600, 100);
+  
+  // Stats
+  ctx.font = '32px Arial';
+  ctx.fillText(`Total Watched: ${yearItems.length}`, 600, 200);
+  ctx.fillText(`Movies: ${stats.moviesWatched || 0}`, 600, 250);
+  ctx.fillText(`Series: ${stats.seriesWatched || 0}`, 600, 300);
+  ctx.fillText(`Total Hours: ${Math.round(stats.totalHours || 0)}`, 600, 350);
+  
+  // Top posters grid (6x4)
+  const topItems = yearItems.slice(0, 24);
+  const posterSize = 150;
+  const spacing = 20;
+  const startX = 100;
+  const startY = 450;
+  
+  for (let i = 0; i < topItems.length; i++) {
+    const row = Math.floor(i / 6);
+    const col = i % 6;
+    const x = startX + col * (posterSize + spacing);
+    const y = startY + row * (posterSize + spacing);
+    
+    // Draw poster placeholder
+    ctx.fillStyle = '#333333';
+    ctx.fillRect(x, y, posterSize, posterSize * 1.5);
+    
+    // Load actual poster if available
+    if (topItems[i].posterUrl) {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        ctx.drawImage(img, x, y, posterSize, posterSize * 1.5);
+      };
+      img.src = topItems[i].posterUrl;
+    }
+  }
+  
+  // Footer
+  ctx.fillStyle = '#888888';
+  ctx.font = '24px Arial';
+  ctx.fillText('Generated by OurShow', 600, 1550);
+  
+  // Convert to blob and download
+  canvas.toBlob((blob) => {
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `my-${year}-in-movies.png`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, 'image/png');
+}
+
+// Generate QR code for collection/list
+async function generateQRCode(text, size = 200) {
+  // Using a QR code API (you can use qrcode.js library instead)
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(text)}`;
+  
+  return qrUrl;
+}
+
+// Share to social media
+function shareToSocial(platform, text, url) {
+  const encodedText = encodeURIComponent(text);
+  const encodedUrl = encodeURIComponent(url);
+  
+  const shareUrls = {
+    twitter: `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`,
+    facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
+    whatsapp: `https://wa.me/?text=${encodedText}%20${encodedUrl}`,
+    telegram: `https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`,
+    reddit: `https://reddit.com/submit?url=${encodedUrl}&title=${encodedText}`
+  };
+  
+  if (shareUrls[platform]) {
+    window.open(shareUrls[platform], '_blank', 'width=600,height=400');
+  }
+}
+
+// Share collection
+function shareCollection(collectionId, collectionName) {
+  const url = generateProfileLink() + `?collection=${collectionId}`;
+  const text = `Check out my "${collectionName}" collection on OurShow!`;
+  
+  if (navigator.share) {
+    navigator.share({
+      title: collectionName,
+      text: text,
+      url: url
+    }).catch(err => console.log('Error sharing:', err));
+  } else {
+    // Fallback: show share options
+    const shareMenu = document.createElement('div');
+    shareMenu.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    shareMenu.innerHTML = `
+      <div class="bg-gray-800 rounded-lg p-6 max-w-md w-full">
+        <h3 class="text-xl font-bold mb-4">Share Collection</h3>
+        <div class="space-y-2 mb-4">
+          <button onclick="shareToSocial('twitter', '${text}', '${url}')" class="w-full bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded">Twitter</button>
+          <button onclick="shareToSocial('facebook', '${text}', '${url}')" class="w-full bg-blue-700 hover:bg-blue-800 px-4 py-2 rounded">Facebook</button>
+          <button onclick="shareToSocial('whatsapp', '${text}', '${url}')" class="w-full bg-green-500 hover:bg-green-600 px-4 py-2 rounded">WhatsApp</button>
+        </div>
+        <div class="flex gap-2">
+          <input type="text" value="${url}" readonly class="flex-1 bg-gray-700 px-3 py-2 rounded text-sm">
+          <button onclick="navigator.clipboard.writeText('${url}'); alert('Copied!')" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded">Copy</button>
+        </div>
+        <button onclick="this.closest('.fixed').remove()" class="mt-4 w-full bg-red-600 hover:bg-red-700 px-4 py-2 rounded">Close</button>
+      </div>
+    `;
+    document.body.appendChild(shareMenu);
+  }
+}
+
+// Export functions
+window.exportToCSV = exportToCSV;
+window.exportToJSON = exportToJSON;
+window.exportAllUserData = exportAllUserData;
+window.generateProfileLink = generateProfileLink;
+window.generateYearInReviewImage = generateYearInReviewImage;
+window.generateQRCode = generateQRCode;
+window.shareToSocial = shareToSocial;
+window.shareCollection = shareCollection;
+

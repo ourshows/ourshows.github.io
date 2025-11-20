@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Stats - OurShow</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-192x192.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .stat-card {
+      background: rgba(17, 24, 39, 0.92);
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px rgba(239, 68, 68, 0.2);
+    }
+    .progress-bar {
+      height: 8px;
+      background: rgba(148, 163, 184, 0.2);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #ef4444, #ec4899);
+      transition: width 0.3s ease;
+    }
+    .calendar-day {
+      width: 32px;
+      height: 32px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .calendar-day.has-watched {
+      background: rgba(239, 68, 68, 0.3);
+      border: 1px solid rgba(239, 68, 68, 0.5);
+    }
+    .calendar-day.has-watched:hover {
+      background: rgba(239, 68, 68, 0.5);
+      transform: scale(1.1);
+    }
+  </style>
+</head>
+<body class="bg-gray-900 text-white font-sans">
+  <!-- Header -->
+  <header class="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 shadow-xl p-4 sticky top-0 z-50 border-b border-red-600/30">
+    <div class="max-w-6xl mx-auto flex items-center justify-between">
+      <a href="index.html" class="flex items-center gap-3 hover:scale-105 transition-transform">
+        <div class="logo-badge flex items-center justify-center rounded-lg bg-gradient-to-br from-red-600 to-red-700 px-3 py-2 shadow-lg">
+          <span class="text-white font-extrabold text-lg">OUR</span>
+        </div>
+        <div>
+          <div class="text-2xl font-extrabold bg-gradient-to-r from-red-500 to-pink-500 bg-clip-text text-transparent">Show</div>
+          <div class="text-xs text-gray-400">📊 My Statistics</div>
+        </div>
+      </a>
+      <nav class="flex items-center gap-3">
+        <a href="index.html" class="px-4 py-2 rounded-lg bg-gray-700/50 hover:bg-gray-700 transition">← Home</a>
+        <a href="watchlist.html" class="px-4 py-2 rounded-lg bg-yellow-600/20 hover:bg-yellow-600/40 border border-yellow-500/30 transition">⭐ Watchlist</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="max-w-6xl mx-auto p-4 space-y-6">
+    <!-- Overview Stats -->
+    <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="stat-card">
+        <div class="text-sm text-gray-400 mb-1">Total Watched</div>
+        <div class="text-3xl font-bold text-red-500" id="total-watched">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="text-sm text-gray-400 mb-1">Movies</div>
+        <div class="text-3xl font-bold text-blue-500" id="movies-watched">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="text-sm text-gray-400 mb-1">Series</div>
+        <div class="text-3xl font-bold text-purple-500" id="series-watched">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="text-sm text-gray-400 mb-1">Total Hours</div>
+        <div class="text-3xl font-bold text-green-500" id="total-hours">0</div>
+      </div>
+    </section>
+
+    <!-- Watch Streak -->
+    <section class="stat-card">
+      <h2 class="text-xl font-bold mb-4">🔥 Watch Streak</h2>
+      <div class="flex items-center gap-4">
+        <div class="text-4xl font-bold text-orange-500" id="watch-streak">0</div>
+        <div>
+          <div class="text-lg font-semibold">Days in a row!</div>
+          <div class="text-sm text-gray-400">Keep watching to maintain your streak</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Favorite Genres -->
+    <section class="stat-card">
+      <h2 class="text-xl font-bold mb-4">🎭 Favorite Genres</h2>
+      <div id="favorite-genres" class="space-y-2">
+        <p class="text-gray-400">No data yet. Start watching to see your favorite genres!</p>
+      </div>
+    </section>
+
+    <!-- Yearly & Monthly Stats -->
+    <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="stat-card">
+        <h2 class="text-xl font-bold mb-4">📅 This Year</h2>
+        <div id="yearly-stats" class="space-y-2">
+          <p class="text-gray-400">No data yet</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <h2 class="text-xl font-bold mb-4">📆 This Month</h2>
+        <div id="monthly-stats" class="space-y-2">
+          <p class="text-gray-400">No data yet</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Calendar View -->
+    <section class="stat-card">
+      <h2 class="text-xl font-bold mb-4">📅 Calendar View</h2>
+      <div class="mb-4 flex items-center gap-4">
+        <button onclick="changeCalendarMonth(-1)" class="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600">← Prev</button>
+        <span class="font-semibold" id="calendar-month-year"></span>
+        <button onclick="changeCalendarMonth(1)" class="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600">Next →</button>
+      </div>
+      <div id="calendar-view" class="grid grid-cols-7 gap-2">
+        <!-- Calendar will be generated here -->
+      </div>
+      <div class="mt-4 text-sm text-gray-400">
+        <div class="flex items-center gap-2">
+          <div class="calendar-day has-watched"></div>
+          <span>Days you watched something</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Recently Watched -->
+    <section class="stat-card">
+      <h2 class="text-xl font-bold mb-4">🎬 Recently Watched</h2>
+      <div id="recently-watched" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+        <p class="text-gray-400 col-span-full">No watched items yet. Mark items as watched to see them here!</p>
+      </div>
+    </section>
+
+    <!-- Series Progress -->
+    <section class="stat-card" id="series-progress-section" style="display: none;">
+      <h2 class="text-xl font-bold mb-4">📺 Series Progress</h2>
+      <div id="series-progress-list" class="space-y-4">
+        <!-- Series progress will be shown here -->
+      </div>
+    </section>
+  </main>
+
+  <!-- Scripts -->
+  <script src="firebase-config.js"></script>
+  <script src="stats.js"></script>
+  <script>
+    let currentCalendarDate = new Date();
+    
+    async function loadStats() {
+      await loadWatchedItems();
+      const stats = calculateStats();
+      
+      // Update overview
+      document.getElementById('total-watched').textContent = stats.totalWatched;
+      document.getElementById('movies-watched').textContent = stats.moviesWatched;
+      document.getElementById('series-watched').textContent = stats.seriesWatched;
+      document.getElementById('total-hours').textContent = Math.round(stats.totalHours);
+      document.getElementById('watch-streak').textContent = stats.watchStreak;
+      
+      // Favorite genres
+      const genresEl = document.getElementById('favorite-genres');
+      if (Object.keys(stats.favoriteGenres).length > 0) {
+        genresEl.innerHTML = Object.entries(stats.favoriteGenres)
+          .map(([genre, count]) => `
+            <div class="flex items-center justify-between">
+              <span>${genre}</span>
+              <div class="flex items-center gap-2">
+                <div class="progress-bar w-32">
+                  <div class="progress-fill" style="width: ${(count / stats.totalWatched) * 100}%"></div>
+                </div>
+                <span class="text-sm font-semibold">${count}</span>
+              </div>
+            </div>
+          `).join('');
+      }
+      
+      // Yearly stats
+      const yearlyEl = document.getElementById('yearly-stats');
+      const currentYear = new Date().getFullYear();
+      if (stats.yearlyStats[currentYear]) {
+        yearlyEl.innerHTML = `
+          <div class="text-2xl font-bold text-red-500">${stats.yearlyStats[currentYear]}</div>
+          <div class="text-sm text-gray-400">titles watched this year</div>
+        `;
+      }
+      
+      // Monthly stats
+      const monthlyEl = document.getElementById('monthly-stats');
+      const currentMonth = `${currentYear}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+      if (stats.monthlyStats[currentMonth]) {
+        monthlyEl.innerHTML = `
+          <div class="text-2xl font-bold text-blue-500">${stats.monthlyStats[currentMonth]}</div>
+          <div class="text-sm text-gray-400">titles watched this month</div>
+        `;
+      }
+      
+      // Recently watched
+      const recentEl = document.getElementById('recently-watched');
+      const recent = watchedItems
+        .sort((a, b) => (b.watchedTimestamp || 0) - (a.watchedTimestamp || 0))
+        .slice(0, 10);
+      
+      if (recent.length > 0) {
+        recentEl.innerHTML = recent.map(item => `
+          <div class="cursor-pointer group" onclick="showWatchedDetails('${item.id}')">
+            <img src="${item.posterUrl || 'https://placehold.co/300x450?text=No+Image'}" 
+                 alt="${item.title}" 
+                 class="w-full aspect-[2/3] object-cover rounded-lg group-hover:opacity-80 transition">
+            <div class="mt-2 text-sm font-semibold truncate">${item.title}</div>
+            <div class="text-xs text-gray-400">${item.watchedDate ? new Date(item.watchedDate).toLocaleDateString() : ''}</div>
+          </div>
+        `).join('');
+      }
+      
+      // Calendar view
+      renderCalendar(stats.calendarView);
+      
+      // Series progress
+      await loadSeriesProgress();
+      renderSeriesProgress();
+    }
+    
+    function renderCalendar(calendarData) {
+      const year = currentCalendarDate.getFullYear();
+      const month = currentCalendarDate.getMonth();
+      
+      document.getElementById('calendar-month-year').textContent = 
+        currentCalendarDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      
+      const firstDay = new Date(year, month, 1);
+      const lastDay = new Date(year, month + 1, 0);
+      const daysInMonth = lastDay.getDate();
+      const startingDayOfWeek = firstDay.getDay();
+      
+      const calendarEl = document.getElementById('calendar-view');
+      calendarEl.innerHTML = '';
+      
+      // Day labels
+      ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(day => {
+        const label = document.createElement('div');
+        label.className = 'text-center text-sm font-semibold text-gray-400';
+        label.textContent = day;
+        calendarEl.appendChild(label);
+      });
+      
+      // Empty cells for days before month starts
+      for (let i = 0; i < startingDayOfWeek; i++) {
+        const empty = document.createElement('div');
+        calendarEl.appendChild(empty);
+      }
+      
+      // Days of month
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const hasWatched = calendarData[dateStr] && calendarData[dateStr].length > 0;
+        
+        const dayEl = document.createElement('div');
+        dayEl.className = `calendar-day ${hasWatched ? 'has-watched' : ''}`;
+        dayEl.textContent = day;
+        if (hasWatched) {
+          dayEl.title = `${calendarData[dateStr].length} title(s) watched`;
+          dayEl.onclick = () => showDayDetails(dateStr, calendarData[dateStr]);
+        }
+        calendarEl.appendChild(dayEl);
+      }
+    }
+    
+    function changeCalendarMonth(direction) {
+      currentCalendarDate.setMonth(currentCalendarDate.getMonth() + direction);
+      loadStats();
+    }
+    
+    function showDayDetails(dateStr, items) {
+      alert(`Watched on ${dateStr}:\n${items.map(i => `• ${i.title}`).join('\n')}`);
+    }
+    
+    function showWatchedDetails(id) {
+      // Could open modal with details
+      console.log('Show details for:', id);
+    }
+    
+    async function renderSeriesProgress() {
+      const progress = getSeriesProgress();
+      const section = document.getElementById('series-progress-section');
+      const list = document.getElementById('series-progress-list');
+      
+      if (Object.keys(progress).length === 0) {
+        section.style.display = 'none';
+        return;
+      }
+      
+      section.style.display = 'block';
+      list.innerHTML = Object.entries(progress).map(([key, prog]) => `
+        <div class="bg-gray-800 rounded-lg p-4">
+          <div class="flex items-center justify-between mb-2">
+            <div>
+              <div class="font-semibold">Series ID: ${prog.seriesId}</div>
+              <div class="text-sm text-gray-400">Season ${prog.seasonNum}</div>
+            </div>
+            <div class="text-sm text-gray-400">
+              ${prog.lastWatched ? new Date(prog.lastWatched).toLocaleDateString() : ''}
+            </div>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: ${prog.totalEpisodes ? (prog.episodeNum / prog.totalEpisodes) * 100 : 0}%"></div>
+          </div>
+          <div class="text-xs text-gray-400 mt-1">
+            Episode ${prog.episodeNum}${prog.totalEpisodes ? ` of ${prog.totalEpisodes}` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+    
+    // Load stats on page load
+    window.addEventListener('load', () => {
+      setTimeout(loadStats, 1000);
+    });
+  </script>
+</body>
+</html>
+
