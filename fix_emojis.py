@@ -4,8 +4,26 @@ import re
 with open('index.html', 'r', encoding='utf-8') as f:
     content = f.read()
 
-# Define emoji replacements (garbled text -> proper emoji)
-emoji_map = {
+# Define ALL character replacements (garbled text -> proper character)
+char_map = {
+    # Special punctuation and symbols (do these first)
+    'ΓÇö': '—',  # Em dash
+    'ΓÇô': '–',  # En dash
+    'ΓÇó': '•',  # Bullet
+    'ΓÇ£': '"',  # Left double quote
+    'ΓÇ¥': '"',  # Right double quote
+    'ΓÇÖ': "'",  # Left single quote
+    'ΓÇÿ': "'",  # Right single quote
+    'ΓÇª': '…',  # Ellipsis
+    'ΓÇ╣': '←',
+    'ΓÇ¿': '→',
+    'ΓÇ»': '↑',
+    'ΓÇ╝': '↓',
+    'Γ£à': '✅',
+    'ΓÜá∩╕Å': '⚠️',
+    'Γ¥î': '❌',
+    
+    # Garbled emojis
     '≡ƒÄ¼': '🎬',
     '≡ƒÆ¼': '💬',
     '≡ƒñû': '🤖',
@@ -33,27 +51,15 @@ emoji_map = {
     'Γÿ░': '🏆',
     '≡ƒÅå': '🏅',
     '≡ƒöÄ': '🔍',
-    'ΓÇó': '•',
-    'ΓÇÖ': ''',
-    'ΓÇÖ': ''',
-    'ΓÇ£': '"',
-    'ΓÇ¥': '"',
-    'Γ£à': '✅',
-    'ΓÜá∩╕Å': '⚠️',
-    'Γ¥î': '❌',
-    'ΓÇ╣': '←',
-    'ΓÇ¿': '→',
-    'ΓÇ»': '↑',
-    'ΓÇ╝': '↓',
 }
 
-# Replace all garbled emojis
-for garbled, emoji in emoji_map.items():
-    content = content.replace(garbled, emoji)
+# Replace all garbled characters
+for garbled, proper in char_map.items():
+    content = content.replace(garbled, proper)
 
 # Write back with UTF-8 encoding
 with open('index.html', 'w', encoding='utf-8') as f:
     f.write(content)
 
-print("✅ Emojis fixed successfully!")
-print(f"📝 Replaced {len(emoji_map)} emoji patterns")
+print("✅ All characters fixed successfully!")
+print(f"📝 Replaced {len(char_map)} character patterns")
