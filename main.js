@@ -3,6 +3,17 @@ let currentMovieId = null;
 let currentMovieData = null;
 let userRating = null;
 
+// Expose functions to global scope for onclick handlers
+window.closeModal = closeModal;
+window.switchTab = switchTab;
+window.rateMovie = rateMovie;
+window.submitReview = submitReview;
+window.markAsWatched = markAsWatched;
+window.addToWatchLater = addToWatchLater;
+window.watchNow = watchNow;
+window.askAI = askAI;
+window.openMovieModal = openMovieModal;
+
 document.addEventListener('DOMContentLoaded', () => {
     initApp();
 });
@@ -232,7 +243,19 @@ function switchTab(tabName) {
 
     // Show selected tab
     document.getElementById(`tab-${tabName}`).style.display = 'block';
-    event.target.classList.add('active');
+
+    // Find and activate the corresponding button
+    const buttons = document.querySelectorAll('.tab-btn');
+    buttons.forEach(btn => {
+        if (btn.textContent.toLowerCase().includes(tabName.toLowerCase()) ||
+            (tabName === 'overview' && btn.textContent === 'Overview') ||
+            (tabName === 'cast' && btn.textContent === 'Cast & Crew') ||
+            (tabName === 'reviews' && btn.textContent === 'Reviews') ||
+            (tabName === 'similar' && btn.textContent === 'Similar') ||
+            (tabName === 'ai' && btn.textContent === 'Ask AI')) {
+            btn.classList.add('active');
+        }
+    });
 }
 
 function loadTrailer(videos) {
