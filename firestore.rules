@@ -1,0 +1,101 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    // Users collection - profiles, watchlists, watched history
+    match /users/{userId} {
+      // Anyone can read user profiles (for discovery, following)
+      allow read: if true;
+      
+      // Only the user can create/update their own profile
+      allow create, update: if isSignedIn() && isOwner(userId);
+      allow delete: if isSignedIn() && isOwner(userId);
+      
+      // Watchlist subcollection
+      match /watchlist/{movieId} {
+        allow read: if true;
+        allow write: if isSignedIn() && isOwner(userId);
+      }
+      
+      // Watched history subcollection
+      match /watched/{movieId} {
+        allow read: if true;
+        allow write: if isSignedIn() && isOwner(userId);
+      }
+      
+      // User stats/badges
+      match /stats/{statId} {
+        allow read: if true;
+        allow write: if isSignedIn() && isOwner(userId);
+      }
+    }
+    
+    // Posts/Social Feed
+    match /posts/{postId} {
+      allow read: if true;
+      
+      allow create: if isSignedIn() && 
+                      request.resource.data.userId == request.auth.uid &&
+                      request.resource.data.timestamp == request.time;
+      
+      allow update, delete: if isSignedIn() && 
+                               resource.data.userId == request.auth.uid;
+      
+      // Comments on posts
+      match /comments/{commentId} {
+        allow read: if true;
+        
+        allow create: if isSignedIn() && 
+                        request.resource.data.userId == request.auth.uid &&
+                        request.resource.data.timestamp == request.time;
+        
+        allow update, delete: if isSignedIn() && 
+                                 resource.data.userId == request.auth.uid;
+      }
+    }
+    
+    // Chat messages (community chat)
+    match /messages/{messageId} {
+      allow read: if true;
+      
+      allow create: if isSignedIn() && 
+                      request.resource.data.userId == request.auth.uid &&
+                      request.resource.data.username != null &&
+                      request.resource.data.timestamp == request.time;
+      
+      allow delete: if isSignedIn() && 
+                      resource.data.userId == request.auth.uid;
+      
+      allow update: if false; // Messages are immutable
+    }
+    
+    // Movie/Series reviews
+    match /reviews/{reviewId} {
+      allow read: if true;
+      
+      allow create: if isSignedIn() && 
+                      request.resource.data.userId == request.auth.uid &&
+                      request.resource.data.timestamp == request.time &&
+                      request.resource.data.rating >= 1 &&
+                      request.resource.data.rating <= 5 &&
+                      request.resource.data.movieId != null;
+      
+      allow update, delete: if isSignedIn() && 
+                               resource.data.userId == request.auth.uid;
+    }
+    
+    // Deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
