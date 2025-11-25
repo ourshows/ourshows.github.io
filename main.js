@@ -1,28 +1,30 @@
 // Main Application Logic
+let currentMovieId = null;
+let currentMovieData = null;
+let userRating = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     initApp();
 });
 
 async function initApp() {
-    // Check if config is loaded
     if (!window.APP_CONFIG) {
         console.error("Config not found!");
         return;
     }
 
-    // Initialize UI components
     setupNavbar();
     setupSearch();
 
-    // Fetch Data
     await loadHeroContent();
     await loadTrending();
+    await loadPopular();
     await loadTopRated();
+    await loadUpcoming();
+    await loadNowPlaying();
 }
 
 // --- UI Setup ---
-
 function setupNavbar() {
     const navbar = document.getElementById('navbar');
     window.addEventListener('scroll', () => {
@@ -53,7 +55,6 @@ function setupSearch() {
         }, 500);
     });
 
-    // Close search when clicking outside
     document.addEventListener('click', (e) => {
         if (!input.contains(e.target) && !resultsContainer.contains(e.target)) {
             resultsContainer.classList.remove('active');
@@ -62,7 +63,6 @@ function setupSearch() {
 }
 
 // --- Data Fetching ---
-
 async function fetchTMDB(endpoint, params = {}) {
     const url = new URL(`${window.APP_CONFIG.TMDB_BASE_URL}${endpoint}`);
     url.searchParams.append('api_key', window.APP_CONFIG.TMDB_API_KEY);
@@ -79,10 +79,9 @@ async function fetchTMDB(endpoint, params = {}) {
 }
 
 async function loadHeroContent() {
-    // Fetch trending to pick a random hero
     const data = await fetchTMDB('/trending/all/day');
     if (data && data.results.length > 0) {
-        const randomHero = data.results[Math.floor(Math.random() * 5)]; // Pick from top 5
+        const randomHero = data.results[Math.floor(Math.random() * 5)];
         updateHeroUI(randomHero);
     }
 }
@@ -101,24 +100,32 @@ function updateHeroUI(item) {
     rating.textContent = item.vote_average ? item.vote_average.toFixed(1) : 'N/A';
     year.textContent = (item.release_date || item.first_air_date || '').split('-')[0];
 
-    // Link to watch page
-    watchBtn.onclick = () => {
-        window.location.href = `watchanddownload.html?id=${item.id}&type=${item.media_type || 'movie'}`;
-    };
+    watchBtn.onclick = () => openMovieModal(item.id, item.media_type || 'movie');
 }
 
 async function loadTrending() {
     const data = await fetchTMDB('/trending/movie/week');
-    if (data) {
-        renderCards(data.results, 'trendingScroller', 'movie');
-    }
+    if (data) renderCards(data.results, 'trendingScroller', 'movie');
+}
+
+async function loadPopular() {
+    const data = await fetchTMDB('/movie/popular');
+    if (data) renderCards(data.results, 'popularScroller', 'movie');
 }
 
 async function loadTopRated() {
     const data = await fetchTMDB('/movie/top_rated');
-    if (data) {
-        renderCards(data.results, 'topRatedScroller', 'movie');
-    }
+    if (data) renderCards(data.results, 'topRatedScroller', 'movie');
+}
+
+async function loadUpcoming() {
+    const data = await fetchTMDB('/movie/upcoming');
+    if (data) renderCards(data.results, 'upcomingScroller', 'movie');
+}
+
+async function loadNowPlaying() {
+    const data = await fetchTMDB('/movie/now_playing');
+    if (data) renderCards(data.results, 'nowPlayingScroller', 'movie');
 }
 
 async function performSearch(query) {
@@ -129,7 +136,7 @@ async function performSearch(query) {
     if (data && data.results.length > 0) {
         resultsContainer.classList.add('active');
         data.results.slice(0, 5).forEach(item => {
-            if (!item.poster_path && !item.profile_path) return; // Skip if no image
+            if (!item.poster_path && !item.profile_path) return;
 
             const div = document.createElement('div');
             div.className = 'search-item';
@@ -141,7 +148,8 @@ async function performSearch(query) {
                 </div>
             `;
             div.onclick = () => {
-                window.location.href = `watchanddownload.html?id=${item.id}&type=${item.media_type}`;
+                openMovieModal(item.id, item.media_type);
+                resultsContainer.classList.remove('active');
             };
             resultsContainer.appendChild(div);
         });
@@ -151,10 +159,9 @@ async function performSearch(query) {
 }
 
 // --- Rendering ---
-
 function renderCards(items, containerId, defaultType) {
     const container = document.getElementById(containerId);
-    container.innerHTML = ''; // Clear skeletons
+    container.innerHTML = '';
 
     items.forEach(item => {
         if (!item.poster_path) return;
@@ -169,10 +176,245 @@ function renderCards(items, containerId, defaultType) {
             </div>
         `;
 
-        card.onclick = () => {
-            window.location.href = `watchanddownload.html?id=${item.id}&type=${item.media_type || defaultType}`;
-        };
-
+        card.onclick = () => openMovieModal(item.id, item.media_type || defaultType);
         container.appendChild(card);
     });
+}
+
+// --- Movie Modal ---
+async function openMovieModal(id, type = 'movie') {
+    currentMovieId = id;
+    const modal = document.getElementById('movieModal');
+    modal.style.display = 'block';
+    document.body.style.overflow = 'hidden';
+
+    // Fetch movie details
+    const details = await fetchTMDB(`/${type}/${id}`, { append_to_response: 'videos,credits,reviews,similar' });
+    if (!details) return;
+
+    currentMovieData = details;
+
+    // Update modal header
+    document.getElementById('modalPoster').src = `${window.APP_CONFIG.TMDB_IMAGE_SMALL_URL}${details.poster_path}`;
+    document.getElementById('modalTitle').textContent = details.title || details.name;
+    document.getElementById('modalRating').textContent = details.vote_average ? details.vote_average.toFixed(1) : 'N/A';
+    document.getElementById('modalYear').textContent = (details.release_date || details.first_air_date || '').split('-')[0];
+    document.getElementById('modalRuntime').textContent = details.runtime ? `${details.runtime} min` : '';
+    document.getElementById('modalOverview').textContent = details.overview;
+
+    // Load trailer
+    loadTrailer(details.videos);
+
+    // Load genres
+    loadGenres(details.genres);
+
+    // Load cast
+    loadCast(details.credits);
+
+    // Load reviews
+    loadReviews(details.reviews);
+
+    // Load similar
+    loadSimilar(details.similar);
+}
+
+function closeModal() {
+    document.getElementById('movieModal').style.display = 'none';
+    document.body.style.overflow = 'auto';
+    currentMovieId = null;
+    currentMovieData = null;
+}
+
+function switchTab(tabName) {
+    // Hide all tabs
+    document.querySelectorAll('.tab-content').forEach(tab => tab.style.display = 'none');
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+
+    // Show selected tab
+    document.getElementById(`tab-${tabName}`).style.display = 'block';
+    event.target.classList.add('active');
+}
+
+function loadTrailer(videos) {
+    const trailerContainer = document.getElementById('modalTrailer');
+    if (!videos || !videos.results || videos.results.length === 0) {
+        trailerContainer.innerHTML = '';
+        return;
+    }
+
+    const trailer = videos.results.find(v => v.type === 'Trailer' && v.site === 'YouTube') || videos.results[0];
+    if (trailer) {
+        trailerContainer.innerHTML = `
+            <div style="margin-bottom: 2rem;">
+                <h3>Trailer</h3>
+                <iframe width="100%" height="400" src="https://www.youtube.com/embed/${trailer.key}" 
+                    frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowfullscreen style="border-radius: 12px; margin-top: 1rem;"></iframe>
+            </div>
+        `;
+    }
+}
+
+function loadGenres(genres) {
+    const genresContainer = document.getElementById('modalGenres');
+    if (!genres || genres.length === 0) {
+        genresContainer.innerHTML = '';
+        return;
+    }
+
+    genresContainer.innerHTML = `
+        <div style="margin-bottom: 1.5rem;">
+            <strong>Genres:</strong> ${genres.map(g => g.name).join(', ')}
+        </div>
+    `;
+}
+
+function loadCast(credits) {
+    const castContainer = document.getElementById('modalCast');
+    if (!credits || !credits.cast || credits.cast.length === 0) {
+        castContainer.innerHTML = '<p>No cast information available.</p>';
+        return;
+    }
+
+    castContainer.innerHTML = credits.cast.slice(0, 12).map(person => `
+        <div class="cast-card">
+            <img src="${person.profile_path ? window.APP_CONFIG.TMDB_IMAGE_SMALL_URL + person.profile_path : 'https://via.placeholder.com/150x225?text=No+Image'}" 
+                alt="${person.name}">
+            <div style="font-weight: 600; font-size: 0.9rem;">${person.name}</div>
+            <div style="font-size: 0.8rem; color: var(--text-secondary);">${person.character}</div>
+        </div>
+    `).join('');
+}
+
+function loadReviews(reviews) {
+    const reviewsContainer = document.getElementById('modalReviews');
+    if (!reviews || !reviews.results || reviews.results.length === 0) {
+        reviewsContainer.innerHTML = '<p>No reviews yet. Be the first to review!</p>';
+        return;
+    }
+
+    reviewsContainer.innerHTML = reviews.results.slice(0, 5).map(review => `
+        <div class="review-card">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                <strong>${review.author}</strong>
+                <span style="color: #ffd700;">★ ${review.author_details.rating || 'N/A'}</span>
+            </div>
+            <p style="color: var(--text-secondary); line-height: 1.6;">
+                ${review.content.substring(0, 300)}${review.content.length > 300 ? '...' : ''}
+            </p>
+        </div>
+    `).join('');
+}
+
+function loadSimilar(similar) {
+    const similarContainer = document.getElementById('modalSimilar');
+    if (!similar || !similar.results || similar.results.length === 0) {
+        similarContainer.innerHTML = '<p>No similar titles found.</p>';
+        return;
+    }
+
+    renderCards(similar.results.slice(0, 10), 'modalSimilar', 'movie');
+}
+
+// --- User Actions ---
+function rateMovie(rating) {
+    userRating = rating;
+    document.querySelectorAll('.rating-btn').forEach(btn => btn.classList.remove('selected'));
+    document.querySelector(`.rating-btn[data-rating="${rating}"]`).classList.add('selected');
+}
+
+function submitReview() {
+    const reviewText = document.getElementById('reviewText').value;
+    if (!userRating) {
+        alert('Please select a rating first!');
+        return;
+    }
+    if (!reviewText.trim()) {
+        alert('Please write a review!');
+        return;
+    }
+
+    // TODO: Save to Firebase
+    console.log('Review submitted:', { movieId: currentMovieId, rating: userRating, review: reviewText });
+    alert('Review submitted successfully!');
+    document.getElementById('reviewText').value = '';
+    userRating = null;
+    document.querySelectorAll('.rating-btn').forEach(btn => btn.classList.remove('selected'));
+}
+
+function markAsWatched() {
+    // TODO: Save to Firebase
+    console.log('Marked as watched:', currentMovieId);
+    alert('Added to watched list!');
+}
+
+function addToWatchLater() {
+    // TODO: Save to Firebase
+    console.log('Added to watch later:', currentMovieId);
+    alert('Added to watch later!');
+}
+
+function watchNow() {
+    window.location.href = `watchanddownload.html?id=${currentMovieId}&type=movie`;
+}
+
+// --- AI Chat ---
+async function askAI() {
+    const question = document.getElementById('aiQuestion').value.trim();
+    if (!question) return;
+
+    const chatContainer = document.getElementById('aiChat');
+
+    // Add user message
+    const userMsg = document.createElement('div');
+    userMsg.className = 'ai-message user';
+    userMsg.textContent = question;
+    chatContainer.appendChild(userMsg);
+
+    document.getElementById('aiQuestion').value = '';
+
+    // Call Gemini API
+    const prompt = `You are a movie expert. Answer this question about "${currentMovieData.title || currentMovieData.name}": ${question}. Keep the answer concise and informative.`;
+
+    try {
+        const response = await callGemini(prompt);
+        const aiMsg = document.createElement('div');
+        aiMsg.className = 'ai-message ai';
+        aiMsg.textContent = response;
+        chatContainer.appendChild(aiMsg);
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    } catch (error) {
+        console.error('AI Error:', error);
+        const aiMsg = document.createElement('div');
+        aiMsg.className = 'ai-message ai';
+        aiMsg.textContent = 'Sorry, I encountered an error. Please try again.';
+        chatContainer.appendChild(aiMsg);
+    }
+}
+
+async function callGemini(prompt) {
+    if (!window.APP_CONFIG || !window.APP_CONFIG.GEMINI_API_KEY) {
+        throw new Error("Gemini Key Missing");
+    }
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${window.APP_CONFIG.GEMINI_API_KEY}`;
+
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }]
+        })
+    });
+
+    const data = await response.json();
+    return data.candidates[0].content.parts[0].text;
+}
+
+// Close modal on outside click
+window.onclick = function (event) {
+    const modal = document.getElementById('movieModal');
+    if (event.target == modal) {
+        closeModal();
+    }
 }
