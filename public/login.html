@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - OurShow</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .login-box {
+            width: 100%;
+            max-width: 400px;
+            padding: 2.5rem;
+            text-align: center;
+        }
+
+        .social-btn {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+            background: white;
+            color: #333;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-bottom: 1.5rem;
+        }
+
+        .social-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 1.5rem 0;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--glass-border);
+        }
+
+        .divider span {
+            padding: 0 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="login-container">
+        <div class="glass-panel login-box">
+            <h1 class="logo" style="font-size: 2.5rem; margin-bottom: 0.5rem;">OurShow</h1>
+            <p style="color: var(--text-secondary); margin-bottom: 2rem;">Welcome back, movie buff!</p>
+
+            <button class="social-btn" onclick="handleGoogleLogin()">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20" alt="Google">
+                Continue with Google
+            </button>
+
+            <div class="divider"><span>OR</span></div>
+
+            <form onsubmit="handleEmailLogin(event)">
+                <div style="margin-bottom: 1rem;">
+                    <input type="email" class="glass-input" placeholder="Email Address" required>
+                </div>
+                <div style="margin-bottom: 1.5rem;">
+                    <input type="password" class="glass-input" placeholder="Password" required>
+                </div>
+                <button type="submit" class="glass-button"
+                    style="width: 100%; background: var(--primary-color); border: none;">
+                    Log In
+                </button>
+            </form>
+
+            <p style="margin-top: 1.5rem; font-size: 0.9rem; color: var(--text-secondary);">
+                Don't have an account? <a href="#" style="color: var(--primary-color);">Sign up</a>
+            </p>
+            <p style="margin-top: 1rem; font-size: 0.9rem;">
+                <a href="index.html" style="color: var(--text-secondary);">Continue as Guest</a>
+            </p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { auth, googleProvider, signInWithPopup, signInWithEmailAndPassword } from './firebase-config.js';
+
+        window.handleGoogleLogin = async () => {
+            try {
+                const result = await signInWithPopup(auth, googleProvider);
+                const user = result.user;
+                console.log("User signed in:", user);
+                window.location.href = 'index.html';
+            } catch (error) {
+                console.error("Error signing in with Google:", error);
+                alert("Login failed: " + error.message);
+            }
+        };
+
+        window.handleEmailLogin = async (e) => {
+            e.preventDefault();
+            const email = e.target.querySelector('input[type="email"]').value;
+            const password = e.target.querySelector('input[type="password"]').value;
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                window.location.href = 'index.html';
+            } catch (error) {
+                console.error("Error signing in with Email:", error);
+                alert("Login failed: " + error.message);
+            }
+        };
+    </script>
+</body>
+
+</html>

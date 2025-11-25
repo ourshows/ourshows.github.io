@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OurShow - Discover & Watch</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+        <div class="container nav-content">
+            <a href="index.html" class="logo">OurShow</a>
+
+            <div class="search-container">
+                <input type="text" id="searchInput" class="glass-input" placeholder="Search movies, series, vibes...">
+                <div id="searchResults" class="search-results glass-panel"></div>
+            </div>
+
+            <ul class="nav-links">
+                <li><a href="index.html" class="nav-link active"><i class="fas fa-home"></i> <span>Home</span></a></li>
+                <li><a href="ai.html" class="nav-link"><i class="fas fa-robot"></i> <span>AI Vibe</span></a></li>
+                <li><a href="communitychat.html" class="nav-link"><i class="fas fa-comments"></i> <span>Chat</span></a>
+                </li>
+                <li><a href="post.html" class="nav-link"><i class="fas fa-users"></i> <span>Feed</span></a></li>
+                <li><a href="watchanddownload.html" class="nav-link"><i class="fas fa-download"></i>
+                        <span>Download</span></a></li>
+                <li><a href="profile.html" class="nav-link"><i class="fas fa-user"></i> <span>Profile</span></a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="hero" id="heroSection">
+        <div class="hero-bg-container">
+            <!-- Dynamic BG Image injected here -->
+            <img id="heroBg" class="hero-bg" src="" alt="">
+        </div>
+        <div class="container hero-content">
+            <div class="hero-meta">
+                <span class="rating-badge" id="heroRating">--</span>
+                <span id="heroYear">----</span>
+                <span id="heroGenres">Genre</span>
+            </div>
+            <h1 class="hero-title" id="heroTitle">Loading...</h1>
+            <p class="hero-desc" id="heroOverview">Discover the best movies and series tailored just for you.</p>
+            <div class="hero-actions" style="margin-top: 2rem; display: flex; gap: 1rem;">
+                <button class="glass-button" id="heroWatchBtn" style="background: var(--primary-color); border: none;">
+                    <i class="fas fa-play"></i> Watch Now
+                </button>
+                <button class="glass-button" id="heroListBtn">
+                    <i class="fas fa-plus"></i> My List
+                </button>
+                <a href="app/PP_Cine.apk" download class="glass-button">
+                    <i class="fas fa-download"></i> Download App
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container">
+
+        <!-- Trending Movies -->
+        <section class="content-section">
+            <h2 class="section-title">Trending Now</h2>
+            <div class="media-scroller" id="trendingScroller">
+                <!-- Cards injected via JS -->
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+            </div>
+        </section>
+
+        <!-- Top Rated -->
+        <section class="content-section" style="margin-top: 3rem;">
+            <h2 class="section-title">Top Rated</h2>
+            <div class="media-scroller" id="topRatedScroller">
+                <!-- Cards injected via JS -->
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Scripts -->
+    <script src="config.js"></script>
+    <script src="main.js" type="module"></script>
+</body>
+
+</html>

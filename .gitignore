@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Firebase
+.firebase/
+firebase-debug.log
+.firebaserc
+firebase.json
+firestore.rules
+firestore.indexes.json
+database.rules.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Backup files
+*_backup.*
+*.bak
+FIREBASE_SETUP_GUIDE.md

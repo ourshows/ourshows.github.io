@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Social Feed - OurShow</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .feed-container {
+            max-width: 700px;
+            margin: 2rem auto;
+        }
+
+        .post-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .post-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .post-movie-card {
+            display: flex;
+            gap: 1rem;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 0.5rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            cursor: pointer;
+        }
+
+        .post-movie-card img {
+            width: 50px;
+            height: 75px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 1.5rem;
+            margin-top: 1rem;
+            color: var(--text-secondary);
+        }
+
+        .action-item {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .action-item:hover {
+            color: var(--primary-color);
+        }
+
+        .create-post {
+            margin-bottom: 2rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <div class="container nav-content">
+            <a href="index.html" class="logo">OurShow Feed</a>
+            <ul class="nav-links">
+                <li><a href="index.html" class="nav-link">Home</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container feed-container">
+
+        <!-- Create Post -->
+        <div class="glass-panel create-post" style="padding: 1.5rem;">
+            <div style="display: flex; gap: 1rem;">
+                <div class="avatar">Me</div>
+                <textarea class="glass-input" id="postContent" rows="3"
+                    placeholder="What did you watch recently?"></textarea>
+            </div>
+            <div style="display: flex; justify-content: flex-end; margin-top: 1rem;">
+                <button class="glass-button" onclick="createPost()">Post</button>
+            </div>
+        </div>
+
+        <!-- Feed -->
+        <div id="feedList">
+            <!-- Mock Post -->
+            <div class="post-card">
+                <div class="post-header">
+                    <div class="avatar" style="background: var(--accent-color);">JD</div>
+                    <div>
+                        <div style="font-weight: 600;">John Doe</div>
+                        <div style="font-size: 0.8rem; color: var(--text-secondary);">2 hours ago</div>
+                    </div>
+                </div>
+                <p style="margin-bottom: 1rem;">Just watched Inception again. Still blows my mind every time! 🤯</p>
+
+                <div class="post-movie-card">
+                    <img src="https://image.tmdb.org/t/p/w200/9gk7admal4zlWH9O9TxnP9obmHZ.jpg" alt="Inception">
+                    <div>
+                        <div style="font-weight: 600;">Inception</div>
+                        <div style="font-size: 0.8rem;">2010 • Sci-Fi</div>
+                    </div>
+                </div>
+
+                <div class="actions">
+                    <div class="action-item"><i class="far fa-heart"></i> 24</div>
+                    <div class="action-item"><i class="far fa-comment"></i> 5</div>
+                    <div class="action-item"><i class="fas fa-share"></i> Share</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="config.js"></script>
+    <script src="post.js"></script>
+</body>
+
+</html>

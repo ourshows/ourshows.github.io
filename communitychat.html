@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Community Chat - OurShow</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .chat-layout {
+            display: flex;
+            height: calc(100vh - 80px);
+            /* Adjust for navbar */
+            margin-top: 80px;
+            gap: 1rem;
+            padding-bottom: 1rem;
+        }
+
+        .sidebar {
+            width: 300px;
+            background: rgba(15, 23, 42, 0.6);
+            border-right: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            border-radius: 16px;
+        }
+
+        .chat-area {
+            flex: 1;
+            background: rgba(15, 23, 42, 0.4);
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid var(--glass-border);
+            overflow: hidden;
+        }
+
+        .channel-list {
+            list-style: none;
+            padding: 1rem;
+            overflow-y: auto;
+        }
+
+        .channel-item {
+            padding: 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .channel-item:hover,
+        .channel-item.active {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+        }
+
+        .channel-item.active {
+            border-left: 3px solid var(--primary-color);
+        }
+
+        .messages-container {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .message {
+            max-width: 70%;
+            padding: 1rem;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            position: relative;
+        }
+
+        .message.self {
+            align-self: flex-end;
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .message-meta {
+            font-size: 0.75rem;
+            opacity: 0.7;
+            margin-bottom: 0.25rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .spoiler-content {
+            filter: blur(8px);
+            cursor: pointer;
+            transition: filter 0.3s;
+            user-select: none;
+        }
+
+        .spoiler-content.revealed {
+            filter: blur(0);
+        }
+
+        .input-area {
+            padding: 1rem;
+            background: rgba(2, 6, 23, 0.5);
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .spoiler-toggle {
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+
+        .spoiler-toggle.active {
+            color: #ef4444;
+            /* Red for warning */
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <div class="container nav-content">
+            <a href="index.html" class="logo">OurShow Chat</a>
+            <ul class="nav-links">
+                <li><a href="index.html" class="nav-link">Home</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container chat-layout">
+        <aside class="sidebar glass-panel">
+            <div style="padding: 1.5rem; border-bottom: 1px solid var(--glass-border);">
+                <h3>Channels</h3>
+            </div>
+            <ul class="channel-list">
+                <li class="channel-item active">
+                    <i class="fas fa-globe"></i> Global Chat
+                </li>
+                <li class="channel-item">
+                    <i class="fas fa-film"></i> Movie Spoilers
+                </li>
+                <li class="channel-item">
+                    <i class="fas fa-tv"></i> Series Discussion
+                </li>
+            </ul>
+        </aside>
+
+        <main class="chat-area glass-panel">
+            <div class="messages-container" id="messagesList">
+                <!-- Mock Messages -->
+                <div class="message">
+                    <div class="message-meta"><span>User123</span> <span>10:00 AM</span></div>
+                    Has anyone seen the new Marvel movie?
+                </div>
+                <div class="message self">
+                    <div class="message-meta"><span>Me</span> <span>10:01 AM</span></div>
+                    Yes! It was amazing.
+                </div>
+                <div class="message">
+                    <div class="message-meta"><span>SpoilerGuy</span> <span>10:05 AM</span></div>
+                    <span class="spoiler-content" onclick="this.classList.toggle('revealed')">The main character dies at
+                        the end! (Click to reveal)</span>
+                </div>
+            </div>
+
+            <div class="input-area">
+                <i class="fas fa-eye-slash spoiler-toggle" id="spoilerToggle" title="Toggle Spoiler Mode"></i>
+                <input type="text" class="glass-input" id="msgInput" placeholder="Type a message...">
+                <button class="glass-button" onclick="sendMessage()">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="communitychat.js"></script>
+</body>
+
+</html>

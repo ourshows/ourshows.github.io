@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Vibe - OurShow</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .ai-container {
+            max-width: 800px;
+            margin: 4rem auto;
+            text-align: center;
+        }
+
+        .ai-input-group {
+            position: relative;
+            margin-bottom: 2rem;
+        }
+
+        .ai-input {
+            width: 100%;
+            padding: 1.5rem;
+            border-radius: 24px;
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid var(--glass-border);
+            color: white;
+            font-size: 1.2rem;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .ai-input:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 20px rgba(219, 39, 119, 0.2);
+        }
+
+        .ai-btn-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 3rem;
+        }
+
+        .ai-result-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 1.5rem;
+            text-align: left;
+        }
+
+        .chat-bubble {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1.5rem;
+            border-radius: 16px;
+            margin-bottom: 2rem;
+            border: 1px solid var(--glass-border);
+            text-align: left;
+            line-height: 1.6;
+            display: none;
+        }
+
+        .loading-spinner {
+            display: none;
+            font-size: 2rem;
+            color: var(--accent-color);
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <div class="container nav-content">
+            <a href="index.html" class="logo">OurShow AI</a>
+            <ul class="nav-links">
+                <li><a href="index.html" class="nav-link">Home</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container ai-container">
+        <h1 style="font-size: 3rem; margin-bottom: 1rem;">What's the <span
+                style="color: var(--accent-color)">Vibe</span>?</h1>
+        <p style="color: var(--text-secondary); margin-bottom: 2rem;">Describe your mood, occasion, or specific taste.
+        </p>
+
+        <div class="ai-input-group">
+            <input type="text" id="vibeInput" class="ai-input"
+                placeholder="e.g., 'Movies for a rainy Sunday that feel like a warm hug'">
+        </div>
+
+        <div class="ai-btn-group">
+            <button class="glass-button" onclick="findVibe()">
+                <i class="fas fa-magic"></i> Find Movies
+            </button>
+            <button class="glass-button" onclick="roastMyTaste()">
+                <i class="fas fa-fire"></i> Roast My Taste
+            </button>
+        </div>
+
+        <div id="loading" class="loading-spinner"><i class="fas fa-circle-notch"></i></div>
+
+        <div id="aiTextResponse" class="chat-bubble"></div>
+        <div id="aiResults" class="ai-result-grid"></div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="ai.js"></script>
+</body>
+
+</html>

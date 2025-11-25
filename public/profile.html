@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - OurShow</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .profile-header {
+            text-align: center;
+            padding: 4rem 0;
+            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.2), transparent);
+        }
+
+        .profile-avatar {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            border: 4px solid var(--primary-color);
+            margin-bottom: 1.5rem;
+            object-fit: cover;
+        }
+
+        .profile-stats {
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            margin: 2rem 0;
+        }
+
+        .p-stat {
+            text-align: center;
+        }
+
+        .p-stat-val {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .p-stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .profile-nav {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--glass-border);
+            padding-bottom: 1rem;
+        }
+
+        .profile-tab {
+            padding: 0.5rem 1.5rem;
+            cursor: pointer;
+            border-radius: 20px;
+            transition: background 0.3s;
+        }
+
+        .profile-tab.active {
+            background: var(--glass-highlight);
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <div class="container nav-content">
+            <a href="index.html" class="logo">OurShow</a>
+            <a href="index.html" class="nav-link"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        </div>
+    </nav>
+
+    <div class="profile-header">
+        <img src="https://ui-avatars.com/api/?name=User+Name&background=random" class="profile-avatar" alt="Profile">
+        <h1>User Name</h1>
+        <p style="color: var(--text-secondary);">Movie Enthusiast & Sci-Fi Lover</p>
+
+        <div class="profile-stats">
+            <div class="p-stat">
+                <div class="p-stat-val">128</div>
+                <div class="p-stat-label">Following</div>
+            </div>
+            <div class="p-stat">
+                <div class="p-stat-val">342</div>
+                <div class="p-stat-label">Followers</div>
+            </div>
+            <div class="p-stat">
+                <div class="p-stat-val">85%</div>
+                <div class="p-stat-label">Compatibility</div>
+            </div>
+        </div>
+
+        <button class="glass-button" onclick="window.location.href='stats.html'">View Full Stats</button>
+    </div>
+
+    <div class="container">
+        <div class="profile-nav">
+            <div class="profile-tab active">Watchlist</div>
+            <div class="profile-tab">Watched</div>
+            <div class="profile-tab">Reviews</div>
+        </div>
+
+        <div class="media-scroller" style="flex-wrap: wrap; overflow: visible; justify-content: center;">
+            <!-- Mock Content -->
+            <div class="media-card">
+                <img class="media-poster" src="https://image.tmdb.org/t/p/w200/q6y0Go1tsGEsmtFryDOJo3dEmqu.jpg"
+                    alt="Poster">
+            </div>
+            <div class="media-card">
+                <img class="media-poster" src="https://image.tmdb.org/t/p/w200/8UlWHLMpgZm9bx6QYh0NFoq67TZ.jpg"
+                    alt="Poster">
+            </div>
+            <div class="media-card">
+                <img class="media-poster" src="https://image.tmdb.org/t/p/w200/pFlaoETZ51xdbhDDVEtUQ8kCVUO.jpg"
+                    alt="Poster">
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>
