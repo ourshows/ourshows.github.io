@@ -1,0 +1,251 @@
+/* ============================================
+   OURSHOW THEME SYSTEM
+   ============================================ */
+
+/* Default Theme: Noir Dusk (Dark Purple/Blue) */
+:root {
+    /* Color Palette */
+    --color-background: #0f172a;
+    --color-background-secondary: #1e293b;
+    --color-surface: rgba(30, 41, 59, 0.4);
+    --color-border: rgba(255, 255, 255, 0.1);
+
+    /* Text Colors */
+    --color-text-primary: #f8fafc;
+    --color-text-secondary: #94a3b8;
+    --color-text-muted: #64748b;
+
+    /* Accent Colors */
+    --color-primary: hsl(250, 90%, 60%);
+    --color-primary-hover: hsl(250, 90%, 70%);
+    --color-accent: hsl(320, 90%, 60%);
+    --color-accent-hover: hsl(320, 90%, 70%);
+
+    /* Functional Colors */
+    --color-success: #10b981;
+    --color-warning: #f59e0b;
+    --color-error: #ef4444;
+    --color-info: #3b82f6;
+
+    /* Glassmorphism */
+    --glass-bg: rgba(30, 41, 59, 0.4);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-highlight: rgba(255, 255, 255, 0.05);
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+    --gradient-overlay: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), transparent);
+
+    /* Shadows */
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.2);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.3);
+    --shadow-glow: 0 0 20px var(--color-primary);
+}
+
+/* ============================================
+   THEME 1: Noir Dusk (Default - Dark Purple/Blue)
+   ============================================ */
+.theme-noir-dusk {
+    --color-background: #0f172a;
+    --color-background-secondary: #1e293b;
+    --color-surface: rgba(30, 41, 59, 0.4);
+    --color-border: rgba(255, 255, 255, 0.1);
+
+    --color-text-primary: #f8fafc;
+    --color-text-secondary: #94a3b8;
+    --color-text-muted: #64748b;
+
+    --color-primary: hsl(250, 90%, 60%);
+    --color-primary-hover: hsl(250, 90%, 70%);
+    --color-accent: hsl(320, 90%, 60%);
+    --color-accent-hover: hsl(320, 90%, 70%);
+
+    --glass-bg: rgba(30, 41, 59, 0.4);
+    --glass-border: rgba(255, 255, 255, 0.1);
+
+    --gradient-primary: linear-gradient(135deg, hsl(250, 90%, 60%), hsl(320, 90%, 60%));
+}
+
+/* ============================================
+   THEME 2: Sunny Matinee (Light/Warm)
+   ============================================ */
+.theme-sunny-matinee {
+    --color-background: #fef3c7;
+    --color-background-secondary: #fde68a;
+    --color-surface: rgba(254, 243, 199, 0.6);
+    --color-border: rgba(217, 119, 6, 0.2);
+
+    --color-text-primary: #1f2937;
+    --color-text-secondary: #4b5563;
+    --color-text-muted: #6b7280;
+
+    --color-primary: #ea580c;
+    --color-primary-hover: #f97316;
+    --color-accent: #dc2626;
+    --color-accent-hover: #ef4444;
+
+    --glass-bg: rgba(254, 243, 199, 0.7);
+    --glass-border: rgba(217, 119, 6, 0.2);
+
+    --gradient-primary: linear-gradient(135deg, #ea580c, #dc2626);
+    --shadow-glow: 0 0 20px rgba(234, 88, 12, 0.3);
+}
+
+/* ============================================
+   THEME 3: Retro Glitch (Cyberpunk Neon)
+   ============================================ */
+.theme-retro-glitch {
+    --color-background: #0a0e27;
+    --color-background-secondary: #1a1f3a;
+    --color-surface: rgba(26, 31, 58, 0.5);
+    --color-border: rgba(0, 255, 255, 0.3);
+
+    --color-text-primary: #00ffff;
+    --color-text-secondary: #ff00ff;
+    --color-text-muted: #8b5cf6;
+
+    --color-primary: #00ffff;
+    --color-primary-hover: #5dfdff;
+    --color-accent: #ff00ff;
+    --color-accent-hover: #ff5dff;
+
+    --glass-bg: rgba(26, 31, 58, 0.6);
+    --glass-border: rgba(0, 255, 255, 0.3);
+
+    --gradient-primary: linear-gradient(135deg, #00ffff, #ff00ff);
+    --shadow-glow: 0 0 30px rgba(0, 255, 255, 0.5);
+}
+
+/* ============================================
+   THEME 4: Forest Binge (Nature Green)
+   ============================================ */
+.theme-forest-binge {
+    --color-background: #064e3b;
+    --color-background-secondary: #065f46;
+    --color-surface: rgba(6, 78, 59, 0.5);
+    --color-border: rgba(52, 211, 153, 0.2);
+
+    --color-text-primary: #ecfdf5;
+    --color-text-secondary: #a7f3d0;
+    --color-text-muted: #6ee7b7;
+
+    --color-primary: #10b981;
+    --color-primary-hover: #34d399;
+    --color-accent: #3b82f6;
+    --color-accent-hover: #60a5fa;
+
+    --glass-bg: rgba(6, 78, 59, 0.6);
+    --glass-border: rgba(52, 211, 153, 0.2);
+
+    --gradient-primary: linear-gradient(135deg, #10b981, #3b82f6);
+    --shadow-glow: 0 0 20px rgba(16, 185, 129, 0.4);
+}
+
+/* ============================================
+   THEME TRANSITION ANIMATIONS
+   ============================================ */
+body {
+    transition: background-color 0.5s ease, color 0.5s ease;
+}
+
+* {
+    transition: border-color 0.3s ease, background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ============================================
+   THEME SWITCHER UI
+   ============================================ */
+.theme-switcher {
+    position: fixed;
+    bottom: 100px;
+    right: 20px;
+    z-index: 999;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.theme-switcher-toggle {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: var(--gradient-primary);
+    border: 2px solid var(--color-border);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+    box-shadow: var(--shadow-lg);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.theme-switcher-toggle:hover {
+    transform: scale(1.1);
+    box-shadow: var(--shadow-glow);
+}
+
+.theme-options {
+    display: none;
+    flex-direction: column;
+    gap: 0.5rem;
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    padding: 1rem;
+    border-radius: 16px;
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-lg);
+}
+
+.theme-options.active {
+    display: flex;
+}
+
+.theme-option {
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    background: var(--color-surface);
+    border: 2px solid transparent;
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    transition: all 0.3s ease;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.theme-option:hover {
+    border-color: var(--color-primary);
+    transform: translateX(-5px);
+}
+
+.theme-option.active {
+    background: var(--gradient-primary);
+    color: white;
+    border-color: var(--color-primary);
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+    .theme-switcher {
+        bottom: 80px;
+        right: 10px;
+    }
+
+    .theme-switcher-toggle {
+        width: 45px;
+        height: 45px;
+        font-size: 1.2rem;
+    }
+
+    .theme-options {
+        padding: 0.75rem;
+    }
+
+    .theme-option {
+        padding: 0.6rem 0.8rem;
+        font-size: 0.9rem;
+    }
+}

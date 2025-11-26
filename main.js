@@ -33,11 +33,16 @@ document.addEventListener('DOMContentLoaded', () => {
     initApp();
 });
 
+
 async function initApp() {
     if (!window.APP_CONFIG) {
         console.error("Config not found!");
         return;
     }
+
+    // Initialize theme system FIRST
+    loadTheme();
+    setupThemeSwitcher();
 
     setupNavbar();
     setupSearch();
@@ -683,3 +688,191 @@ window.onclick = function (event) {
         closeModal();
     }
 }
+
+// ============================================
+// THEME SWITCHING SYSTEM
+// ============================================
+
+const THEMES = [
+    { name: 'Noir Dusk', class: 'theme-noir-dusk', icon: '🌙', default: true },
+    { name: 'Sunny Matinee', class: 'theme-sunny-matinee', icon: '☀️' },
+    { name: 'Retro Glitch', class: 'theme-retro-glitch', icon: '⚡' },
+    { name: 'Forest Binge', class: 'theme-forest-binge', icon: '🌲' }
+];
+
+/**
+ * Apply a theme to the body element
+ * @param {string} themeClass - The CSS class name of the theme
+ */
+function applyTheme(themeClass) {
+    // Remove all existing theme classes
+    THEMES.forEach(theme => {
+        document.body.classList.remove(theme.class);
+    });
+
+    // Add the new theme class
+    document.body.classList.add(themeClass);
+
+    // Update active state in UI
+    updateThemeUI(themeClass);
+
+    console.log(`Theme applied: ${themeClass}`);
+}
+
+/**
+ * Save theme preference to localStorage
+ * @param {string} themeClass - The CSS class name of the theme to save
+ */
+function saveTheme(themeClass) {
+    try {
+        localStorage.setItem('ourshow-theme', themeClass);
+        console.log(`Theme saved: ${themeClass}`);
+    } catch (error) {
+        console.error('Error saving theme:', error);
+    }
+}
+
+/**
+ * Load theme from localStorage or apply default
+ */
+function loadTheme() {
+    try {
+        const savedTheme = localStorage.getItem('ourshow-theme');
+
+        if (savedTheme) {
+            // Apply saved theme
+            applyTheme(savedTheme);
+        } else {
+            // Apply default theme
+            const defaultTheme = THEMES.find(t => t.default);
+            applyTheme(defaultTheme.class);
+        }
+    } catch (error) {
+        console.error('Error loading theme:', error);
+        // Fallback to default theme
+        const defaultTheme = THEMES.find(t => t.default);
+        applyTheme(defaultTheme.class);
+    }
+}
+
+/**
+ * Setup theme switcher UI and event listeners
+ */
+function setupThemeSwitcher() {
+    // Create theme switcher HTML
+    const themeSwitcherHTML = `
+        <div class="theme-switcher">
+            <button class="theme-switcher-toggle" id="themeSwitcherToggle" title="Change Theme">
+                🎨
+            </button>
+            <div class="theme-options" id="themeOptions">
+                ${THEMES.map(theme => `
+                    <button class="theme-option" data-theme="${theme.class}" title="${theme.name}">
+                        ${theme.icon} ${theme.name}
+                    </button>
+                `).join('')}
+            </div>
+        </div>
+    `;
+
+    // Inject into body
+    document.body.insertAdjacentHTML('beforeend', themeSwitcherHTML);
+
+    // Add event listeners
+    const toggle = document.getElementById('themeSwitcherToggle');
+    const options = document.getElementById('themeOptions');
+
+    // Toggle theme options
+    toggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        options.classList.toggle('active');
+    });
+
+    // Close options when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.theme-switcher')) {
+            options.classList.remove('active');
+        }
+    });
+
+    // Theme selection
+    document.querySelectorAll('.theme-option').forEach(button => {
+        button.addEventListener('click', () => {
+            const themeClass = button.dataset.theme;
+            applyTheme(themeClass);
+            saveTheme(themeClass);
+            options.classList.remove('active');
+
+            // Optional: Show confirmation
+            showThemeChangeNotification(button.textContent.trim());
+        });
+    });
+
+    // Initialize active state
+    const currentTheme = localStorage.getItem('ourshow-theme') || THEMES.find(t => t.default).class;
+    updateThemeUI(currentTheme);
+}
+
+/**
+ * Update theme UI to show active theme
+ * @param {string} themeClass - The active theme class
+ */
+function updateThemeUI(themeClass) {
+    document.querySelectorAll('.theme-option').forEach(button => {
+        if (button.dataset.theme === themeClass) {
+            button.classList.add('active');
+        } else {
+            button.classList.remove('active');
+        }
+    });
+}
+
+/**
+ * Show a brief notification when theme changes
+ * @param {string} themeName - Name of the theme
+ */
+function showThemeChangeNotification(themeName) {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        background: var(--gradient-primary);
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        box-shadow: var(--shadow-lg);
+        z-index: 10000;
+        animation: slideIn 0.3s ease;
+        font-weight: 600;
+    `;
+    notification.textContent = `Theme changed to ${themeName}`;
+
+    // Add animation
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideIn {
+            from { transform: translateX(400px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(400px); opacity: 0; }
+        }
+    `;
+    document.head.appendChild(style);
+
+    document.body.appendChild(notification);
+
+    // Remove after 2 seconds
+    setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => notification.remove(), 300);
+    }, 2000);
+}
+
+// Expose theme functions globally if needed
+window.applyTheme = applyTheme;
+window.saveTheme = saveTheme;
+window.loadTheme = loadTheme;
