@@ -1,119 +1,105 @@
+// Profile Page - Simple and Working
+import { auth, db, onAuthStateChanged, collection, getDocs } from './firebase-config.js';
 
-async function loadStats(userId) {
+let currentUser = null;
+
+// Wait for DOM to load
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('Profile page loaded, waiting for auth...');
+});
+
+// Auth state listener
+onAuthStateChanged(auth, (user) => {
+    console.log('Auth state changed:', user);
+
+    if (user) {
+        currentUser = user;
+        displayUserInfo(user);
+        loadUserData(user);
+    } else {
+        console.log('No user, redirecting to login');
+        window.location.href = 'login.html';
+    }
+});
+
+function displayUserInfo(user) {
+    console.log('Displaying user info for:', user.email);
+
+    // Set username
+    const displayName = user.displayName || user.email.split('@')[0];
+    document.getElementById('userName').textContent = displayName;
+    document.getElementById('userEmail').textContent = user.email;
+
+    // Set profile picture
+    const profilePic = document.getElementById('profilePic');
+    if (user.photoURL) {
+        profilePic.src = user.photoURL;
+        console.log('Using Google photo');
+    } else {
+        profilePic.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&size=200&background=6366f1&color=fff`;
+    }
+}
+
+async function loadUserData(user) {
+    console.log('Loading user data...');
+
     try {
-        // Count watchlist items
-        const watchlistSnap = await getDocs(collection(db, 'users', userId, 'watchlist'));
+        // Load watchlist
+        const watchlistRef = collection(db, 'users', user.uid, 'watchlist');
+        const watchlistSnap = await getDocs(watchlistRef);
         document.getElementById('watchlistCount').textContent = watchlistSnap.size;
 
-        // Count watched items
-        const watchedSnap = await getDocs(collection(db, 'users', userId, 'watched'));
+        const watchlistGrid = document.getElementById('watchlistGrid');
+        watchlistGrid.innerHTML = '';
+
+        if (watchlistSnap.empty) {
+            watchlistGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-secondary);">No movies in watchlist. Add some from homepage!</p>';
+        } else {
+            watchlistSnap.forEach(doc => {
+                const data = doc.data();
+                watchlistGrid.appendChild(createMovieCard(data));
+            });
+        }
+
+        // Load watched
+        const watchedRef = collection(db, 'users', user.uid, 'watched');
+        const watchedSnap = await getDocs(watchedRef);
         document.getElementById('watchedCount').textContent = watchedSnap.size;
 
-        // Count reviews
-        const reviewsSnap = await getDocs(query(collection(db, 'reviews')));
-        let userReviewsCount = 0;
+        const watchedGrid = document.getElementById('watchedGrid');
+        watchedGrid.innerHTML = '';
+
+        if (watchedSnap.empty) {
+            watchedGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-secondary);">No watched movies yet!</p>';
+        } else {
+            watchedSnap.forEach(doc => {
+                const data = doc.data();
+                watchedGrid.appendChild(createMovieCard(data));
+            });
+        }
+
+        // Load reviews
+        const reviewsSnap = await getDocs(collection(db, 'reviews'));
+        let reviewCount = 0;
+        const reviewsGrid = document.getElementById('reviewsGrid');
+        reviewsGrid.innerHTML = '';
+
         reviewsSnap.forEach(doc => {
-            if (doc.data().userId === userId) userReviewsCount++;
-        });
-        document.getElementById('reviewsCount').textContent = userReviewsCount;
-    } catch (error) {
-        console.error('Error loading stats:', error);
-    }
-}
-
-async function loadWatchlist() {
-    if (!currentUser) {
-        console.log('No current user for watchlist');
-        return;
-    }
-
-    console.log('Loading watchlist for user:', currentUser.uid);
-
-    try {
-        const watchlistRef = collection(db, 'users', currentUser.uid, 'watchlist');
-        const querySnapshot = await getDocs(watchlistRef);
-
-        console.log('Watchlist query result:', querySnapshot.size, 'items');
-
-        const container = document.getElementById('watchlistGrid');
-        container.innerHTML = '';
-
-        if (querySnapshot.empty) {
-            container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-secondary);">No movies in watchlist yet. Add some from the homepage!</p>';
-            return;
-        }
-
-        querySnapshot.forEach((docSnap) => {
-            const data = docSnap.data();
-            console.log('Watchlist item:', data);
-            const card = createMovieCard(data);
-            container.appendChild(card);
-        });
-    } catch (error) {
-        console.error('Error loading watchlist:', error);
-        const container = document.getElementById('watchlistGrid');
-        container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #ef4444;">Error loading watchlist. Check console.</p>';
-    }
-}
-
-async function loadWatched() {
-    if (!currentUser) {
-        console.log('No current user for watched');
-        return;
-    }
-
-    console.log('Loading watched for user:', currentUser.uid);
-
-    try {
-        const watchedRef = collection(db, 'users', currentUser.uid, 'watched');
-        const querySnapshot = await getDocs(watchedRef);
-
-        console.log('Watched query result:', querySnapshot.size, 'items');
-
-        const container = document.getElementById('watchedGrid');
-        container.innerHTML = '';
-
-        if (querySnapshot.empty) {
-            container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-secondary);">No watched movies yet. Mark movies as watched!</p>';
-            return;
-        }
-
-        querySnapshot.forEach((docSnap) => {
-            const data = docSnap.data();
-            console.log('Watched item:', data);
-            const card = createMovieCard(data);
-            container.appendChild(card);
-        });
-    } catch (error) {
-        console.error('Error loading watched:', error);
-        const container = document.getElementById('watchedGrid');
-        container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #ef4444;">Error loading watched. Check console.</p>';
-    }
-}
-
-async function loadReviews() {
-    if (!currentUser) return;
-
-    try {
-        const querySnapshot = await getDocs(collection(db, 'reviews'));
-        const container = document.getElementById('reviewsGrid');
-        container.innerHTML = '';
-
-        let hasReviews = false;
-        querySnapshot.forEach((doc) => {
             const data = doc.data();
-            if (data.userId === currentUser.uid) {
-                hasReviews = true;
-                const reviewCard = createReviewCard(data);
-                container.appendChild(reviewCard);
+            if (data.userId === user.uid) {
+                reviewCount++;
+                reviewsGrid.appendChild(createReviewCard(data));
             }
         });
 
-        if (!hasReviews) {
-            container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-secondary);">No reviews yet.</p>';
+        document.getElementById('reviewsCount').textContent = reviewCount;
+
+        if (reviewCount === 0) {
+            reviewsGrid.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">No reviews yet!</p>';
         }
+
     } catch (error) {
-        console.error('Error loading reviews:', error);
+        console.error('Error loading user data:', error);
     }
 }
 
@@ -121,10 +107,10 @@ function createMovieCard(data) {
     const card = document.createElement('div');
     card.className = 'movie-card';
     card.innerHTML = `
-        <img src="https://image.tmdb.org/t/p/w500${data.posterPath}" alt="${data.movieTitle}">
-        <div class="movie-info">
-            <h4>${data.movieTitle}</h4>
-            <div class="rating">★ ${data.rating ? data.rating.toFixed(1) : 'N/A'}</div>
+        <img src="https://image.tmdb.org/t/p/w500${data.posterPath}" alt="${data.movieTitle}" style="width: 100%; border-radius: 12px;">
+        <div style="margin-top: 0.5rem;">
+            <div style="font-weight: 600; font-size: 0.9rem;">${data.movieTitle}</div>
+            <div style="color: #ffd700;">★ ${data.rating ? data.rating.toFixed(1) : 'N/A'}</div>
         </div>
     `;
     card.onclick = () => window.location.href = `watchanddownload.html?id=${data.movieId}&type=movie`;
@@ -133,7 +119,7 @@ function createMovieCard(data) {
 
 function createReviewCard(data) {
     const card = document.createElement('div');
-    card.className = 'review-card glass-panel';
+    card.className = 'glass-panel';
     card.style.padding = '1.5rem';
     card.style.marginBottom = '1rem';
 
@@ -145,14 +131,20 @@ function createReviewCard(data) {
             ${'★'.repeat(data.rating)}${'☆'.repeat(5 - data.rating)} ${ratingText}
         </div>
         <p style="color: var(--text-secondary); line-height: 1.6;">${data.review}</p>
-        <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 1rem;">
-            ${data.timestamp ? new Date(data.timestamp.seconds * 1000).toLocaleDateString() : 'Just now'}
-        </div>
     `;
     return card;
 }
 
-// Edit Profile Functions
+// Tab switching
+function switchTab(tabName) {
+    document.querySelectorAll('.tab-pane').forEach(pane => pane.style.display = 'none');
+    document.querySelectorAll('.tab-link').forEach(link => link.classList.remove('active'));
+
+    document.getElementById(tabName).style.display = 'block';
+    event.target.classList.add('active');
+}
+
+// Edit profile
 function enableEdit() {
     document.getElementById('editBtn').style.display = 'none';
     document.getElementById('saveBtn').style.display = 'inline-block';
@@ -161,8 +153,6 @@ function enableEdit() {
     const userName = document.getElementById('userName');
     const currentName = userName.textContent;
     userName.innerHTML = `<input type="text" id="nameInput" class="glass-input" value="${currentName}" style="max-width: 300px;">`;
-
-    document.getElementById('uploadPicBtn').style.display = 'inline-block';
 }
 
 function cancelEdit() {
@@ -170,65 +160,38 @@ function cancelEdit() {
 }
 
 async function saveProfile() {
-    if (!currentUser) return;
+    const user = auth.currentUser;
+    if (!user) {
+        alert('Not logged in!');
+        return;
+    }
 
     const newName = document.getElementById('nameInput').value.trim();
-
     if (!newName) {
         alert('Name cannot be empty!');
         return;
     }
 
     try {
-        // Update Firebase Auth profile
-        await currentUser.updateProfile({
-            displayName: newName
-        });
-
-        alert('Profile updated successfully!');
+        await user.updateProfile({ displayName: newName });
+        alert('Profile updated!');
         location.reload();
     } catch (error) {
-        console.error('Error updating profile:', error);
-        alert('Failed to update profile. Please try again.');
+        console.error('Error:', error);
+        alert('Failed to update profile');
     }
 }
 
-function uploadProfilePic() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = async (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            // For now, use a placeholder service
-            // In production, upload to Firebase Storage
-            alert('Profile picture upload will be implemented with Firebase Storage');
-        }
-    };
-    input.click();
-}
-
-function switchTab(tabName) {
-    // Hide all tabs
-    document.querySelectorAll('.tab-pane').forEach(pane => pane.style.display = 'none');
-    document.querySelectorAll('.tab-link').forEach(link => link.classList.remove('active'));
-
-    // Show selected tab
-    document.getElementById(tabName).style.display = 'block';
-    event.target.classList.add('active');
-}
-
 async function logout() {
-    if (confirm('Are you sure you want to logout?')) {
+    if (confirm('Logout?')) {
         await auth.signOut();
         window.location.href = 'login.html';
     }
 }
 
-// Expose to global scope
+// Expose to window
 window.switchTab = switchTab;
 window.enableEdit = enableEdit;
 window.saveProfile = saveProfile;
 window.cancelEdit = cancelEdit;
-window.uploadProfilePic = uploadProfilePic;
 window.logout = logout;
