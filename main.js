@@ -57,6 +57,8 @@ async function initApp() {
     await loadTopRated();
     await loadUpcoming();
     await loadNowPlaying();
+    await loadNepaliContent();
+    await loadHindiContent();
 }
 
 // --- UI Setup ---
@@ -163,6 +165,25 @@ async function loadNowPlaying() {
     if (data) renderCards(data.results, 'nowPlayingScroller', 'movie');
 }
 
+async function loadNepaliContent() {
+    // Discover Nepali movies
+    const data = await fetchTMDB('/discover/movie', {
+        with_original_language: 'ne',
+        sort_by: 'popularity.desc'
+    });
+    if (data) renderCards(data.results, 'nepaliScroller', 'movie');
+}
+
+async function loadHindiContent() {
+    // Discover Hindi movies
+    const data = await fetchTMDB('/discover/movie', {
+        with_original_language: 'hi',
+        sort_by: 'popularity.desc',
+        region: 'IN'
+    });
+    if (data) renderCards(data.results, 'hindiScroller', 'movie');
+}
+
 async function performSearch(query) {
     const data = await fetchTMDB('/search/multi', { query: query });
     const resultsContainer = document.getElementById('searchResults');
@@ -220,6 +241,23 @@ function renderCards(items, containerId, defaultType) {
 async function openMovieModal(id, type = 'movie') {
     currentMovieId = id;
     const modal = document.getElementById('movieModal');
+    modal.style.display = 'block';
+    document.body.style.overflow = 'hidden';
+
+    // Fetch movie details
+    const details = await fetchTMDB(`/${type}/${id}`, { append_to_response: 'videos,credits,reviews,similar' });
+    if (!details) return;
+
+    currentMovieData = details;
+    currentMovieData.media_type = type; // Ensure media type is set
+
+    // Update modal header
+    document.getElementById('modalPoster').src = `${window.APP_CONFIG.TMDB_IMAGE_SMALL_URL}${details.poster_path}`;
+    document.getElementById('modalTitle').textContent = details.title || details.name;
+    document.getElementById('modalRating').textContent = details.vote_average ? details.vote_average.toFixed(1) : 'N/A';
+    document.getElementById('modalYear').textContent = (details.release_date || details.first_air_date || '').split('-')[0];
+    document.getElementById('modalRuntime').textContent = details.runtime ? `${details.runtime} min` : '';
+    document.getElementById('modalOverview').textContent = details.overview;
 
     // Load trailer
     loadTrailer(details.videos);
