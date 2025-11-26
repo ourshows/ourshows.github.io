@@ -256,8 +256,11 @@ function renderCards(items, containerId, defaultType) {
     else if (containerId === 'nepaliScroller') category = 'nepali';
     else if (containerId === 'hindiScroller') category = 'hindi';
 
-    viewMoreCard.onclick = () => window.location.href = `view_all.html?category=${category}`;
-    container.appendChild(viewMoreCard);
+    // Only add View More card if it's a main section
+    if (category) {
+        viewMoreCard.onclick = () => window.location.href = `view_all.html?category=${category}`;
+        container.appendChild(viewMoreCard);
+    }
 }
 
 // --- Movie Modal ---

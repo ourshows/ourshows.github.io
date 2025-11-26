@@ -366,6 +366,22 @@ a {
 
 /* Mobile Nav (Bottom) */
 @media (max-width: 768px) {
+    /* Container padding */
+    .container {
+        padding: 0 1rem;
+    }
+
+    /* Navigation */
+    .nav-content {
+        flex-wrap: wrap;
+    }
+
+    .search-container {
+        order: 3;
+        width: 100%;
+        margin-top: 1rem;
+    }
+
     .nav-links {
         position: fixed;
         bottom: 0;
@@ -373,19 +389,155 @@ a {
         width: 100%;
         background: rgba(2, 6, 23, 0.95);
         backdrop-filter: blur(10px);
-        padding: 1rem;
+        padding: 0.75rem 0;
         justify-content: space-around;
         border-top: 1px solid var(--glass-border);
         z-index: 1000;
+        margin: 0;
+        gap: 0;
     }
 
-    .nav-link span {
+    .nav-link {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.25rem;
+        font-size: 0.7rem;
+        padding: 0.5rem;
+    }
+
+    .nav-link i {
+        font-size: 1.2rem;
+    }
+
+    .nav-link::after {
         display: none;
-        /* Hide text, show icons if added */
+    }
+
+    /* Hero Section */
+    .hero {
+        height: 60vh;
+        min-height: 400px;
+    }
+
+    .hero-content {
+        padding-top: 2rem;
     }
 
     .hero-title {
-        font-size: 2.5rem;
+        font-size: 2rem;
+        line-height: 1.2;
+    }
+
+    .hero-desc {
+        font-size: 0.95rem;
+        -webkit-line-clamp: 2;
+    }
+
+    .hero-meta {
+        font-size: 0.8rem;
+        flex-wrap: wrap;
+    }
+
+    .hero-actions {
+        flex-direction: column !important;
+        gap: 0.75rem !important;
+    }
+
+    .hero-actions .glass-button {
+        width: 100%;
+        text-align: center;
+        justify-content: center;
+    }
+
+    /* Section Titles */
+    .section-title {
+        font-size: 1.25rem;
+    }
+
+    /* Media Cards */
+    .media-card {
+        flex: 0 0 140px;
+    }
+
+    .media-scroller {
+        gap: 1rem;
+        padding-bottom: 1rem;
+    }
+
+    .media-title {
+        font-size: 0.8rem;
+    }
+
+    .media-year {
+        font-size: 0.7rem;
+    }
+
+    /* Add bottom padding to avoid nav overlap */
+    body {
+        padding-bottom: 80px;
+    }
+
+    /* Glass buttons */
+    .glass-button {
+        padding: 0.6rem 1.2rem;
+        font-size: 0.9rem;
+    }
+
+    /* Content sections */
+    .content-section {
+        margin-bottom: 2rem !important;
+    }
+}
+
+/* Tablet adjustments */
+@media (max-width: 1024px) and (min-width: 769px) {
+    .hero-title {
+        font-size: 3rem;
+    }
+
+    .media-card {
+        flex: 0 0 160px;
+    }
+
+    .container {
+        padding: 0 1.25rem;
+    }
+}
+
+/* Small mobile devices */
+@media (max-width: 480px) {
+    .logo {
+        font-size: 1.25rem;
+    }
+
+    .hero-title {
+        font-size: 1.75rem;
+    }
+
+    .hero-desc {
+        font-size: 0.9rem;
+    }
+
+    .media-card {
+        flex: 0 0 120px;
+    }
+
+    .section-title {
+        font-size: 1.1rem;
+    }
+
+    .section-title::before {
+        width: 3px;
+        height: 20px;
+    }
+
+    .nav-link {
+        font-size: 0.65rem;
+    }
+
+    .nav-link i {
+        font-size: 1.1rem;
     }
 }
 
@@ -404,5 +556,21 @@ a {
 
     100% {
         background-position: -200% 0;
+    }
+}
+
+/* Touch-friendly improvements */
+@media (hover: none) and (pointer: coarse) {
+    .media-card:active {
+        transform: scale(0.95);
+    }
+
+    .glass-button:active {
+        transform: translateY(0);
+    }
+
+    .nav-link:active {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
     }
 }
