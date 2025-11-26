@@ -1,7 +1,16 @@
 // Main Application Logic
+import { auth, db, onAuthStateChanged, collection, addDoc, setDoc, doc, serverTimestamp } from './firebase-config.js';
+
 let currentMovieId = null;
 let currentMovieData = null;
 let userRating = null;
+let currentUser = null;
+
+// Listen for auth state changes
+onAuthStateChanged(auth, (user) => {
+    currentUser = user;
+    console.log('Auth state changed:', user ? user.email : 'Not logged in');
+});
 
 // Expose functions to global scope for onclick handlers
 window.closeModal = closeModal;
@@ -346,7 +355,7 @@ function rateMovie(rating) {
     document.querySelector(`.rating-btn[data-rating="${rating}"]`).classList.add('selected');
 }
 
-function submitReview() {
+async function submitReview() {
     const reviewText = document.getElementById('reviewText').value;
     if (!userRating) {
         alert('Please select a rating first!');
@@ -357,24 +366,78 @@ function submitReview() {
         return;
     }
 
-    // TODO: Save to Firebase
-    console.log('Review submitted:', { movieId: currentMovieId, rating: userRating, review: reviewText });
-    alert('Review submitted successfully!');
-    document.getElementById('reviewText').value = '';
-    userRating = null;
-    document.querySelectorAll('.rating-btn').forEach(btn => btn.classList.remove('selected'));
+    if (!currentUser) {
+        alert('Please log in to submit a review!');
+        window.location.href = 'login.html';
+        return;
+    }
+
+    try {
+        // Save review to Firestore
+        await addDoc(collection(db, 'reviews'), {
+            userId: currentUser.uid,
+            username: currentUser.displayName || currentUser.email,
+            movieId: currentMovieId,
+            movieTitle: currentMovieData.title || currentMovieData.name,
+            rating: userRating,
+            review: reviewText.trim(),
+            timestamp: serverTimestamp()
+        });
+
+        alert('Review submitted successfully!');
+        document.getElementById('reviewText').value = '';
+        userRating = null;
+        document.querySelectorAll('.rating-btn').forEach(btn => btn.classList.remove('selected'));
+    } catch (error) {
+        console.error('Error submitting review:', error);
+        alert('Failed to submit review. Please try again.');
+    }
 }
 
-function markAsWatched() {
-    // TODO: Save to Firebase
-    console.log('Marked as watched:', currentMovieId);
-    alert('Added to watched list!');
+async function markAsWatched() {
+    if (!currentUser) {
+        alert('Please log in to mark as watched!');
+        window.location.href = 'login.html';
+        return;
+    }
+
+    try {
+        await setDoc(doc(db, 'users', currentUser.uid, 'watched', String(currentMovieId)), {
+            movieId: currentMovieId,
+            movieTitle: currentMovieData.title || currentMovieData.name,
+            posterPath: currentMovieData.poster_path,
+            rating: currentMovieData.vote_average,
+            timestamp: serverTimestamp()
+        });
+
+        alert('Added to watched list!');
+    } catch (error) {
+        console.error('Error marking as watched:', error);
+        alert('Failed to add to watched list. Please try again.');
+    }
 }
 
-function addToWatchLater() {
-    // TODO: Save to Firebase
-    console.log('Added to watch later:', currentMovieId);
-    alert('Added to watch later!');
+async function addToWatchLater() {
+    if (!currentUser) {
+        alert('Please log in to add to watch later!');
+        window.location.href = 'login.html';
+        return;
+    }
+
+    try {
+        await setDoc(doc(db, 'users', currentUser.uid, 'watchlist', String(currentMovieId)), {
+            movieId: currentMovieId,
+            movieTitle: currentMovieData.title || currentMovieData.name,
+            posterPath: currentMovieData.poster_path,
+            rating: currentMovieData.vote_average,
+            timestamp: serverTimestamp()
+        });
+
+        alert('Added to watch later!');
+    } catch (error) {
+        console.error('Error adding to watch later:', error);
+        alert('Failed to add to watch later. Please try again.');
+    }
 }
 
 function watchNow() {
