@@ -77,7 +77,13 @@ function addMoreLinks() {
         { id: 'upcomingScroller', category: 'upcoming', title: 'Coming Soon' },
         { id: 'nowPlayingScroller', category: 'now_playing', title: 'Now in Theaters' },
         { id: 'nepaliScroller', category: 'nepali', title: 'Nepali Hits 🇳🇵' },
-        { id: 'hindiScroller', category: 'hindi', title: 'Bollywood & Hindi 🇮🇳' }
+        { id: 'hindiScroller', category: 'hindi', title: 'Bollywood & Hindi 🇮🇳' },
+        { id: 'newToStreamScroller', category: 'new_to_stream', title: 'New to Stream' },
+        { id: 'highestGrossingScroller', category: 'highest_grossing', title: 'Highest Grossing (2020+)' },
+        { id: 'cultClassicsScroller', category: 'cult_classics', title: 'Cult Classics' },
+        { id: 'underratedGemsScroller', category: 'underrated_gems', title: 'Underrated Gems' },
+        { id: 'actionThrillersScroller', category: 'action_thrillers', title: 'Action & Thrillers' },
+        { id: 'dramaRomanceScroller', category: 'drama_romance', title: 'Drama & Romance' }
     ];
 
     sections.forEach(section => {
