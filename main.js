@@ -10,7 +10,22 @@ let currentUser = null;
 onAuthStateChanged(auth, (user) => {
     currentUser = user;
     console.log('Auth state changed:', user ? user.email : 'Not logged in');
+    updateAuthUI(user);
 });
+
+function updateAuthUI(user) {
+    // Update hero buttons if user is logged in
+    const heroListBtn = document.getElementById('heroListBtn');
+    if (heroListBtn) {
+        if (user) {
+            heroListBtn.innerHTML = '<i class="fas fa-user"></i> ' + (user.displayName || user.email);
+            heroListBtn.onclick = () => window.location.href = 'profile.html';
+        } else {
+            heroListBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login';
+            heroListBtn.onclick = () => window.location.href = 'login.html';
+        }
+    }
+}
 
 // Expose functions to global scope for onclick handlers
 window.closeModal = closeModal;
