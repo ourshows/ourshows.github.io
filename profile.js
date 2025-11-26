@@ -1,36 +1,3 @@
-// Profile Page with Firebase Integration
-import { auth, db, onAuthStateChanged, collection, getDocs, query, orderBy, doc, updateDoc } from './firebase-config.js';
-
-let currentUser = null;
-
-onAuthStateChanged(auth, async (user) => {
-    currentUser = user;
-    if (user) {
-        await loadUserProfile(user);
-        await loadWatchlist();
-        await loadWatched();
-        await loadReviews();
-    } else {
-        window.location.href = 'login.html';
-    }
-});
-
-async function loadUserProfile(user) {
-    // Update profile info
-    document.getElementById('userName').textContent = user.displayName || user.email;
-    document.getElementById('userEmail').textContent = user.email;
-
-    // Set profile picture
-    const profilePic = document.getElementById('profilePic');
-    if (user.photoURL) {
-        profilePic.src = user.photoURL;
-    } else {
-        profilePic.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || user.email)}&size=200&background=6366f1&color=fff`;
-    }
-
-    // Load stats
-    await loadStats(user.uid);
-}
 
 async function loadStats(userId) {
     try {
@@ -55,52 +22,72 @@ async function loadStats(userId) {
 }
 
 async function loadWatchlist() {
-    if (!currentUser) return;
+    if (!currentUser) {
+        console.log('No current user for watchlist');
+        return;
+    }
+
+    console.log('Loading watchlist for user:', currentUser.uid);
 
     try {
-        const q = query(collection(db, 'users', currentUser.uid, 'watchlist'), orderBy('timestamp', 'desc'));
-        const querySnapshot = await getDocs(q);
+        const watchlistRef = collection(db, 'users', currentUser.uid, 'watchlist');
+        const querySnapshot = await getDocs(watchlistRef);
+
+        console.log('Watchlist query result:', querySnapshot.size, 'items');
 
         const container = document.getElementById('watchlistGrid');
         container.innerHTML = '';
 
         if (querySnapshot.empty) {
-            container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-secondary);">No movies in watchlist yet.</p>';
+            container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-secondary);">No movies in watchlist yet. Add some from the homepage!</p>';
             return;
         }
 
-        querySnapshot.forEach((doc) => {
-            const data = doc.data();
+        querySnapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            console.log('Watchlist item:', data);
             const card = createMovieCard(data);
             container.appendChild(card);
         });
     } catch (error) {
         console.error('Error loading watchlist:', error);
+        const container = document.getElementById('watchlistGrid');
+        container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #ef4444;">Error loading watchlist. Check console.</p>';
     }
 }
 
 async function loadWatched() {
-    if (!currentUser) return;
+    if (!currentUser) {
+        console.log('No current user for watched');
+        return;
+    }
+
+    console.log('Loading watched for user:', currentUser.uid);
 
     try {
-        const q = query(collection(db, 'users', currentUser.uid, 'watched'), orderBy('timestamp', 'desc'));
-        const querySnapshot = await getDocs(q);
+        const watchedRef = collection(db, 'users', currentUser.uid, 'watched');
+        const querySnapshot = await getDocs(watchedRef);
+
+        console.log('Watched query result:', querySnapshot.size, 'items');
 
         const container = document.getElementById('watchedGrid');
         container.innerHTML = '';
 
         if (querySnapshot.empty) {
-            container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-secondary);">No watched movies yet.</p>';
+            container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-secondary);">No watched movies yet. Mark movies as watched!</p>';
             return;
         }
 
-        querySnapshot.forEach((doc) => {
-            const data = doc.data();
+        querySnapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            console.log('Watched item:', data);
             const card = createMovieCard(data);
             container.appendChild(card);
         });
     } catch (error) {
         console.error('Error loading watched:', error);
+        const container = document.getElementById('watchedGrid');
+        container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #ef4444;">Error loading watched. Check console.</p>';
     }
 }
 
