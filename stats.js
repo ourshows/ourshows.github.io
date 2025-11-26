@@ -2,61 +2,108 @@
 import { auth, db, onAuthStateChanged, collection, getDocs } from './firebase-config.js';
 
 let currentUser = null;
-let watchedMovies = [];
+let watchedItems = [];
 
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         currentUser = user;
-        await loadWatchedMovies(user.uid);
-        calculateStats();
+        await loadWatchedItems(user.uid);
     } else {
         console.log('No user, showing default stats');
-        calculateStats(); // Show 0 stats
+        updateStatsUI({ totalMovies: 0, totalSeries: 0, totalHours: 0, streak: 0 });
     }
 });
 
-async function loadWatchedMovies(userId) {
+async function loadWatchedItems(userId) {
     try {
         const watchedRef = collection(db, 'users', userId, 'watched');
         const querySnapshot = await getDocs(watchedRef);
 
-        watchedMovies = [];
+        watchedItems = [];
         querySnapshot.forEach((doc) => {
-            watchedMovies.push(doc.data());
+            watchedItems.push(doc.data());
         });
 
-        console.log('Loaded watched movies:', watchedMovies.length);
+        console.log('Loaded watched items:', watchedItems.length);
+        await calculateStats();
     } catch (error) {
-        console.error('Error loading watched movies:', error);
+        console.error('Error loading watched items:', error);
     }
 }
 
-function calculateStats() {
-    const totalMovies = watchedMovies.length;
+async function fetchTMDBDetails(id, type) {
+    if (!window.APP_CONFIG) return null;
 
-    // Calculate total watch time (assuming average 120 min per movie)
-    const avgMovieLength = 120; // minutes
-    const totalMinutes = totalMovies * avgMovieLength;
+    const url = `${window.APP_CONFIG.TMDB_BASE_URL}/${type}/${id}?api_key=${window.APP_CONFIG.TMDB_API_KEY}`;
+    try {
+        const res = await fetch(url);
+        if (!res.ok) return null;
+        return await res.json();
+    } catch (e) {
+        console.error('Error fetching TMDB details:', e);
+        return null;
+    }
+}
+
+async function calculateStats() {
+    let totalMovies = 0;
+    let totalSeries = 0;
+    let totalMinutes = 0;
+
+    // Process items in parallel batches to speed up
+    const promises = watchedItems.map(async (item) => {
+        // Default to movie if mediaType is missing, or try to infer
+        let type = item.mediaType || 'movie';
+
+        // Fetch details to get runtime
+        const details = await fetchTMDBDetails(item.movieId, type);
+
+        if (details) {
+            if (type === 'movie') {
+                totalMovies++;
+                totalMinutes += details.runtime || 0;
+            } else if (type === 'tv') {
+                totalSeries++;
+                // For TV, estimate based on episode run time * number of episodes, 
+                // or just use episode_run_time array average if available.
+                const avgRuntime = (details.episode_run_time && details.episode_run_time.length > 0)
+                    ? details.episode_run_time[0]
+                    : 45; // Default 45 min
+
+                const episodes = details.number_of_episodes || 1;
+                totalMinutes += avgRuntime * episodes;
+            }
+        } else {
+            // Fallback if fetch fails
+            if (type === 'movie') {
+                totalMovies++;
+                totalMinutes += 120;
+            } else {
+                totalSeries++;
+                totalMinutes += 450; // Approx 10 eps * 45 min
+            }
+        }
+    });
+
+    await Promise.all(promises);
+
     const totalHours = Math.floor(totalMinutes / 60);
-
-    // Calculate streak
     const streak = calculateStreak();
 
-    // Update UI with correct IDs from HTML
     updateStatsUI({
         totalMovies,
+        totalSeries,
         totalHours,
         streak
     });
 
-    // Update Badges
-    updateBadges(totalMovies, totalHours, streak);
+    updateBadges(totalMovies, totalSeries, totalHours, streak);
 }
 
 function calculateStreak() {
-    if (watchedMovies.length === 0) return 0;
+    if (watchedItems.length === 0) return 0;
 
-    const sorted = watchedMovies
+    const sorted = watchedItems
         .filter(m => m.timestamp)
         .sort((a, b) => b.timestamp.seconds - a.timestamp.seconds);
 
@@ -82,20 +129,15 @@ function calculateStreak() {
 }
 
 function updateStatsUI(stats) {
-    // Animate numbers - using IDs from stats.html
     animateValue('moviesCount', 0, stats.totalMovies, 1000);
+    animateValue('seriesCount', 0, stats.totalSeries, 1000);
     animateValue('totalHours', 0, stats.totalHours, 1000);
     animateValue('streakDays', 0, stats.streak, 1000);
-
-    console.log('Stats updated:', stats);
 }
 
 function animateValue(id, start, end, duration) {
     const element = document.getElementById(id);
-    if (!element) {
-        console.warn('Element not found:', id);
-        return;
-    }
+    if (!element) return;
 
     const range = end - start;
     const increment = range / (duration / 16);
@@ -111,14 +153,13 @@ function animateValue(id, start, end, duration) {
     }, 16);
 }
 
-function updateBadges(totalMovies, totalHours, streak) {
-    // Define badges logic
+function updateBadges(totalMovies, totalSeries, totalHours, streak) {
     const badges = [
         {
             name: 'First Watch',
             icon: 'fa-play',
-            desc: 'Watched your first movie',
-            unlocked: totalMovies >= 1
+            desc: 'Watched your first item',
+            unlocked: (totalMovies + totalSeries) >= 1
         },
         {
             name: 'Movie Buff',
@@ -127,10 +168,10 @@ function updateBadges(totalMovies, totalHours, streak) {
             unlocked: totalMovies >= 10
         },
         {
-            name: 'Cinephile',
-            icon: 'fa-video',
-            desc: 'Watched 50 movies',
-            unlocked: totalMovies >= 50
+            name: 'Series Binger',
+            icon: 'fa-tv',
+            desc: 'Watched 5 series',
+            unlocked: totalSeries >= 5
         },
         {
             name: 'Marathon Runner',
@@ -146,7 +187,6 @@ function updateBadges(totalMovies, totalHours, streak) {
         }
     ];
 
-    // Find the container - in stats.html it is class "badges-grid"
     const badgesContainer = document.querySelector('.badges-grid');
     if (!badgesContainer) return;
 

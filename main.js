@@ -220,22 +220,6 @@ function renderCards(items, containerId, defaultType) {
 async function openMovieModal(id, type = 'movie') {
     currentMovieId = id;
     const modal = document.getElementById('movieModal');
-    modal.style.display = 'block';
-    document.body.style.overflow = 'hidden';
-
-    // Fetch movie details
-    const details = await fetchTMDB(`/${type}/${id}`, { append_to_response: 'videos,credits,reviews,similar' });
-    if (!details) return;
-
-    currentMovieData = details;
-
-    // Update modal header
-    document.getElementById('modalPoster').src = `${window.APP_CONFIG.TMDB_IMAGE_SMALL_URL}${details.poster_path}`;
-    document.getElementById('modalTitle').textContent = details.title || details.name;
-    document.getElementById('modalRating').textContent = details.vote_average ? details.vote_average.toFixed(1) : 'N/A';
-    document.getElementById('modalYear').textContent = (details.release_date || details.first_air_date || '').split('-')[0];
-    document.getElementById('modalRuntime').textContent = details.runtime ? `${details.runtime} min` : '';
-    document.getElementById('modalOverview').textContent = details.overview;
 
     // Load trailer
     loadTrailer(details.videos);
@@ -422,6 +406,7 @@ async function markAsWatched() {
             movieTitle: currentMovieData.title || currentMovieData.name,
             posterPath: currentMovieData.poster_path,
             rating: currentMovieData.vote_average,
+            mediaType: currentMovieData.media_type || 'movie', // Save media type
             timestamp: serverTimestamp()
         });
 
@@ -445,6 +430,7 @@ async function addToWatchLater() {
             movieTitle: currentMovieData.title || currentMovieData.name,
             posterPath: currentMovieData.poster_path,
             rating: currentMovieData.vote_average,
+            mediaType: currentMovieData.media_type || 'movie', // Save media type
             timestamp: serverTimestamp()
         });
 
