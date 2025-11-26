@@ -66,335 +66,320 @@
         </div>
     </header>
 
-    <!-- Main Content -->
-    <main class="container">
-
-        <!-- Trending Movies -->
-        <section class="content-section">
-            <h2 class="section-title">Trending Now</h2>
-            <div class="media-scroller" id="trendingScroller">
-                <div class="media-card skeleton"></div>
-                <div class="media-card skeleton"></div>
-                <div class="media-card skeleton"></div>
-                <div class="media-card skeleton"></div>
-                <div class="media-card skeleton"></div>
-            </div>
-        </section>
-
-        <!-- Popular Movies -->
-        <section class="content-section" style="margin-top: 3rem;">
-            <h2 class="section-title">Popular</h2>
-            <div class="media-scroller" id="popularScroller">
-                <div class="media-card skeleton"></div>
-                <div class="media-card skeleton"></div>
-                <div class="media-card skeleton"></div>
-                <div class="media-card skeleton"></div>
-                <div class="media-card skeleton"></div>
-            </div>
-        </section>
-
-        <!-- Top Rated -->
-        <section class="content-section" style="margin-top: 3rem;">
-            <h2 class="section-title">Top Rated</h2>
-            <div class="media-scroller" id="topRatedScroller">
-                <div class="media-card skeleton"></div>
-                <div class="media-card skeleton"></div>
-                <div class="media-card skeleton"></div>
-                <div class="media-card skeleton"></div>
-                <div class="media-card skeleton"></div>
-            </div>
-        </section>
-
-        <!-- Upcoming -->
-        <section class="content-section" style="margin-top: 3rem;">
-            <h2 class="section-title">Coming Soon</h2>
-            <div class="media-scroller" id="upcomingScroller">
-                <div class="media-card skeleton"></div>
-                <div class="media-card skeleton"></div>
-
-    </main>
-
-    <!-- Movie Details Modal -->
-    <div id="movieModal" class="modal" style="display: none;">
-        <div class="modal-content glass-panel">
-            <span class="modal-close" onclick="closeModal()">&times;</span>
-
-            <div class="modal-header">
-                <img id="modalPoster" src="" alt="Poster" class="modal-poster">
-                <div class="modal-header-info">
-                    <h2 id="modalTitle"></h2>
-                    <div class="modal-meta">
-                        <span class="rating-badge" id="modalRating"></span>
-                        <span id="modalYear"></span>
-                        <span id="modalRuntime"></span>
-                    </div>
-                    <p id="modalOverview"></p>
-
-                    <!-- Action Buttons -->
-                    <div class="modal-actions">
-                        <button class="glass-button" onclick="markAsWatched()"><i class="fas fa-check"></i>
-                            Watched</button>
-                        <button class="glass-button" onclick="addToWatchLater()"><i class="fas fa-clock"></i> Watch
-                            Later</button>
-                        <button class="glass-button" onclick="watchNow()"><i class="fas fa-play"></i> Watch Now</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Tabs -->
-            <div class="modal-tabs">
-                <button class="tab-btn active" onclick="switchTab('overview')">Overview</button>
-                <button class="tab-btn" onclick="switchTab('cast')">Cast & Crew</button>
-                <button class="tab-btn" onclick="switchTab('reviews')">Reviews</button>
-                <button class="tab-btn" onclick="switchTab('similar')">Similar</button>
-                <button class="tab-btn" onclick="switchTab('ai')">Ask AI</button>
-            </div>
-
-            <!-- Tab Content -->
-            <div class="modal-body">
-                <!-- Overview Tab -->
-                <div id="tab-overview" class="tab-content active">
-                    <div id="modalTrailer"></div>
-                    <div id="modalGenres"></div>
-
-                    <!-- Rating System -->
-                    <div class="rating-section">
-                        <h3>Rate This Movie</h3>
-                        <div class="rating-buttons">
-                            <button class="rating-btn" data-rating="1" onclick="rateMovie(1)">😞 Bad</button>
-                            <button class="rating-btn" data-rating="2" onclick="rateMovie(2)">😐 One-Time Watch</button>
-                            <button class="rating-btn" data-rating="3" onclick="rateMovie(3)">🙂 Good</button>
-                            <button class="rating-btn" data-rating="4" onclick="rateMovie(4)">😃 Must Watch</button>
-                            <button class="rating-btn" data-rating="5" onclick="rateMovie(5)">🤩 Perfection</button>
-                        </div>
-                        <textarea id="reviewText" class="glass-input" placeholder="Write your review..."
-                            rows="4"></textarea>
-                        <button class="glass-button" onclick="submitReview()">Submit Review</button>
-                    </div>
-                </div>
-
-                <!-- Cast Tab -->
-                <div id="tab-cast" class="tab-content" style="display: none;">
-                    <h3>Cast</h3>
-                    <div id="modalCast" class="cast-grid"></div>
-                </div>
-
-                <!-- Reviews Tab -->
-                <div id="tab-reviews" class="tab-content" style="display: none;">
-                    <h3>User Reviews</h3>
-                    <div id="modalReviews"></div>
-                </div>
-
-                <!-- Similar Tab -->
-                <div id="tab-similar" class="tab-content" style="display: none;">
-                    <h3>Similar Titles</h3>
-                    <div id="modalSimilar" class="media-scroller"></div>
-                </div>
-
-                <!-- AI Chat Tab -->
-                <div id="tab-ai" class="tab-content" style="display: none;">
-                    <h3>Ask AI About This Movie</h3>
-                    <div id="aiChat" class="ai-chat-container"></div>
-                    <div class="ai-input-group">
-                        <input type="text" id="aiQuestion" class="glass-input"
-                            placeholder="Ask about facts, trivia, spoilers...">
-                        <button class="glass-button" onclick="askAI()"><i class="fas fa-paper-plane"></i> Ask</button>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="media-card skeleton"></div>
+    <div class="media-card skeleton"></div>
+    <div class="media-card skeleton"></div>
     </div>
+    </section>
 
-    <style>
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.9);
-            z-index: 10000;
-            overflow-y: auto;
-            padding: 2rem;
-        }
+    <!-- Top Rated -->
+    <section class="content-section" style="margin-top: 3rem;">
+        <h2 class="section-title">Top Rated</h2>
+        <div class="media-scroller" id="topRatedScroller">
+            <div class="media-card skeleton"></div>
+            <div class="media-card skeleton"></div>
+            <div class="media-card skeleton"></div>
+            <div class="media-card skeleton"></div>
+            <div class="media-card skeleton"></div>
+        </div>
+    </section>
 
-        .modal-content {
-            max-width: 1200px;
-            margin: 0 auto;
-            position: relative;
-            padding: 2rem;
-        }
+    <!-- Upcoming -->
+    <section class="content-section" style="margin-top: 3rem;">
+        <h2 class="section-title">Coming Soon</h2>
+        <div class="media-scroller" id="upcomingScroller">
+            <div class="media-card skeleton"></div>
+            <div class="media-card skeleton"></div>
 
-        .modal-close {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            font-size: 2rem;
-            cursor: pointer;
-            color: white;
-            z-index: 10;
-        }
+            </main>
 
-        .modal-header {
-            display: flex;
-            gap: 2rem;
-            margin-bottom: 2rem;
-        }
+            <!-- Movie Details Modal -->
+            <div id="movieModal" class="modal" style="display: none;">
+                <div class="modal-content glass-panel">
+                    <span class="modal-close" onclick="closeModal()">&times;</span>
 
-        .modal-poster {
-            width: 300px;
-            border-radius: 12px;
-        }
+                    <div class="modal-header">
+                        <img id="modalPoster" src="" alt="Poster" class="modal-poster">
+                        <div class="modal-header-info">
+                            <h2 id="modalTitle"></h2>
+                            <div class="modal-meta">
+                                <span class="rating-badge" id="modalRating"></span>
+                                <span id="modalYear"></span>
+                                <span id="modalRuntime"></span>
+                            </div>
+                            <p id="modalOverview"></p>
 
-        .modal-header-info {
-            flex: 1;
-        }
+                            <!-- Action Buttons -->
+                            <div class="modal-actions">
+                                <button class="glass-button" onclick="markAsWatched()"><i class="fas fa-check"></i>
+                                    Watched</button>
+                                <button class="glass-button" onclick="addToWatchLater()"><i class="fas fa-clock"></i>
+                                    Watch
+                                    Later</button>
+                                <button class="glass-button" onclick="watchNow()"><i class="fas fa-play"></i> Watch
+                                    Now</button>
+                            </div>
+                        </div>
+                    </div>
 
-        .modal-meta {
-            display: flex;
-            gap: 1rem;
-            margin: 1rem 0;
-        }
+                    <!-- Tabs -->
+                    <div class="modal-tabs">
+                        <button class="tab-btn active" onclick="switchTab('overview')">Overview</button>
+                        <button class="tab-btn" onclick="switchTab('cast')">Cast & Crew</button>
+                        <button class="tab-btn" onclick="switchTab('reviews')">Reviews</button>
+                        <button class="tab-btn" onclick="switchTab('similar')">Similar</button>
+                        <button class="tab-btn" onclick="switchTab('ai')">Ask AI</button>
+                    </div>
 
-        .modal-actions {
-            display: flex;
-            gap: 1rem;
-            margin-top: 1.5rem;
-            flex-wrap: wrap;
-        }
+                    <!-- Tab Content -->
+                    <div class="modal-body">
+                        <!-- Overview Tab -->
+                        <div id="tab-overview" class="tab-content active">
+                            <div id="modalTrailer"></div>
+                            <div id="modalGenres"></div>
 
-        .modal-tabs {
-            display: flex;
-            gap: 1rem;
-            border-bottom: 2px solid var(--glass-border);
-            margin-bottom: 2rem;
-        }
+                            <!-- Rating System -->
+                            <div class="rating-section">
+                                <h3>Rate This Movie</h3>
+                                <div class="rating-buttons">
+                                    <button class="rating-btn" data-rating="1" onclick="rateMovie(1)">😞 Bad</button>
+                                    <button class="rating-btn" data-rating="2" onclick="rateMovie(2)">😐 One-Time
+                                        Watch</button>
+                                    <button class="rating-btn" data-rating="3" onclick="rateMovie(3)">🙂 Good</button>
+                                    <button class="rating-btn" data-rating="4" onclick="rateMovie(4)">😃 Must
+                                        Watch</button>
+                                    <button class="rating-btn" data-rating="5" onclick="rateMovie(5)">🤩
+                                        Perfection</button>
+                                </div>
+                                <textarea id="reviewText" class="glass-input" placeholder="Write your review..."
+                                    rows="4"></textarea>
+                                <button class="glass-button" onclick="submitReview()">Submit Review</button>
+                            </div>
+                        </div>
 
-        .tab-btn {
-            background: none;
-            border: none;
-            color: var(--text-secondary);
-            padding: 1rem 1.5rem;
-            cursor: pointer;
-            font-weight: 600;
-            border-bottom: 3px solid transparent;
-            transition: all 0.3s;
-        }
+                        <!-- Cast Tab -->
+                        <div id="tab-cast" class="tab-content" style="display: none;">
+                            <h3>Cast</h3>
+                            <div id="modalCast" class="cast-grid"></div>
+                        </div>
 
-        .tab-btn.active {
-            color: var(--primary-color);
-            border-bottom-color: var(--primary-color);
-        }
+                        <!-- Reviews Tab -->
+                        <div id="tab-reviews" class="tab-content" style="display: none;">
+                            <h3>User Reviews</h3>
+                            <div id="modalReviews"></div>
+                        </div>
 
-        .tab-content {
-            display: none;
-        }
+                        <!-- Similar Tab -->
+                        <div id="tab-similar" class="tab-content" style="display: none;">
+                            <h3>Similar Titles</h3>
+                            <div id="modalSimilar" class="media-scroller"></div>
+                        </div>
 
-        .tab-content.active {
-            display: block;
-        }
+                        <!-- AI Chat Tab -->
+                        <div id="tab-ai" class="tab-content" style="display: none;">
+                            <h3>Ask AI About This Movie</h3>
+                            <div id="aiChat" class="ai-chat-container"></div>
+                            <div class="ai-input-group">
+                                <input type="text" id="aiQuestion" class="glass-input"
+                                    placeholder="Ask about facts, trivia, spoilers...">
+                                <button class="glass-button" onclick="askAI()"><i class="fas fa-paper-plane"></i>
+                                    Ask</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-        .rating-section {
-            margin-top: 2rem;
-            padding: 1.5rem;
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 12px;
-        }
+            <style>
+                .modal {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.9);
+                    z-index: 10000;
+                    overflow-y: auto;
+                    padding: 2rem;
+                }
 
-        .rating-buttons {
-            display: flex;
-            gap: 1rem;
-            margin: 1rem 0;
-            flex-wrap: wrap;
-        }
+                .modal-content {
+                    max-width: 1200px;
+                    margin: 0 auto;
+                    position: relative;
+                    padding: 2rem;
+                }
 
-        .rating-btn {
-            flex: 1;
-            min-width: 120px;
-            padding: 1rem;
-            border: 2px solid var(--glass-border);
-            background: rgba(255, 255, 255, 0.05);
-            color: white;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-size: 0.9rem;
-        }
+                .modal-close {
+                    position: absolute;
+                    top: 1rem;
+                    right: 1rem;
+                    font-size: 2rem;
+                    cursor: pointer;
+                    color: white;
+                    z-index: 10;
+                }
 
-        .rating-btn:hover,
-        .rating-btn.selected {
-            border-color: var(--primary-color);
-            background: var(--primary-color);
-            transform: scale(1.05);
-        }
+                .modal-header {
+                    display: flex;
+                    gap: 2rem;
+                    margin-bottom: 2rem;
+                }
 
-        .cast-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 1.5rem;
-        }
+                .modal-poster {
+                    width: 300px;
+                    border-radius: 12px;
+                }
 
-        .cast-card {
-            text-align: center;
-        }
+                .modal-header-info {
+                    flex: 1;
+                }
 
-        .cast-card img {
-            width: 100%;
-            border-radius: 8px;
-            margin-bottom: 0.5rem;
-        }
+                .modal-meta {
+                    display: flex;
+                    gap: 1rem;
+                    margin: 1rem 0;
+                }
 
-        .review-card {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 1.5rem;
-            border-radius: 12px;
-            margin-bottom: 1rem;
-        }
+                .modal-actions {
+                    display: flex;
+                    gap: 1rem;
+                    margin-top: 1.5rem;
+                    flex-wrap: wrap;
+                }
 
-        .ai-chat-container {
-            max-height: 400px;
-            overflow-y: auto;
-            margin-bottom: 1rem;
-            padding: 1rem;
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 12px;
-        }
+                .modal-tabs {
+                    display: flex;
+                    gap: 1rem;
+                    border-bottom: 2px solid var(--glass-border);
+                    margin-bottom: 2rem;
+                }
 
-        .ai-message {
-            margin-bottom: 1rem;
-            padding: 1rem;
-            border-radius: 8px;
-        }
+                .tab-btn {
+                    background: none;
+                    border: none;
+                    color: var(--text-secondary);
+                    padding: 1rem 1.5rem;
+                    cursor: pointer;
+                    font-weight: 600;
+                    border-bottom: 3px solid transparent;
+                    transition: all 0.3s;
+                }
 
-        .ai-message.user {
-            background: var(--primary-color);
-            margin-left: 20%;
-        }
+                .tab-btn.active {
+                    color: var(--primary-color);
+                    border-bottom-color: var(--primary-color);
+                }
 
-        .ai-message.ai {
-            background: rgba(255, 255, 255, 0.1);
-            margin-right: 20%;
-        }
+                .tab-content {
+                    display: none;
+                }
 
-        .ai-input-group {
-            display: flex;
-            gap: 1rem;
-        }
+                .tab-content.active {
+                    display: block;
+                }
 
-        @media (max-width: 768px) {
-            .modal-header {
-                flex-direction: column;
-            }
+                .rating-section {
+                    margin-top: 2rem;
+                    padding: 1.5rem;
+                    background: rgba(0, 0, 0, 0.3);
+                    border-radius: 12px;
+                }
 
-            .modal-poster {
-                width: 100%;
-            }
-        }
-    </style>
+                .rating-buttons {
+                    display: flex;
+                    gap: 1rem;
+                    margin: 1rem 0;
+                    flex-wrap: wrap;
+                }
 
-    <!-- Scripts -->
-    <script src="config.js"></script>
-    <script src="main.js" type="module"></script>
+                .rating-btn {
+                    flex: 1;
+                    min-width: 120px;
+                    padding: 1rem;
+                    border: 2px solid var(--glass-border);
+                    background: rgba(255, 255, 255, 0.05);
+                    color: white;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    transition: all 0.3s;
+                    font-size: 0.9rem;
+                }
+
+                .rating-btn:hover,
+                .rating-btn.selected {
+                    border-color: var(--primary-color);
+                    background: var(--primary-color);
+                    transform: scale(1.05);
+                }
+
+                .cast-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                    gap: 1.5rem;
+                }
+
+                .cast-card {
+                    text-align: center;
+                }
+
+                .cast-card img {
+                    width: 100%;
+                    border-radius: 8px;
+                    margin-bottom: 0.5rem;
+                }
+
+                .review-card {
+                    background: rgba(255, 255, 255, 0.05);
+                    padding: 1.5rem;
+                    border-radius: 12px;
+                    margin-bottom: 1rem;
+                }
+
+                .ai-chat-container {
+                    max-height: 400px;
+                    overflow-y: auto;
+                    margin-bottom: 1rem;
+                    padding: 1rem;
+                    background: rgba(0, 0, 0, 0.3);
+                    border-radius: 12px;
+                }
+
+                .ai-message {
+                    margin-bottom: 1rem;
+                    padding: 1rem;
+                    border-radius: 8px;
+                }
+
+                .ai-message.user {
+                    background: var(--primary-color);
+                    margin-left: 20%;
+                }
+
+                .ai-message.ai {
+                    background: rgba(255, 255, 255, 0.1);
+                    margin-right: 20%;
+                }
+
+                .ai-input-group {
+                    display: flex;
+                    gap: 1rem;
+                }
+
+                @media (max-width: 768px) {
+                    .modal-header {
+                        flex-direction: column;
+                    }
+
+                    .modal-poster {
+                        width: 100%;
+                    }
+                }
+            </style>
+
+            <!-- Scripts -->
+            <script src="config.js"></script>
+            <script src="main.js" type="module"></script>
 </body>
 
 </html>
