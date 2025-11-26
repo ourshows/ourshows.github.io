@@ -1,12 +1,3 @@
-// Main Application Logic
-import { auth, db, onAuthStateChanged, collection, addDoc, setDoc, doc, serverTimestamp } from './firebase-config.js';
-
-let currentMovieId = null;
-let currentMovieData = null;
-let userRating = null;
-let currentUser = null;
-
-// Listen for auth state changes
 onAuthStateChanged(auth, (user) => {
     currentUser = user;
     console.log('Auth state changed:', user ? user.email : 'Not logged in');
@@ -59,6 +50,47 @@ async function initApp() {
     await loadNowPlaying();
     await loadNepaliContent();
     await loadHindiContent();
+
+    // New content rows
+    await loadNewToStream();
+    await loadHighestGrossing();
+    await loadCultClassics();
+    await loadUnderratedGems();
+    await loadActionThrillers();
+    await loadDramaRomance();
+
+    // Add "More >>" links to section headings
+    addMoreLinks();
+}
+
+// Add "More >>" links to section headings
+function addMoreLinks() {
+    const sections = [
+        { id: 'trendingScroller', category: 'trending', title: 'Trending Now' },
+        { id: 'popularScroller', category: 'popular', title: 'Popular' },
+        { id: 'topRatedScroller', category: 'top_rated', title: 'Top Rated' },
+        { id: 'upcomingScroller', category: 'upcoming', title: 'Coming Soon' },
+        { id: 'nowPlayingScroller', category: 'now_playing', title: 'Now in Theaters' },
+        { id: 'nepaliScroller', category: 'nepali', title: 'Nepali Hits 🇳🇵' },
+        { id: 'hindiScroller', category: 'hindi', title: 'Bollywood & Hindi 🇮🇳' }
+    ];
+
+    sections.forEach(section => {
+        const scroller = document.getElementById(section.id);
+        if (scroller) {
+            const sectionElement = scroller.closest('.content-section');
+            const titleElement = sectionElement?.querySelector('.section-title');
+            if (titleElement) {
+                const moreLink = document.createElement('a');
+                moreLink.href = `view_all.html?category=${section.category}`;
+                moreLink.textContent = 'More >>';
+                moreLink.style.cssText = 'margin-left: auto; font-size: 0.9rem; color: var(--primary-color); text-decoration: none; font-weight: 600;';
+                titleElement.style.display = 'flex';
+                titleElement.style.justifyContent = 'space-between';
+                titleElement.appendChild(moreLink);
+            }
+        }
+    });
 }
 
 // --- UI Setup ---
@@ -184,6 +216,114 @@ async function loadHindiContent() {
     if (data) renderCards(data.results, 'hindiScroller', 'movie');
 }
 
+// --- HYBRID RENDERING SYSTEM ---
+// Fetches and mixes regional content (Nepali/Hindi) with global content
+
+/**
+ * Renders a content row with regional integration
+ * @param {string} containerId - DOM element ID for the scroller
+ * @param {string} endpoint - TMDB API endpoint (e.g., '/movie/popular')
+ * @param {string} mediaType - 'movie' or 'tv'
+ * @param {boolean} includeRegional - Whether to inject Nepali/Hindi content
+ */
+async function renderHybridContentRow(containerId, endpoint, mediaType = 'movie', includeRegional = true) {
+    // Fetch global content
+    const globalData = await fetchTMDB(endpoint);
+    if (!globalData || !globalData.results) return;
+
+    let finalResults = [...globalData.results];
+
+    if (includeRegional) {
+        // Fetch Nepali content
+        const nepaliData = await fetchTMDB('/discover/movie', {
+            with_original_language: REGIONAL_CONFIG.languages.nepali,
+            sort_by: 'popularity.desc'
+        });
+
+        // Fetch Hindi content
+        const hindiData = await fetchTMDB('/discover/movie', {
+            with_original_language: REGIONAL_CONFIG.languages.hindi,
+            sort_by: 'popularity.desc',
+            region: 'IN'
+        });
+
+        // Mix regional content into the results
+        const regionalItems = [];
+        if (nepaliData?.results) regionalItems.push(...nepaliData.results.slice(0, 3));
+        if (hindiData?.results) regionalItems.push(...hindiData.results.slice(0, 3));
+
+        // Inject regional content at strategic positions (positions 2, 5, 8, 11, 14)
+        const injectionPositions = [2, 5, 8, 11, 14];
+        regionalItems.forEach((item, index) => {
+            if (index < injectionPositions.length) {
+                finalResults.splice(injectionPositions[index], 0, item);
+            }
+        });
+    }
+
+    renderCards(finalResults.slice(0, 20), containerId, mediaType);
+}
+
+/**
+ * Renders a custom curated list
+ * @param {string} containerId - DOM element ID for the scroller
+ * @param {Array} tmdbIds - Array of TMDB IDs
+ * @param {string} mediaType - 'movie' or 'tv'
+ */
+async function renderCustomList(containerId, tmdbIds, mediaType = 'movie') {
+    const items = [];
+
+    // Fetch details for each TMDB ID
+    for (const id of tmdbIds.slice(0, 15)) {
+        const data = await fetchTMDB(`/${mediaType}/${id}`);
+        if (data) items.push(data);
+    }
+
+    renderCards(items, containerId, mediaType);
+}
+
+/**
+ * Load new content rows
+ */
+async function loadNewToStream() {
+    // Get recently added content (last 3 months)
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+    const dateString = threeMonthsAgo.toISOString().split('T')[0];
+
+    const data = await fetchTMDB('/discover/movie', {
+        'primary_release_date.gte': dateString,
+        sort_by: 'popularity.desc'
+    });
+
+    if (data) renderCards(data.results, 'newToStreamScroller', 'movie');
+}
+
+async function loadHighestGrossing() {
+    const data = await fetchTMDB('/discover/movie', {
+        'primary_release_date.gte': '2020-01-01',
+        sort_by: 'revenue.desc'
+    });
+
+    if (data) renderCards(data.results, 'highestGrossingScroller', 'movie');
+}
+
+async function loadCultClassics() {
+    await renderCustomList('cultClassicsScroller', CUSTOM_LISTS.cultClassics, 'movie');
+}
+
+async function loadUnderratedGems() {
+    await renderCustomList('underratedGemsScroller', CUSTOM_LISTS.underratedGems, 'movie');
+}
+
+async function loadActionThrillers() {
+    await renderCustomList('actionThrillersScroller', CUSTOM_LISTS.actionThrillers, 'movie');
+}
+
+async function loadDramaRomance() {
+    await renderCustomList('dramaRomanceScroller', CUSTOM_LISTS.dramaRomance, 'movie');
+}
+
 async function performSearch(query) {
     const data = await fetchTMDB('/search/multi', { query: query });
     const resultsContainer = document.getElementById('searchResults');
@@ -235,32 +375,6 @@ function renderCards(items, containerId, defaultType) {
         card.onclick = () => openMovieModal(item.id, item.media_type || defaultType);
         container.appendChild(card);
     });
-
-    // Add "View More" card
-    const viewMoreCard = document.createElement('div');
-    viewMoreCard.className = 'media-card view-more-card';
-    viewMoreCard.innerHTML = `
-        <div style="height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(255,255,255,0.05); border-radius: 12px; color: var(--primary-color);">
-            <i class="fas fa-arrow-right" style="font-size: 2rem; margin-bottom: 1rem;"></i>
-            <span style="font-weight: 600;">View More</span>
-        </div>
-    `;
-
-    // Determine category based on containerId
-    let category = '';
-    if (containerId === 'trendingScroller') category = 'trending';
-    else if (containerId === 'popularScroller') category = 'popular';
-    else if (containerId === 'topRatedScroller') category = 'top_rated';
-    else if (containerId === 'upcomingScroller') category = 'upcoming';
-    else if (containerId === 'nowPlayingScroller') category = 'now_playing';
-    else if (containerId === 'nepaliScroller') category = 'nepali';
-    else if (containerId === 'hindiScroller') category = 'hindi';
-
-    // Only add View More card if it's a main section
-    if (category) {
-        viewMoreCard.onclick = () => window.location.href = `view_all.html?category=${category}`;
-        container.appendChild(viewMoreCard);
-    }
 }
 
 // --- Movie Modal ---
