@@ -10,7 +10,8 @@ onAuthStateChanged(auth, async (user) => {
         await loadWatchedMovies(user.uid);
         calculateStats();
     } else {
-        window.location.href = 'login.html';
+        console.log('No user, showing default stats');
+        calculateStats(); // Show 0 stats
     }
 });
 
@@ -38,40 +39,23 @@ function calculateStats() {
     const totalMinutes = totalMovies * avgMovieLength;
     const totalHours = Math.floor(totalMinutes / 60);
 
-    // Calculate average rating
-    let totalRating = 0;
-    let ratedCount = 0;
-    watchedMovies.forEach(movie => {
-        if (movie.rating) {
-            totalRating += movie.rating;
-            ratedCount++;
-        }
-    });
-    const avgRating = ratedCount > 0 ? (totalRating / ratedCount).toFixed(1) : 'N/A';
-
-    // Find favorite genre (would need genre data from TMDB)
-    const favoriteGenre = 'Action'; // Placeholder
-
-    // Calculate streak (days watched consecutively)
+    // Calculate streak
     const streak = calculateStreak();
 
-    // Update UI
+    // Update UI with correct IDs from HTML
     updateStatsUI({
         totalMovies,
         totalHours,
-        avgRating,
-        favoriteGenre,
         streak
     });
 
-    // Calculate badges
-    updateBadges(totalMovies, totalHours);
+    // Update Badges
+    updateBadges(totalMovies, totalHours, streak);
 }
 
 function calculateStreak() {
     if (watchedMovies.length === 0) return 0;
 
-    // Sort by timestamp
     const sorted = watchedMovies
         .filter(m => m.timestamp)
         .sort((a, b) => b.timestamp.seconds - a.timestamp.seconds);
@@ -82,10 +66,10 @@ function calculateStreak() {
     const oneDayMs = 24 * 60 * 60 * 1000;
 
     for (let i = 0; i < sorted.length - 1; i++) {
-        const current = new Date(sorted[i].timestamp.seconds * 1000);
-        const next = new Date(sorted[i + 1].timestamp.seconds * 1000);
+        const currentDate = new Date(sorted[i].timestamp.seconds * 1000);
+        const nextDate = new Date(sorted[i + 1].timestamp.seconds * 1000);
 
-        const diffDays = Math.floor((current - next) / oneDayMs);
+        const diffDays = Math.floor((currentDate - nextDate) / oneDayMs);
 
         if (diffDays === 1) {
             streak++;
@@ -98,80 +82,86 @@ function calculateStreak() {
 }
 
 function updateStatsUI(stats) {
-    // Animate numbers
-    animateValue('moviesWatched', 0, stats.totalMovies, 1000);
-    animateValue('hoursWatched', 0, stats.totalHours, 1000);
+    // Animate numbers - using IDs from stats.html
+    animateValue('moviesCount', 0, stats.totalMovies, 1000);
+    animateValue('totalHours', 0, stats.totalHours, 1000);
+    animateValue('streakDays', 0, stats.streak, 1000);
 
-    document.getElementById('avgRating').textContent = stats.avgRating;
-    document.getElementById('favoriteGenre').textContent = stats.favoriteGenre;
-    document.getElementById('currentStreak').textContent = `${stats.streak} days`;
-
-    // Update progress bars
-    updateProgressBar('watchGoal', stats.totalMovies, 100);
-    updateProgressBar('timeGoal', stats.totalHours, 500);
-}
-
-function updateProgressBar(id, current, goal) {
-    const percentage = Math.min((current / goal) * 100, 100);
-    const bar = document.getElementById(id);
-    if (bar) {
-        bar.style.width = percentage + '%';
-        bar.parentElement.querySelector('.goal-text').textContent = `${current} / ${goal}`;
-    }
+    console.log('Stats updated:', stats);
 }
 
 function animateValue(id, start, end, duration) {
     const element = document.getElementById(id);
-    if (!element) return;
+    if (!element) {
+        console.warn('Element not found:', id);
+        return;
+    }
 
     const range = end - start;
     const increment = range / (duration / 16);
-    let current = start;
+    let currentValue = start;
 
     const timer = setInterval(() => {
-        current += increment;
-        if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) {
-            current = end;
+        currentValue += increment;
+        if ((increment > 0 && currentValue >= end) || (increment < 0 && currentValue <= end)) {
+            currentValue = end;
             clearInterval(timer);
         }
-        element.textContent = Math.floor(current);
+        element.textContent = Math.floor(currentValue);
     }, 16);
 }
 
-function updateBadges(totalMovies, totalHours) {
+function updateBadges(totalMovies, totalHours, streak) {
+    // Define badges logic
     const badges = [
-        { id: 'badge1', name: 'First Watch', desc: 'Watched your first movie', unlocked: totalMovies >= 1 },
-        { id: 'badge2', name: 'Movie Buff', desc: 'Watched 10 movies', unlocked: totalMovies >= 10 },
-        { id: 'badge3', name: 'Cinephile', desc: 'Watched 50 movies', unlocked: totalMovies >= 50 },
-        { id: 'badge4', name: 'Marathon Runner', desc: 'Watched 100 hours', unlocked: totalHours >= 100 },
-        { id: 'badge5', name: 'Binge Master', desc: 'Watched 5 movies in a day', unlocked: false }, // Would need daily tracking
-        { id: 'badge6', name: 'Genre Explorer', desc: 'Watched 5 different genres', unlocked: false }
+        {
+            name: 'First Watch',
+            icon: 'fa-play',
+            desc: 'Watched your first movie',
+            unlocked: totalMovies >= 1
+        },
+        {
+            name: 'Movie Buff',
+            icon: 'fa-film',
+            desc: 'Watched 10 movies',
+            unlocked: totalMovies >= 10
+        },
+        {
+            name: 'Cinephile',
+            icon: 'fa-video',
+            desc: 'Watched 50 movies',
+            unlocked: totalMovies >= 50
+        },
+        {
+            name: 'Marathon Runner',
+            icon: 'fa-running',
+            desc: 'Watched 100 hours',
+            unlocked: totalHours >= 100
+        },
+        {
+            name: 'Streak Master',
+            icon: 'fa-fire',
+            desc: '3 day watch streak',
+            unlocked: streak >= 3
+        }
     ];
 
-    const badgesContainer = document.getElementById('badgesContainer');
+    // Find the container - in stats.html it is class "badges-grid"
+    const badgesContainer = document.querySelector('.badges-grid');
     if (!badgesContainer) return;
 
     badgesContainer.innerHTML = '';
 
     badges.forEach(badge => {
         const badgeEl = document.createElement('div');
-        badgeEl.className = 'badge-item glass-panel';
-        badgeEl.style.opacity = badge.unlocked ? '1' : '0.4';
-        badgeEl.style.padding = '1.5rem';
-        badgeEl.style.textAlign = 'center';
-        badgeEl.style.borderRadius = '12px';
+        badgeEl.className = `badge ${badge.unlocked ? '' : 'locked'}`;
+        badgeEl.title = `${badge.desc} (${badge.unlocked ? 'Unlocked' : 'Locked'})`;
 
         badgeEl.innerHTML = `
-            <div style="font-size: 3rem; margin-bottom: 0.5rem;">
-                ${badge.unlocked ? '🏆' : '🔒'}
-            </div>
-            <h4>${badge.name}</h4>
-            <p style="font-size: 0.85rem; color: var(--text-secondary);">${badge.desc}</p>
+            <i class="fas ${badge.icon}"></i>
+            <span>${badge.name}</span>
         `;
 
         badgesContainer.appendChild(badgeEl);
     });
 }
-
-// Expose functions
-window.animateValue = animateValue;
