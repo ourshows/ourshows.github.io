@@ -1,3 +1,20 @@
+import {
+    auth,
+    onAuthStateChanged,
+    db,
+    addDoc,
+    collection,
+    serverTimestamp,
+    setDoc,
+    doc
+} from './firebase-config.js';
+import { CUSTOM_LISTS, REGIONAL_CONFIG } from './custom_lists.js';
+
+let currentUser = null;
+let currentMovieId = null;
+let currentMovieData = null;
+let userRating = null;
+
 onAuthStateChanged(auth, (user) => {
     currentUser = user;
     console.log('Auth state changed:', user ? user.email : 'Not logged in');
