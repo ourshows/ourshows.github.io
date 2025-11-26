@@ -235,6 +235,29 @@ function renderCards(items, containerId, defaultType) {
         card.onclick = () => openMovieModal(item.id, item.media_type || defaultType);
         container.appendChild(card);
     });
+
+    // Add "View More" card
+    const viewMoreCard = document.createElement('div');
+    viewMoreCard.className = 'media-card view-more-card';
+    viewMoreCard.innerHTML = `
+        <div style="height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(255,255,255,0.05); border-radius: 12px; color: var(--primary-color);">
+            <i class="fas fa-arrow-right" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+            <span style="font-weight: 600;">View More</span>
+        </div>
+    `;
+
+    // Determine category based on containerId
+    let category = '';
+    if (containerId === 'trendingScroller') category = 'trending';
+    else if (containerId === 'popularScroller') category = 'popular';
+    else if (containerId === 'topRatedScroller') category = 'top_rated';
+    else if (containerId === 'upcomingScroller') category = 'upcoming';
+    else if (containerId === 'nowPlayingScroller') category = 'now_playing';
+    else if (containerId === 'nepaliScroller') category = 'nepali';
+    else if (containerId === 'hindiScroller') category = 'hindi';
+
+    viewMoreCard.onclick = () => window.location.href = `view_all.html?category=${category}`;
+    container.appendChild(viewMoreCard);
 }
 
 // --- Movie Modal ---
