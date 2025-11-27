@@ -499,3 +499,112 @@ a {
         border-radius: 8px;
     }
 }
+
+/* Search Page Styles */
+.search-hero {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.search-input-wrapper {
+    position: relative;
+    max-width: 700px;
+    margin: 0 auto;
+    display: flex;
+    gap: 1rem;
+}
+
+.large-search {
+    font-size: 1.2rem;
+    padding: 1rem 1.5rem;
+    border-radius: 50px;
+}
+
+.search-btn {
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+}
+
+.suggestions-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    margin-top: 0.5rem;
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 100;
+    text-align: left;
+}
+
+.suggestion-item {
+    padding: 0.75rem 1.5rem;
+    cursor: pointer;
+    border-bottom: 1px solid var(--glass-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.suggestion-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.filter-panel {
+    margin-bottom: 3rem;
+    padding: 1.5rem;
+}
+
+.filter-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+}
+
+.filter-content {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--glass-border);
+}
+
+.filter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.filter-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.trending-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.trending-tag {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.trending-tag:hover {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+}
+

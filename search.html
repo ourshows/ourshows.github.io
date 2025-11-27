@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search - OurShow</title>
+    <link rel="stylesheet" href="public/style.css">
+    <link rel="stylesheet" href="public/modal.css">
+    <link rel="stylesheet" href="themes.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="navbar" id="navbar">
+        <div class="container nav-content">
+            <a href="index.html" class="logo">OurShow</a>
+            <ul class="nav-links">
+                <li><a href="index.html" class="nav-link"><i class="fas fa-home"></i> <span>Home</span></a></li>
+                <li><a href="search.html" class="nav-link active"><i class="fas fa-search"></i> <span>Search</span></a>
+                </li>
+                <li><a href="ai.html" class="nav-link"><i class="fas fa-robot"></i> <span>AI Vibe</span></a></li>
+                <li><a href="communitychat.html" class="nav-link"><i class="fas fa-comments"></i> <span>Chat</span></a>
+                </li>
+                <li><a href="post.html" class="nav-link"><i class="fas fa-users"></i> <span>Feed</span></a></li>
+                <li><a href="watchanddownload.html" class="nav-link"><i class="fas fa-download"></i>
+                        <span>Download</span></a></li>
+                <li><a href="profile.html" class="nav-link"><i class="fas fa-user"></i> <span>Profile</span></a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container" style="margin-top: 6rem;">
+        <!-- Search Hero -->
+        <div class="search-hero">
+            <h1 class="page-title"
+                style="font-size: 2.5rem; font-weight: 800; margin-bottom: 1rem; background: linear-gradient(45deg, var(--primary-color), var(--accent-color)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                Find Your Next Obsession</h1>
+            <div class="search-input-wrapper">
+                <input type="text" id="advancedSearchInput" class="glass-input large-search"
+                    placeholder="Search movies, TV shows, people...">
+                <button id="searchBtn" class="glass-button search-btn"><i class="fas fa-search"></i></button>
+                <div id="searchSuggestions" class="suggestions-dropdown glass-panel" style="display: none;"></div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="glass-panel filter-panel">
+            <div class="filter-header" id="filterHeader">
+                <h3><i class="fas fa-sliders-h"></i> Advanced Filters</h3>
+                <i class="fas fa-chevron-down" id="filterToggleIcon"></i>
+            </div>
+            <div class="filter-content" id="filterContent" style="display: none;">
+                <div class="filter-grid">
+                    <div class="filter-group">
+                        <label>Type</label>
+                        <select id="filterType" class="glass-input">
+                            <option value="multi">All</option>
+                            <option value="movie">Movies</option>
+                            <option value="tv">TV Shows</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Genre</label>
+                        <select id="filterGenre" class="glass-input">
+                            <option value="">Any Genre</option>
+                            <!-- Populated by JS -->
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Year</label>
+                        <input type="number" id="filterYear" class="glass-input" placeholder="e.g. 2023">
+                    </div>
+                    <div class="filter-group">
+                        <label>Sort By</label>
+                        <select id="filterSort" class="glass-input">
+                            <option value="popularity.desc">Most Popular</option>
+                            <option value="vote_average.desc">Top Rated</option>
+                            <option value="primary_release_date.desc">Newest</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="filter-actions" style="display: flex; gap: 1rem;">
+                    <button class="glass-button" id="applyFiltersBtn">Apply Filters</button>
+                    <button class="glass-button" id="resetFiltersBtn"
+                        style="background: rgba(255,255,255,0.1);">Reset</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trending Searches -->
+        <div class="trending-searches-section" id="trendingSearchesSection">
+            <h3 class="section-title">Trending Searches</h3>
+            <div class="trending-tags" id="trendingTags">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
+        <!-- Results -->
+        <h2 class="section-title" id="resultsTitle" style="margin-top: 2rem; display: none;">Results</h2>
+        <div class="grid-container" id="resultsGrid"></div>
+        <button id="loadMoreBtn" class="load-more-btn"
+            style="display: none; margin: 3rem auto; display: block; width: 200px; padding: 1rem; background: var(--primary-color); color: white; border: none; border-radius: 50px; font-weight: 600; cursor: pointer; text-align: center;">Load
+            More</button>
+    </div>
+
+    <!-- Movie Details Modal -->
+    <div id="movieModal" class="modal" style="display: none;">
+        <div class="modal-content glass-panel">
+            <span class="modal-close" onclick="closeModal()">&times;</span>
+
+            <div class="modal-header">
+                <img id="modalPoster" src="" alt="Poster" class="modal-poster">
+                <div class="modal-header-info">
+                    <h2 id="modalTitle"></h2>
+                    <div class="modal-meta">
+                        <span class="rating-badge" id="modalRating"></span>
+                        <span id="modalYear"></span>
+                        <span id="modalRuntime"></span>
+                    </div>
+                    <p id="modalOverview"></p>
+
+                    <!-- Action Buttons -->
+                    <div class="modal-actions">
+                        <button class="glass-button" onclick="markAsWatched()"><i class="fas fa-check"></i>
+                            Watched</button>
+                        <button class="glass-button" onclick="addToWatchLater()"><i class="fas fa-clock"></i> Watch
+                            Later</button>
+                        <button class="glass-button" onclick="watchNow()"><i class="fas fa-play"></i> Watch Now</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="modal-tabs">
+                <button class="tab-btn active" onclick="switchTab('overview')">Overview</button>
+                <button class="tab-btn" onclick="switchTab('cast')">Cast & Crew</button>
+                <button class="tab-btn" onclick="switchTab('reviews')">Reviews</button>
+                <button class="tab-btn" onclick="switchTab('similar')">Similar</button>
+                <button class="tab-btn" onclick="switchTab('ai')">Ask AI</button>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="modal-body">
+                <!-- Overview Tab -->
+                <div id="tab-overview" class="tab-content active">
+                    <div id="modalTrailer"></div>
+                    <div id="modalGenres"></div>
+
+                    <!-- Rating System -->
+                    <div class="rating-section">
+                        <h3>Rate This Movie</h3>
+                        <div class="rating-buttons">
+                            <button class="rating-btn" data-rating="1" onclick="rateMovie(1)">😞 Bad</button>
+                            <button class="rating-btn" data-rating="2" onclick="rateMovie(2)">😐 One-Time Watch</button>
+                            <button class="rating-btn" data-rating="3" onclick="rateMovie(3)">🙂 Good</button>
+                            <button class="rating-btn" data-rating="4" onclick="rateMovie(4)">😃 Must Watch</button>
+                            <button class="rating-btn" data-rating="5" onclick="rateMovie(5)">🤩 Perfection</button>
+                        </div>
+                        <textarea id="reviewText" class="glass-input" placeholder="Write your review..."
+                            rows="4"></textarea>
+                        <button class="glass-button" onclick="submitReview()">Submit Review</button>
+                    </div>
+                </div>
+
+                <!-- Cast Tab -->
+                <div id="tab-cast" class="tab-content" style="display: none;">
+                    <h3>Cast</h3>
+                    <div id="modalCast" class="cast-grid"></div>
+                </div>
+
+                <!-- Reviews Tab -->
+                <div id="tab-reviews" class="tab-content" style="display: none;">
+                    <h3>User Reviews</h3>
+                    <div id="modalReviews"></div>
+                </div>
+
+                <!-- Similar Tab -->
+                <div id="tab-similar" class="tab-content" style="display: none;">
+                    <h3>Similar Titles</h3>
+                    <div id="modalSimilar" class="media-scroller"></div>
+                </div>
+
+                <!-- AI Chat Tab -->
+                <div id="tab-ai" class="tab-content" style="display: none;">
+                    <h3>Ask AI About This Movie</h3>
+                    <div id="aiChat" class="ai-chat-container"></div>
+                    <div class="ai-input-group">
+                        <input type="text" id="aiQuestion" class="glass-input"
+                            placeholder="Ask about facts, trivia, spoilers...">
+                        <button class="glass-button" onclick="askAI()"><i class="fas fa-paper-plane"></i> Ask</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="search.js" type="module"></script>
+</body>
+
+</html>
