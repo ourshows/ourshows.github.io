@@ -132,20 +132,6 @@
 
     --color-primary: #10b981;
     --color-primary-hover: #34d399;
-    --color-accent: #3b82f6;
-    --color-accent-hover: #60a5fa;
-
-    --glass-bg: rgba(6, 78, 59, 0.6);
-    --glass-border: rgba(52, 211, 153, 0.2);
-
-    --gradient-primary: linear-gradient(135deg, #10b981, #3b82f6);
-    --shadow-glow: 0 0 20px rgba(16, 185, 129, 0.4);
-}
-
-/* ============================================
-   THEME TRANSITION ANIMATIONS
-   ============================================ */
-body {
     transition: background-color 0.5s ease, color 0.5s ease;
 }
 

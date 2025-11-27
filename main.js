@@ -714,6 +714,8 @@ window.onclick = function (event) {
 
 const THEMES = [
     { name: 'Noir Dusk', class: 'theme-noir-dusk', icon: '🌙', default: true },
+    { name: 'Standard Light', class: 'theme-light-standard', icon: '⚪' },
+    { name: 'Standard Dark', class: 'theme-dark-standard', icon: '⚫' },
     { name: 'Sunny Matinee', class: 'theme-sunny-matinee', icon: '☀️' },
     { name: 'Retro Glitch', class: 'theme-retro-glitch', icon: '⚡' },
     { name: 'Forest Binge', class: 'theme-forest-binge', icon: '🌲' }
