@@ -22,26 +22,6 @@
     --transition-speed: 0.3s;
 }
 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-body {
-    font-family: var(--font-main);
-    background-color: var(--bg-darker);
-    color: var(--text-primary);
-    overflow-x: hidden;
-    min-height: 100vh;
-    background-image:
-        radial-gradient(circle at 10% 20%, rgba(76, 29, 149, 0.2) 0%, transparent 40%),
-        radial-gradient(circle at 90% 80%, rgba(219, 39, 119, 0.15) 0%, transparent 40%);
-}
-
-/* Typography */
-h1,
-h2,
 h3,
 h4,
 h5,
@@ -366,6 +346,7 @@ a {
 
 /* Mobile Nav (Bottom) */
 @media (max-width: 768px) {
+
     /* Container padding */
     .container {
         padding: 0 1rem;
