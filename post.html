@@ -92,39 +92,53 @@
         </div>
     </nav>
 
-    <div class="container feed-container" id="feedContainer">
+    <div class="container feed-container">
 
         <!-- Create Post -->
-        <div class="post-card">
-            <div class="post-header">
-                <div class="avatar" style="background: var(--accent-color);">JD</div>
-                <div>
-                    <div style="font-weight: 600;">John Doe</div>
-                    <div style="font-size: 0.8rem; color: var(--text-secondary);">2 hours ago</div>
-                </div>
+        <div class="glass-panel create-post" style="padding: 1.5rem;">
+            <div style="display: flex; gap: 1rem;">
+                <div class="avatar">Me</div>
+                <textarea class="glass-input" id="postContent" rows="3"
+                    placeholder="What did you watch recently?"></textarea>
             </div>
-            <p style="margin-bottom: 1rem;">Just watched Inception again. Still blows my mind every time! 🤯</p>
-
-            <div class="post-movie-card">
-                <img src="https://image.tmdb.org/t/p/w200/9gk7admal4zlWH9O9TxnP9obmHZ.jpg" alt="Inception">
-                <div>
-                    <div style="font-weight: 600;">Inception</div>
-                    <div style="font-size: 0.8rem;">2010 • Sci-Fi</div>
-                </div>
-            </div>
-
-            <div class="actions">
-                <div class="action-item"><i class="far fa-heart"></i> 24</div>
-                <div class="action-item"><i class="far fa-comment"></i> 5</div>
-                <div class="action-item"><i class="fas fa-share"></i> Share</div>
+            <div style="display: flex; justify-content: flex-end; margin-top: 1rem;">
+                <button class="glass-button" onclick="createPost()">Post</button>
             </div>
         </div>
-    </div>
+
+        <!-- Feed -->
+        <div id="feedList">
+            <!-- Mock Post -->
+            <div class="post-card">
+                <div class="post-header">
+                    <div class="avatar" style="background: var(--accent-color);">JD</div>
+                    <div>
+                        <div style="font-weight: 600;">John Doe</div>
+                        <div style="font-size: 0.8rem; color: var(--text-secondary);">2 hours ago</div>
+                    </div>
+                </div>
+                <p style="margin-bottom: 1rem;">Just watched Inception again. Still blows my mind every time! 🤯</p>
+
+                <div class="post-movie-card">
+                    <img src="https://image.tmdb.org/t/p/w200/9gk7admal4zlWH9O9TxnP9obmHZ.jpg" alt="Inception">
+                    <div>
+                        <div style="font-weight: 600;">Inception</div>
+                        <div style="font-size: 0.8rem;">2010 • Sci-Fi</div>
+                    </div>
+                </div>
+
+                <div class="actions">
+                    <div class="action-item"><i class="far fa-heart"></i> 24</div>
+                    <div class="action-item"><i class="far fa-comment"></i> 5</div>
+                    <div class="action-item"><i class="fas fa-share"></i> Share</div>
+                </div>
+            </div>
+        </div>
 
     </div>
 
     <script src="config.js"></script>
-    <script src="post.js" type="module"></script>
+    <script src="post.js"></script>
 </body>
 
 </html>

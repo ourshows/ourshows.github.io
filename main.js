@@ -1,20 +1,16 @@
-import {
-    auth,
-    onAuthStateChanged,
-    db,
-    addDoc,
-    collection,
-    serverTimestamp,
-    setDoc,
-    doc
-} from './firebase-config.js';
+// Import Firebase modules
+import { auth, db, onAuthStateChanged, collection, addDoc, serverTimestamp, doc, setDoc } from './firebase-config.js';
+
+// Import custom lists
 import { CUSTOM_LISTS, REGIONAL_CONFIG } from './custom_lists.js';
 
+// Global state variables
 let currentUser = null;
 let currentMovieId = null;
 let currentMovieData = null;
 let userRating = null;
 
+// Initialize auth state listener
 onAuthStateChanged(auth, (user) => {
     currentUser = user;
     console.log('Auth state changed:', user ? user.email : 'Not logged in');
