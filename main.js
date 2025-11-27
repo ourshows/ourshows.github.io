@@ -54,8 +54,8 @@ async function initApp() {
     }
 
     // Initialize theme system FIRST
-    loadTheme();
-    setupThemeSwitcher();
+    initThemeVibe();
+    setupAppearanceUI();
 
     setupNavbar();
     setupSearch();
@@ -709,191 +709,154 @@ window.onclick = function (event) {
 }
 
 // ============================================
-// THEME SWITCHING SYSTEM
+// GLOBAL THEME & VIBE CONTROLLER
 // ============================================
 
-const THEMES = [
-    { name: 'Noir Dusk', class: 'theme-noir-dusk', icon: '🌙', default: true },
-    { name: 'Standard Light', class: 'theme-light-standard', icon: '⚪' },
-    { name: 'Standard Dark', class: 'theme-dark-standard', icon: '⚫' },
-    { name: 'Sunny Matinee', class: 'theme-sunny-matinee', icon: '☀️' },
-    { name: 'Retro Glitch', class: 'theme-retro-glitch', icon: '⚡' },
-    { name: 'Forest Binge', class: 'theme-forest-binge', icon: '🌲' }
+const THEME_SETTINGS = [
+    { name: 'Dark Mode', class: 'theme-dark', default: true },
+    { name: 'Light Mode', class: 'theme-light' }
 ];
 
-/**
- * Apply a theme to the body element
- * @param {string} themeClass - The CSS class name of the theme
- */
+const VIBE_SETTINGS = [
+    { name: 'Default Vibe', class: 'vibe-default', default: true },
+    { name: 'Retro Glitch', class: 'vibe-retro-glitch' },
+    { name: 'Forest Binge', class: 'vibe-forest-binge' }
+];
+
 function applyTheme(themeClass) {
-    // Remove all existing theme classes
-    THEMES.forEach(theme => {
-        document.body.classList.remove(theme.class);
-    });
-
-    // Add the new theme class
+    // Remove all theme classes
+    THEME_SETTINGS.forEach(t => document.body.classList.remove(t.class));
+    // Add new theme class
     document.body.classList.add(themeClass);
-
-    // Update active state in UI
-    updateThemeUI(themeClass);
-
+    // Save
+    localStorage.setItem('os_theme', themeClass);
+    // Update UI
+    updateAppearanceUI();
     console.log(`Theme applied: ${themeClass}`);
 }
 
-/**
- * Save theme preference to localStorage
- * @param {string} themeClass - The CSS class name of the theme to save
- */
-function saveTheme(themeClass) {
-    try {
-        localStorage.setItem('ourshow-theme', themeClass);
-        console.log(`Theme saved: ${themeClass}`);
-    } catch (error) {
-        console.error('Error saving theme:', error);
-    }
+function applyVibe(vibeClass) {
+    // Remove all vibe classes
+    VIBE_SETTINGS.forEach(v => document.body.classList.remove(v.class));
+    // Add new vibe class
+    document.body.classList.add(vibeClass);
+    // Save
+    localStorage.setItem('os_vibe', vibeClass);
+    // Update UI
+    updateAppearanceUI();
+    console.log(`Vibe applied: ${vibeClass}`);
 }
 
-/**
- * Load theme from localStorage or apply default
- */
-function loadTheme() {
-    try {
-        const savedTheme = localStorage.getItem('ourshow-theme');
-
-        if (savedTheme) {
-            // Apply saved theme
-            applyTheme(savedTheme);
-        } else {
-            // Apply default theme
-            const defaultTheme = THEMES.find(t => t.default);
-            applyTheme(defaultTheme.class);
-        }
-    } catch (error) {
-        console.error('Error loading theme:', error);
-        // Fallback to default theme
-        const defaultTheme = THEMES.find(t => t.default);
+function initThemeVibe() {
+    // Load Theme
+    const savedTheme = localStorage.getItem('os_theme');
+    if (savedTheme && THEME_SETTINGS.some(t => t.class === savedTheme)) {
+        applyTheme(savedTheme);
+    } else {
+        const defaultTheme = THEME_SETTINGS.find(t => t.default);
         applyTheme(defaultTheme.class);
     }
+
+    // Load Vibe
+    const savedVibe = localStorage.getItem('os_vibe');
+    if (savedVibe && VIBE_SETTINGS.some(v => v.class === savedVibe)) {
+        applyVibe(savedVibe);
+    } else {
+        const defaultVibe = VIBE_SETTINGS.find(t => t.default);
+        applyVibe(defaultVibe.class);
+    }
 }
 
-/**
- * Setup theme switcher UI and event listeners
- */
-function setupThemeSwitcher() {
-    // Create theme switcher HTML
-    const themeSwitcherHTML = `
-        <div class="theme-switcher">
-            <button class="theme-switcher-toggle" id="themeSwitcherToggle" title="Change Theme">
-                🎨
-            </button>
-            <div class="theme-options" id="themeOptions">
-                ${THEMES.map(theme => `
-                    <button class="theme-option" data-theme="${theme.class}" title="${theme.name}">
-                        ${theme.icon} ${theme.name}
-                    </button>
-                `).join('')}
+function setupAppearanceUI() {
+    // Remove old switcher if exists
+    const oldSwitcher = document.querySelector('.theme-switcher');
+    if (oldSwitcher) oldSwitcher.remove();
+    const oldToggle = document.getElementById('appearanceToggle');
+    if (oldToggle) oldToggle.remove();
+    const oldPanel = document.getElementById('appearancePanel');
+    if (oldPanel) oldPanel.remove();
+
+    const html = `
+        <button class="appearance-toggle" id="appearanceToggle" title="Appearance Settings">
+            <i class="fas fa-palette"></i>
+        </button>
+        <div class="appearance-panel" id="appearancePanel">
+            <div class="appearance-section">
+                <h4>Theme</h4>
+                <div class="theme-btn-group">
+                    ${THEME_SETTINGS.map(t => `
+                        <button class="theme-btn ${document.body.classList.contains(t.class) ? 'active' : ''}" 
+                                onclick="applyTheme('${t.class}')">
+                            ${t.name.replace(' Mode', '')}
+                        </button>
+                    `).join('')}
+                </div>
+            </div>
+            <div class="appearance-section">
+                <h4>Vibe</h4>
+                <select class="vibe-select" onchange="applyVibe(this.value)">
+                    ${VIBE_SETTINGS.map(v => `
+                        <option value="${v.class}" ${document.body.classList.contains(v.class) ? 'selected' : ''}>
+                            ${v.name}
+                        </option>
+                    `).join('')}
+                </select>
             </div>
         </div>
     `;
 
-    // Inject into body
-    document.body.insertAdjacentHTML('beforeend', themeSwitcherHTML);
+    document.body.insertAdjacentHTML('beforeend', html);
 
-    // Add event listeners
-    const toggle = document.getElementById('themeSwitcherToggle');
-    const options = document.getElementById('themeOptions');
+    // Toggle Logic
+    const toggle = document.getElementById('appearanceToggle');
+    const panel = document.getElementById('appearancePanel');
 
-    // Toggle theme options
     toggle.addEventListener('click', (e) => {
         e.stopPropagation();
-        options.classList.toggle('active');
+        panel.classList.toggle('active');
     });
 
-    // Close options when clicking outside
+    panel.addEventListener('click', (e) => {
+        e.stopPropagation();
+    });
+
+    // Close on click outside
     document.addEventListener('click', (e) => {
-        if (!e.target.closest('.theme-switcher')) {
-            options.classList.remove('active');
+        if (!panel.contains(e.target) && !toggle.contains(e.target)) {
+            panel.classList.remove('active');
+        }
+    });
+}
+
+function updateAppearanceUI() {
+    // Update Theme Buttons
+    document.querySelectorAll('.theme-btn').forEach(btn => {
+        const onclick = btn.getAttribute('onclick');
+        if (onclick) {
+            const match = onclick.match(/'([^']+)'/);
+            if (match) {
+                const themeClass = match[1];
+                if (document.body.classList.contains(themeClass)) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            }
         }
     });
 
-    // Theme selection
-    document.querySelectorAll('.theme-option').forEach(button => {
-        button.addEventListener('click', () => {
-            const themeClass = button.dataset.theme;
-            applyTheme(themeClass);
-            saveTheme(themeClass);
-            options.classList.remove('active');
-
-            // Optional: Show confirmation
-            showThemeChangeNotification(button.textContent.trim());
+    // Update Vibe Select
+    const select = document.querySelector('.vibe-select');
+    if (select) {
+        VIBE_SETTINGS.forEach(v => {
+            if (document.body.classList.contains(v.class)) {
+                select.value = v.class;
+            }
         });
-    });
-
-    // Initialize active state
-    const currentTheme = localStorage.getItem('ourshow-theme') || THEMES.find(t => t.default).class;
-    updateThemeUI(currentTheme);
+    }
 }
 
-/**
- * Update theme UI to show active theme
- * @param {string} themeClass - The active theme class
- */
-function updateThemeUI(themeClass) {
-    document.querySelectorAll('.theme-option').forEach(button => {
-        if (button.dataset.theme === themeClass) {
-            button.classList.add('active');
-        } else {
-            button.classList.remove('active');
-        }
-    });
-}
-
-/**
- * Show a brief notification when theme changes
- * @param {string} themeName - Name of the theme
- */
-function showThemeChangeNotification(themeName) {
-    // Create notification element
-    const notification = document.createElement('div');
-    notification.style.cssText = `
-        position: fixed;
-        top: 80px;
-        right: 20px;
-        background: var(--gradient-primary);
-        color: white;
-        padding: 1rem 1.5rem;
-        border-radius: 12px;
-        box-shadow: var(--shadow-lg);
-        z-index: 10000;
-        animation: slideIn 0.3s ease;
-        font-weight: 600;
-    `;
-    notification.textContent = `Theme changed to ${themeName}`;
-
-    // Add animation
-    const style = document.createElement('style');
-    style.textContent = `
-        @keyframes slideIn {
-            from { transform: translateX(400px); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        @keyframes slideOut {
-            from { transform: translateX(0); opacity: 1; }
-            to { transform: translateX(400px); opacity: 0; }
-        }
-    `;
-    document.head.appendChild(style);
-
-    document.body.appendChild(notification);
-
-    // Remove after 2 seconds
-    setTimeout(() => {
-        notification.style.animation = 'slideOut 0.3s ease';
-        setTimeout(() => notification.remove(), 300);
-    }, 2000);
-}
-
-// Expose theme functions globally if needed
+// Expose to window
 window.applyTheme = applyTheme;
-window.saveTheme = saveTheme;
-window.loadTheme = loadTheme;
+window.applyVibe = applyVibe;
+window.initThemeVibe = initThemeVibe;
