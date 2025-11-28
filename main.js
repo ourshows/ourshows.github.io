@@ -720,7 +720,15 @@ const THEME_SETTINGS = [
 const VIBE_SETTINGS = [
     { name: 'Default Vibe', class: 'vibe-default', default: true },
     { name: 'Retro Glitch', class: 'vibe-retro-glitch' },
-    { name: 'Forest Binge', class: 'vibe-forest-binge' }
+    { name: 'Forest Binge', class: 'vibe-forest-binge' },
+    { name: 'Tropical Sunset', class: 'vibe-tropical-sunset' },
+    { name: 'Cyber Noir', class: 'vibe-cyber-noir' },
+    { name: 'Vintage Sepia', class: 'vibe-vintage-sepia' },
+    { name: 'Cherry Blossom', class: 'vibe-cherry-blossom' },
+    { name: 'Industrial Grit', class: 'vibe-industrial-grit' },
+    { name: 'Cosmic Drift', class: 'vibe-cosmic-drift' },
+    { name: 'Pixel Arcade', class: 'vibe-pixel-arcade' },
+    { name: 'Zen Garden', class: 'vibe-zen-garden' }
 ];
 
 function applyTheme(themeClass) {
@@ -732,7 +740,9 @@ function applyTheme(themeClass) {
     localStorage.setItem('os_theme', themeClass);
     // Update UI
     updateAppearanceUI();
+    // Debug logging
     console.log(`Theme applied: ${themeClass}`);
+    console.log(`Body className: ${document.body.className}`);
 }
 
 function applyVibe(vibeClass) {

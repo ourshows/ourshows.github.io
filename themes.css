@@ -1,99 +1,151 @@
 /* ============================================
-   GLOBAL THEME & VIBE CONTROLLER
+   GLOBAL THEME & VIBE CONTROLLER - FINAL FIX
    ============================================ */
+
+/* CRITICAL: Force body background to respect theme variables */
+body {
+    background-color: var(--os-bg-primary) !important;
+    color: var(--os-text-color) !important;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
 
 /* 1. Base Variables & Mapping (Backward Compatibility) */
 :root {
-    /* Map new generic variables to legacy specific names used in style.css */
-    --color-background: var(--bg-primary);
-    --color-background-secondary: var(--bg-secondary);
-    --color-surface: var(--bg-surface);
-    --color-border: var(--border-color);
+    /* Map OS-prefixed variables to legacy names used in style.css */
+    --color-background: var(--os-bg-primary);
+    --color-background-secondary: var(--os-bg-secondary);
+    --color-surface: var(--os-bg-surface);
+    --color-border: var(--os-border-color);
 
-    --color-text-primary: var(--text-primary);
-    --color-text-secondary: var(--text-secondary);
-    --color-text-muted: var(--text-muted);
+    --color-text-primary: var(--os-text-color);
+    --color-text-secondary: var(--os-text-secondary);
+    --color-text-muted: var(--os-text-muted);
 
-    --color-primary: var(--accent-primary);
-    --color-primary-hover: var(--accent-hover);
-    --color-accent: var(--accent-secondary);
+    --color-primary: var(--os-accent-primary);
+    --color-primary-hover: var(--os-accent-hover);
+    --color-accent: var(--os-accent-secondary);
 
     /* Glassmorphism */
-    --glass-bg: var(--bg-glass);
-    --glass-border: var(--border-glass);
+    --glass-bg: var(--os-bg-glass);
+    --glass-border: var(--os-border-glass);
 
     /* Shadows */
-    --shadow-glow: var(--effect-glow);
+    --shadow-glow: var(--os-effect-glow);
 
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    --gradient-primary: linear-gradient(135deg, var(--os-accent-primary), var(--os-accent-secondary));
 
     /* Defaults (Fallback) */
-    --bg-primary: #0f172a;
-    --text-primary: #f8fafc;
-    --accent-primary: #3b82f6;
+    --os-bg-primary: #0f172a;
+    --os-text-color: #f8fafc;
+    --os-accent-primary: #3b82f6;
 }
 
 /* 2. Themes (Base Colors) */
 .theme-dark {
-    --bg-primary: #0f172a;
-    --bg-secondary: #1e293b;
-    --bg-surface: rgba(30, 41, 59, 0.6);
-    --bg-glass: rgba(15, 23, 42, 0.7);
+    --os-bg-primary: #0f172a;
+    --os-bg-secondary: #1e293b;
+    --os-bg-surface: rgba(30, 41, 59, 0.6);
+    --os-bg-glass: rgba(15, 23, 42, 0.7);
 
-    --text-primary: #f8fafc;
-    --text-secondary: #94a3b8;
-    --text-muted: #64748b;
+    --os-text-color: #f8fafc;
+    --os-text-secondary: #94a3b8;
+    --os-text-muted: #64748b;
 
-    --border-color: rgba(255, 255, 255, 0.1);
-    --border-glass: rgba(255, 255, 255, 0.1);
+    --os-border-color: rgba(255, 255, 255, 0.1);
+    --os-border-glass: rgba(255, 255, 255, 0.1);
 }
 
 .theme-light {
-    --bg-primary: #f8fafc;
-    --bg-secondary: #e2e8f0;
-    --bg-surface: rgba(255, 255, 255, 0.6);
-    --bg-glass: rgba(255, 255, 255, 0.7);
+    --os-bg-primary: #f8fafc;
+    --os-bg-secondary: #e2e8f0;
+    --os-bg-surface: rgba(255, 255, 255, 0.6);
+    --os-bg-glass: rgba(255, 255, 255, 0.7);
 
-    --text-primary: #0f172a;
-    --text-secondary: #475569;
-    --text-muted: #94a3b8;
+    --os-text-color: #0f172a;
+    --os-text-secondary: #475569;
+    --os-text-muted: #94a3b8;
 
-    --border-color: rgba(0, 0, 0, 0.1);
-    --border-glass: rgba(0, 0, 0, 0.1);
+    --os-border-color: rgba(0, 0, 0, 0.1);
+    --os-border-glass: rgba(0, 0, 0, 0.1);
 }
 
 /* 3. Vibes (Accents & Effects) */
 .vibe-default {
-    --accent-primary: #3b82f6;
-    /* Blue */
-    --accent-hover: #2563eb;
-    --accent-secondary: #8b5cf6;
-    /* Purple */
-    --effect-glow: 0 0 20px rgba(59, 130, 246, 0.5);
+    --os-accent-primary: #3b82f6;
+    --os-accent-hover: #2563eb;
+    --os-accent-secondary: #8b5cf6;
+    --os-effect-glow: 0 0 20px rgba(59, 130, 246, 0.5);
 }
 
 .vibe-retro-glitch {
-    --accent-primary: #00ffff;
-    /* Cyan */
-    --accent-hover: #5dfdff;
-    --accent-secondary: #ff00ff;
-    /* Magenta */
-    --effect-glow: 0 0 20px rgba(0, 255, 255, 0.6);
+    --os-accent-primary: #00ffff;
+    --os-accent-hover: #5dfdff;
+    --os-accent-secondary: #ff00ff;
+    --os-effect-glow: 0 0 20px rgba(0, 255, 255, 0.6);
 }
 
 .vibe-forest-binge {
-    --accent-primary: #10b981;
-    /* Emerald */
-    --accent-hover: #059669;
-    --accent-secondary: #34d399;
-    /* Light Green */
-    --effect-glow: 0 0 20px rgba(16, 185, 129, 0.5);
+    --os-accent-primary: #10b981;
+    --os-accent-hover: #059669;
+    --os-accent-secondary: #34d399;
+    --os-effect-glow: 0 0 20px rgba(16, 185, 129, 0.5);
 }
 
-/* Transitions */
-body {
-    transition: background-color 0.3s, color 0.3s;
+.vibe-tropical-sunset {
+    --os-accent-primary: #f97316;
+    --os-accent-hover: #fb923c;
+    --os-accent-secondary: #ec4899;
+    --os-effect-glow: 0 0 20px rgba(249, 115, 22, 0.5);
+}
+
+.vibe-cyber-noir {
+    --os-accent-primary: #8b5cf6;
+    --os-accent-hover: #a78bfa;
+    --os-accent-secondary: #06b6d4;
+    --os-effect-glow: 0 0 20px rgba(139, 92, 246, 0.6);
+}
+
+.vibe-vintage-sepia {
+    --os-accent-primary: #d97706;
+    --os-accent-hover: #f59e0b;
+    --os-accent-secondary: #92400e;
+    --os-effect-glow: 0 0 20px rgba(217, 119, 6, 0.4);
+}
+
+.vibe-cherry-blossom {
+    --os-accent-primary: #ec4899;
+    --os-accent-hover: #f472b6;
+    --os-accent-secondary: #fbbf24;
+    --os-effect-glow: 0 0 20px rgba(236, 72, 153, 0.5);
+}
+
+.vibe-industrial-grit {
+    --os-accent-primary: #71717a;
+    --os-accent-hover: #a1a1aa;
+    --os-accent-secondary: #ef4444;
+    --os-effect-glow: 0 0 20px rgba(113, 113, 122, 0.5);
+}
+
+.vibe-cosmic-drift {
+    --os-accent-primary: #6366f1;
+    --os-accent-hover: #818cf8;
+    --os-accent-secondary: #d946ef;
+    --os-effect-glow: 0 0 20px rgba(99, 102, 241, 0.6);
+}
+
+.vibe-pixel-arcade {
+    --os-accent-primary: #22c55e;
+    --os-accent-hover: #4ade80;
+    --os-accent-secondary: #eab308;
+    --os-effect-glow: 0 0 20px rgba(34, 197, 94, 0.5);
+}
+
+.vibe-zen-garden {
+    --os-accent-primary: #14b8a6;
+    --os-accent-hover: #2dd4bf;
+    --os-accent-secondary: #84cc16;
+    --os-effect-glow: 0 0 20px rgba(20, 184, 166, 0.5);
 }
 
 /* UI Controls Styles */
@@ -102,11 +154,11 @@ body {
     bottom: 100px;
     right: 20px;
     z-index: 1000;
-    background: var(--bg-glass);
+    background: var(--os-bg-glass);
     backdrop-filter: blur(12px);
     padding: 1rem;
     border-radius: 16px;
-    border: 1px solid var(--border-glass);
+    border: 1px solid var(--os-border-glass);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     display: none;
     flex-direction: column;
@@ -127,7 +179,7 @@ body {
     height: 50px;
     border-radius: 50%;
     background: var(--gradient-primary);
-    border: 2px solid var(--border-glass);
+    border: 2px solid var(--os-border-glass);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -145,14 +197,14 @@ body {
 .appearance-section h4 {
     margin: 0 0 0.5rem 0;
     font-size: 0.9rem;
-    color: var(--text-secondary);
+    color: var(--os-text-secondary);
     text-transform: uppercase;
     letter-spacing: 1px;
 }
 
 .theme-btn-group {
     display: flex;
-    background: var(--bg-secondary);
+    background: var(--os-bg-secondary);
     border-radius: 8px;
     padding: 4px;
 }
@@ -164,14 +216,14 @@ body {
     padding: 0.5rem;
     border-radius: 6px;
     cursor: pointer;
-    color: var(--text-secondary);
+    color: var(--os-text-secondary);
     font-weight: 600;
     transition: all 0.3s;
 }
 
 .theme-btn.active {
-    background: var(--bg-surface);
-    color: var(--text-primary);
+    background: var(--os-bg-surface);
+    color: var(--os-text-color);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
@@ -179,8 +231,8 @@ body {
     width: 100%;
     padding: 0.5rem;
     border-radius: 8px;
-    background: var(--bg-surface);
-    border: 1px solid var(--border-glass);
-    color: var(--text-primary);
+    background: var(--os-bg-surface);
+    border: 1px solid var(--os-border-glass);
+    color: var(--os-text-color);
     cursor: pointer;
 }
