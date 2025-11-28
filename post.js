@@ -107,5 +107,60 @@ async function submitPost() {
     }
 }
 
+// User Search Logic
+window.searchUsers = async function () {
+    const queryText = document.getElementById('userSearchInput').value.trim().toLowerCase();
+    const resultsContainer = document.getElementById('userSearchResults');
+
+    if (!queryText) {
+        resultsContainer.style.display = 'none';
+        return;
+    }
+
+    resultsContainer.style.display = 'block';
+    resultsContainer.innerHTML = '<div style="padding: 1rem; text-align: center;">Searching...</div>';
+
+    try {
+        // In a real app, this would query Firebase 'users' collection
+        // For now, we'll simulate a search with some mock data + current user if matches
+
+        const mockUsers = [
+            { id: '1', name: 'Alice Smith', handle: '@alice_s', avatar: 'https://ui-avatars.com/api/?name=Alice+Smith' },
+            { id: '2', name: 'Bob Jones', handle: '@bobby_j', avatar: 'https://ui-avatars.com/api/?name=Bob+Jones' },
+            { id: '3', name: 'Charlie Day', handle: '@charlie', avatar: 'https://ui-avatars.com/api/?name=Charlie+Day' }
+        ];
+
+        const filtered = mockUsers.filter(u =>
+            u.name.toLowerCase().includes(queryText) ||
+            u.handle.toLowerCase().includes(queryText)
+        );
+
+        if (filtered.length === 0) {
+            resultsContainer.innerHTML = '<div style="padding: 1rem; text-align: center; color: var(--text-secondary);">No users found.</div>';
+            return;
+        }
+
+        resultsContainer.innerHTML = filtered.map(user => `
+            <div style="display: flex; align-items: center; gap: 1rem; padding: 1rem; border-bottom: 1px solid var(--glass-border);">
+                <img src="${user.avatar}" style="width: 40px; height: 40px; border-radius: 50%;">
+                <div style="flex: 1;">
+                    <div style="font-weight: 600;">${user.name}</div>
+                    <div style="font-size: 0.8rem; color: var(--text-secondary);">${user.handle}</div>
+                </div>
+                <button class="glass-button" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Follow</button>
+            </div>
+        `).join('');
+
+    } catch (error) {
+        console.error('Error searching users:', error);
+        resultsContainer.innerHTML = '<div style="padding: 1rem; text-align: center; color: red;">Error searching users.</div>';
+    }
+};
+
+// Add enter key listener for search
+document.getElementById('userSearchInput')?.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') window.searchUsers();
+});
+
 // Expose to global scope
 window.submitPost = submitPost;

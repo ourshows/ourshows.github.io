@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Social Feed - OurShow</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="public/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -83,16 +83,40 @@
 
 <body>
 
-    <nav class="navbar">
+    <nav class="navbar" id="navbar">
         <div class="container nav-content">
             <a href="index.html" class="logo">OurShow Feed</a>
-            <ul class="nav-links">
-                <li><a href="index.html" class="nav-link">Home</a></li>
+
+            <button class="mobile-menu-btn" id="mobileMenuBtn">
+                <i class="fas fa-bars"></i>
+            </button>
+
+            <ul class="nav-links" id="navLinks">
+                <li><a href="index.html" class="nav-link"><i class="fas fa-home"></i> <span>Home</span></a></li>
+                <li><a href="discovery.html" class="nav-link"><i class="fas fa-search"></i> <span>Search</span></a></li>
+                <li><a href="collection.html" class="nav-link"><i class="fas fa-layer-group"></i>
+                        <span>Collections</span></a></li>
+                <li><a href="ai.html" class="nav-link"><i class="fas fa-robot"></i> <span>AI Vibe</span></a></li>
+                <li><a href="post.html" class="nav-link active"><i class="fas fa-users"></i> <span>Feed</span></a></li>
+                <li><a href="profile.html" class="nav-link"><i class="fas fa-user"></i> <span>Profile</span></a></li>
             </ul>
         </div>
     </nav>
 
-    <div class="container feed-container">
+    <div class="container feed-container" style="margin-top: 6rem;">
+
+        <!-- Find Friends Section -->
+        <div class="glass-panel" style="padding: 1.5rem; margin-bottom: 2rem;">
+            <h3 style="margin-bottom: 1rem;">Find Friends</h3>
+            <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                <input type="text" id="userSearchInput" class="glass-input" placeholder="Search users by name..."
+                    style="flex: 1;">
+                <button class="glass-button" onclick="searchUsers()"><i class="fas fa-search"></i></button>
+            </div>
+            <div id="userSearchResults" style="display: none;">
+                <!-- Results will be injected here -->
+            </div>
+        </div>
 
         <!-- Create Post -->
         <div class="glass-panel create-post" style="padding: 1.5rem;">
@@ -107,7 +131,7 @@
         </div>
 
         <!-- Feed -->
-        <div id="feedList">
+        <div id="feedList" id="feedContainer">
             <!-- Mock Post -->
             <div class="post-card">
                 <div class="post-header">
@@ -138,7 +162,8 @@
     </div>
 
     <script src="config.js"></script>
-    <script src="post.js"></script>
+    <script type="module" src="post.js"></script>
+    <script src="main.js"></script> <!-- For navbar logic -->
 </body>
 
 </html>

@@ -47,6 +47,50 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
+// --- API Helper ---
+async function fetchTMDB(endpoint, params = {}) {
+    console.log(`Fetching TMDB: ${endpoint}`, params);
+    if (!window.APP_CONFIG) {
+        console.error("APP_CONFIG not loaded");
+        return null;
+    }
+
+    const url = new URL(`${window.APP_CONFIG.TMDB_BASE_URL}${endpoint}`);
+    url.searchParams.append('api_key', window.APP_CONFIG.TMDB_API_KEY);
+
+    // Add default params
+    url.searchParams.append('language', 'en-US');
+    url.searchParams.append('include_adult', 'false');
+
+    // Add custom params
+    Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
+
+    try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`API Error: ${response.status}`);
+        const data = await response.json();
+        console.log(`TMDB Success: ${endpoint}`, data);
+        return data;
+    } catch (error) {
+        console.error('Fetch error:', error);
+        return null;
+    }
+}
+
+async function renderCustomList(containerId, listConfig, mediaType) {
+    if (!listConfig) return;
+
+    // If listConfig is an array of IDs (manual curation)
+    if (Array.isArray(listConfig)) {
+        // Not implemented for now, assuming query based
+        return;
+    }
+
+    // If listConfig is a query object
+    const data = await fetchTMDB('/discover/' + mediaType, listConfig);
+    if (data) renderCards(data.results, containerId, mediaType);
+}
+
 async function initApp() {
     if (!window.APP_CONFIG) {
         console.error("Config not found!");
@@ -120,6 +164,9 @@ function addMoreLinks() {
 // --- UI Setup ---
 function setupNavbar() {
     const navbar = document.getElementById('navbar');
+    const mobileBtn = document.getElementById('mobileMenuBtn');
+    const navLinks = document.getElementById('navLinks');
+
     window.addEventListener('scroll', () => {
         if (window.scrollY > 50) {
             navbar.classList.add('scrolled');
@@ -127,6 +174,29 @@ function setupNavbar() {
             navbar.classList.remove('scrolled');
         }
     });
+
+    if (mobileBtn && navLinks) {
+        mobileBtn.addEventListener('click', () => {
+            navLinks.classList.toggle('active');
+            const icon = mobileBtn.querySelector('i');
+            if (navLinks.classList.contains('active')) {
+                icon.classList.remove('fa-bars');
+                icon.classList.add('fa-times');
+            } else {
+                icon.classList.remove('fa-times');
+                icon.classList.add('fa-bars');
+            }
+        });
+
+        // Close menu when clicking a link
+        navLinks.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => {
+                navLinks.classList.remove('active');
+                mobileBtn.querySelector('i').classList.remove('fa-times');
+                mobileBtn.querySelector('i').classList.add('fa-bars');
+            });
+        });
+    }
 }
 
 function setupSearch() {
@@ -388,11 +458,19 @@ function renderCards(items, containerId, defaultType) {
 
         const card = document.createElement('div');
         card.className = 'media-card';
+
+        const rating = item.vote_average ? item.vote_average.toFixed(1) : 'N/A';
+        const year = (item.release_date || item.first_air_date || '').split('-')[0];
+        const title = item.title || item.name;
+
         card.innerHTML = `
-            <img class="media-poster" src="${window.APP_CONFIG.TMDB_IMAGE_SMALL_URL}${item.poster_path}" loading="lazy" alt="${item.title || item.name}">
+            <div class="media-poster-container">
+                <img class="media-poster" src="${window.APP_CONFIG.TMDB_IMAGE_SMALL_URL}${item.poster_path}" loading="lazy" alt="${title}">
+                <div class="card-rating-badge">★ ${rating}</div>
+            </div>
             <div class="media-info">
-                <div class="media-title">${item.title || item.name}</div>
-                <div class="media-year">${(item.release_date || item.first_air_date || '').split('-')[0]}</div>
+                <div class="media-title" title="${title}">${title}</div>
+                <div class="media-year">(${year})</div>
             </div>
         `;
 
