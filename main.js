@@ -202,6 +202,12 @@ function setupNavbar() {
 function setupSearch() {
     const input = document.getElementById('searchInput');
     const resultsContainer = document.getElementById('searchResults');
+
+    // Return early if search elements don't exist on this page
+    if (!input || !resultsContainer) {
+        return;
+    }
+
     let debounceTimer;
 
     input.addEventListener('input', (e) => {
@@ -225,21 +231,6 @@ function setupSearch() {
     });
 }
 
-// --- Data Fetching ---
-async function fetchTMDB(endpoint, params = {}) {
-    const url = new URL(`${window.APP_CONFIG.TMDB_BASE_URL}${endpoint}`);
-    url.searchParams.append('api_key', window.APP_CONFIG.TMDB_API_KEY);
-    Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
-
-    try {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error('Network response was not ok');
-        return await response.json();
-    } catch (error) {
-        console.error("TMDB Fetch Error:", error);
-        return null;
-    }
-}
 
 async function loadHeroContent() {
     const data = await fetchTMDB('/trending/all/day');
@@ -948,3 +939,9 @@ function updateAppearanceUI() {
 window.applyTheme = applyTheme;
 window.applyVibe = applyVibe;
 window.initThemeVibe = initThemeVibe;
+window.fetchTMDB = fetchTMDB;
+window.renderCustomList = renderCustomList;
+console.log('Exposed to window:', {
+    fetchTMDB: typeof window.fetchTMDB,
+    renderCustomList: typeof window.renderCustomList
+});
