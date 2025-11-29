@@ -349,23 +349,6 @@ async function renderHybridContentRow(containerId, endpoint, mediaType = 'movie'
     renderCards(finalResults.slice(0, 20), containerId, mediaType);
 }
 
-/**
- * Renders a custom curated list
- * @param {string} containerId - DOM element ID for the scroller
- * @param {Array} tmdbIds - Array of TMDB IDs
- * @param {string} mediaType - 'movie' or 'tv'
- */
-async function renderCustomList(containerId, tmdbIds, mediaType = 'movie') {
-    const items = [];
-
-    // Fetch details for each TMDB ID
-    for (const id of tmdbIds.slice(0, 15)) {
-        const data = await fetchTMDB(`/${mediaType}/${id}`);
-        if (data) items.push(data);
-    }
-
-    renderCards(items, containerId, mediaType);
-}
 
 /**
  * Load new content rows
