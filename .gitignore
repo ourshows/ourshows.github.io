@@ -1,9 +1,24 @@
-# Dependencies
-node_modules/
+# API Keys and Sensitive Configuration
+config.js
 
 # Firebase
-.firebase/
-firebase-debug.log
+firebase-config.js
+.firebaserc
+
+# Environment variables
+.env
+.env.local
+
+# Node modules
+node_modules/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
 
 # IDE
 .vscode/
@@ -11,14 +26,6 @@ firebase-debug.log
 *.swp
 *.swo
 
-# OS
-.DS_Store
-Thumbs.db
-
-# Logs
-*.log
-
-# Backup files
-*_backup.*
-*.bak
-FIREBASE_SETUP_GUIDE.md
+# Build outputs
+dist/
+build/

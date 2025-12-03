@@ -107,6 +107,7 @@
     border-bottom-color: var(--primary-color);
 }
 
+/* Tab Content Display */
 .tab-content {
     display: none;
     animation: fadeIn 0.3s ease-in-out;
@@ -169,72 +170,116 @@
     display: flex;
     gap: 0.5rem;
     flex-wrap: wrap;
+    margin: 1rem 0;
 }
 
 .rating-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    color: var(--text-secondary);
     padding: 0.5rem 1rem;
     border-radius: 8px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 2px solid var(--glass-border);
-    color: var(--text-primary);
     cursor: pointer;
     transition: all var(--transition-speed);
     font-size: 0.9rem;
+    font-weight: 500;
 }
 
 .rating-btn:hover {
     background: rgba(255, 255, 255, 0.1);
-    border-color: var(--primary-color);
     transform: translateY(-2px);
 }
 
 .rating-btn.selected {
     background: var(--primary-color);
-    border-color: var(--primary-color);
     color: white;
+    border-color: var(--primary-color);
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
 }
 
 /* Mobile Modal Adjustments */
 @media (max-width: 768px) {
     .modal {
-        padding: 1rem 0;
+        padding: 0;
+        background: var(--bg-dark);
+        /* Full screen on mobile */
     }
 
     .modal-content {
         padding: 1rem;
+        border-radius: 0;
+        border: none;
+        min-height: 100vh;
+        background: transparent;
+    }
+
+    .close-modal {
+        top: 0.5rem;
+        right: 0.5rem;
+        z-index: 20;
+        background: rgba(0, 0, 0, 0.5);
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: white;
     }
 
     .modal-body {
         flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .modal-poster-container {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        margin-top: 1rem;
     }
 
     .modal-poster {
-        width: 100%;
-        max-width: 300px;
-        margin: 0 auto;
+        width: 180px;
+        /* Smaller poster on mobile */
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-title {
+        font-size: 1.5rem;
+        text-align: center;
+    }
+
+    .modal-meta {
+        justify-content: center;
+        flex-wrap: wrap;
+        font-size: 0.85rem;
     }
 
     .modal-actions {
         flex-direction: column;
+        gap: 0.75rem;
     }
 
     .modal-actions .glass-button {
         width: 100%;
+        justify-content: center;
     }
 
     .modal-tabs {
         overflow-x: auto;
-        scrollbar-width: none;
-    }
-
-    .modal-tabs::-webkit-scrollbar {
-        display: none;
+        white-space: nowrap;
+        padding-bottom: 0.5rem;
+        margin: 1.5rem -1rem;
+        /* Full width scroll */
+        padding: 0 1rem 0.5rem 1rem;
+        -webkit-overflow-scrolling: touch;
     }
 
     .tab-btn {
-        padding: 0.6rem 1rem;
+        padding: 0.5rem 1rem;
         font-size: 0.9rem;
-        white-space: nowrap;
     }
 
     .cast-grid {
