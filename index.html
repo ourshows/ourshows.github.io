@@ -4,292 +4,352 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OurShow - Discover Movies & TV</title>
+    <title>OurShow - Watch Movies & TV Shows</title>
     <link rel="stylesheet" href="public/style.css">
     <link rel="stylesheet" href="public/modal.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="themes.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
-</div>
-<div class="nav-actions" id="headerActions">
-    <!-- Profile and Theme buttons injected by JS -->
-</div>
-</div>
-</nav>
 
-<!-- Hero Section -->
-<header class="hero-section">
-    <div class="hero-background" id="heroBackground"></div>
-    <div class="hero-content">
-        <span class="hero-tag">Trending Now</span>
-        <h1 class="hero-title" id="heroTitle">Loading...</h1>
-        <p class="hero-overview" id="heroOverview"></p>
-        <div class="hero-actions">
-            <button class="glass-button primary" onclick="watchHeroMovie()"><i class="fas fa-play"></i> Watch
-                Now</button>
-            <button class="glass-button" onclick="addToWatchLater()"><i class="fas fa-plus"></i> My List</button>
-        </div>
-    </div>
-</header>
+<body>
 
-<!-- Main Content -->
-<main class="main-container">
+    <nav class="navbar" id="navbar">
+        <div class="container nav-content">
+            <a href="index.html" class="logo">OurShow</a>
 
-    <!-- Trending Section -->
-    <section class="content-section">
-        <div class="section-header">
-            <h2 class="section-title">Trending Now</h2>
-            <div class="section-actions">
-                <button class="filter-chip active" onclick="filterTrending('all')">All</button>
-                <button class="filter-chip" onclick="filterTrending('movie')">Movies</button>
-                <button class="filter-chip" onclick="filterTrending('tv')">TV Shows</button>
+            <div class="nav-right">
+                <ul class="nav-links" id="navLinks">
+                    <li><a href="index.html" class="nav-link active"><i class="fas fa-home"></i> Home</a></li>
+                    <li><a href="discovery.html" class="nav-link"><i class="fas fa-compass"></i> Discover</a></li>
+                    <li><a href="collection.html" class="nav-link"><i class="fas fa-bookmark"></i> Collections</a></li>
+                    <li><a href="ai.html" class="nav-link"><i class="fas fa-robot"></i> AI Assistant</a></li>
+                </ul>
+
+                <div class="nav-actions">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="Search..." id="searchInput">
+                        <div class="search-results" id="searchResults"></div>
+                    </div>
+
+                    <button class="icon-btn theme-toggle" onclick="toggleTheme()" title="Toggle Theme">
+                        <i class="fas fa-moon"></i>
+                    </button>
+
+                    <button class="auth-btn" id="navAuthBtn">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </button>
+
+                    <button class="mobile-menu-btn" id="mobileMenuBtn">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                </div>
             </div>
         </div>
-        <div class="media-scroller" id="trendingScroller">
-            <!-- Skeleton Loading State -->
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-        </div>
-    </section>
+    </nav>
 
-    <!-- Top Rated -->
-    <section class="content-section" style="margin-top: 3rem;">
-        <h2 class="section-title">Top Rated</h2>
-        <div class="media-scroller" id="topRatedScroller">
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-        </div>
-    </section>
-
-    <!-- Upcoming -->
-    <section class="content-section" style="margin-top: 3rem;">
-        <h2 class="section-title">Coming Soon</h2>
-        <div class="media-scroller" id="upcomingScroller">
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-        </div>
-    </section>
-
-    <!-- Now Playing -->
-    <section class="content-section" style="margin-top: 3rem;">
-        <h2 class="section-title">Now in Theaters</h2>
-        <div class="media-scroller" id="nowPlayingScroller">
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-        </div>
-    </section>
-
-    <!-- Nepali Content Section -->
-    <section class="content-section" style="margin-top: 3rem;">
-        <h2 class="section-title">Nepali Hits 🇳🇵</h2>
-        <div class="media-scroller" id="nepaliScroller">
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-        </div>
-    </section>
-
-    <!-- Hindi Content Section -->
-    <section class="content-section" style="margin-top: 3rem; margin-bottom: 3rem;">
-        <h2 class="section-title">Bollywood & Hindi 🇮🇳</h2>
-        <div class="media-scroller" id="hindiScroller">
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-        </div>
-    </section>
-
-    <!-- New to Stream -->
-    <section class="content-section" style="margin-top: 3rem;">
-        <h2 class="section-title">New to Stream</h2>
-        <div class="media-scroller" id="newToStreamScroller">
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-        </div>
-    </section>
-
-    <!-- Highest Grossing -->
-    <section class="content-section" style="margin-top: 3rem;">
-        <h2 class="section-title">Highest Grossing (2020+)</h2>
-        <div class="media-scroller" id="highestGrossingScroller">
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-        </div>
-    </section>
-
-    <!-- Cult Classics -->
-    <section class="content-section" style="margin-top: 3rem;">
-        <h2 class="section-title">Cult Classics</h2>
-        <div class="media-scroller" id="cultClassicsScroller">
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-        </div>
-    </section>
-
-    <!-- Underrated Gems -->
-    <section class="content-section" style="margin-top: 3rem;">
-        <h2 class="section-title">Underrated Gems</h2>
-        <div class="media-scroller" id="underratedGemsScroller">
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-        </div>
-    </section>
-
-    <!-- Action & Thrillers -->
-    <section class="content-section" style="margin-top: 3rem;">
-        <h2 class="section-title">Action & Thrillers</h2>
-        <div class="media-scroller" id="actionThrillersScroller">
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-        </div>
-    </section>
-
-    <!-- Drama & Romance -->
-    <section class="content-section" style="margin-top: 3rem; margin-bottom: 3rem;">
-        <h2 class="section-title">Drama & Romance</h2>
-        <div class="media-scroller" id="dramaRomanceScroller">
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-            <div class="media-card skeleton"></div>
-        </div>
-    </section>
-
-</main>
-
-<!-- Movie Details Modal -->
-<div id="movieModal" class="modal" style="display: none;">
-    <div class="modal-content glass-panel">
-        <span class="close-modal" onclick="closeModal()">&times;</span>
-        <div class="modal-body">
-            <div class="modal-poster-container">
-                <img id="modalPoster" src="" alt="Movie Poster" class="modal-poster">
+    <!-- Hero Section -->
+    <header class="hero-section">
+        <div class="hero-background" id="heroBackground"></div>
+        <div class="hero-content">
+            <span class="hero-tag">Trending Now</span>
+            <h1 class="hero-title" id="heroTitle">Loading...</h1>
+            <p class="hero-overview" id="heroOverview"></p>
+            <div class="hero-actions">
+                <button class="glass-button primary" onclick="watchHeroMovie()"><i class="fas fa-play"></i> Watch
+                    Now</button>
+                <button class="glass-button" onclick="addToWatchLater()"><i class="fas fa-plus"></i> My List</button>
             </div>
-            <div class="modal-info">
+        </div>
+    </header>
 
-                <!-- Overview Tab -->
-                <div id="tab-overview" class="tab-content active">
-                    <p id="modalOverview" class="modal-overview">Overview text...</p>
-                    <div id="modalGenres" style="margin-top: 1rem;"></div>
-                    <div id="modalTrailer" style="margin-top: 2rem;"></div>
+    <!-- Main Content -->
+    <main class="main-container">
+
+        <!-- Trending Section -->
+        <section class="content-section">
+            <div class="section-header">
+                <h2 class="section-title">Trending Now</h2>
+                <div class="section-actions">
+                    <button class="filter-chip active" onclick="filterTrending('all')">All</button>
+                    <button class="filter-chip" onclick="filterTrending('movie')">Movies</button>
+                    <button class="filter-chip" onclick="filterTrending('tv')">TV Shows</button>
                 </div>
+            </div>
+            <div class="media-scroller" id="trendingScroller">
+                <!-- Skeleton Loading State -->
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+            </div>
+        </section>
 
-                <!-- Cast Tab -->
-                <div id="tab-cast" class="tab-content">
-                    <div class="cast-grid" id="modalCast"></div>
+        <!-- Top Rated -->
+        <section class="content-section" style="margin-top: 3rem;">
+            <h2 class="section-title">Top Rated</h2>
+            <div class="media-scroller" id="topRatedScroller">
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+            </div>
+        </section>
+
+        <!-- Upcoming -->
+        <section class="content-section" style="margin-top: 3rem;">
+            <h2 class="section-title">Coming Soon</h2>
+            <div class="media-scroller" id="upcomingScroller">
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+            </div>
+        </section>
+
+        <!-- Now Playing -->
+        <section class="content-section" style="margin-top: 3rem;">
+            <h2 class="section-title">Now in Theaters</h2>
+            <div class="media-scroller" id="nowPlayingScroller">
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+            </div>
+        </section>
+
+        <!-- Nepali Content Section -->
+        <section class="content-section" style="margin-top: 3rem;">
+            <h2 class="section-title">Nepali Hits 🇳🇵</h2>
+            <div class="media-scroller" id="nepaliScroller">
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+            </div>
+        </section>
+
+        <!-- Hindi Content Section -->
+        <section class="content-section" style="margin-top: 3rem; margin-bottom: 3rem;">
+            <h2 class="section-title">Bollywood & Hindi 🇮🇳</h2>
+            <div class="media-scroller" id="hindiScroller">
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+            </div>
+        </section>
+
+        <!-- New to Stream -->
+        <section class="content-section" style="margin-top: 3rem;">
+            <h2 class="section-title">New to Stream</h2>
+            <div class="media-scroller" id="newToStreamScroller">
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+            </div>
+        </section>
+
+        <!-- Highest Grossing -->
+        <section class="content-section" style="margin-top: 3rem;">
+            <h2 class="section-title">Highest Grossing (2020+)</h2>
+            <div class="media-scroller" id="highestGrossingScroller">
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+            </div>
+        </section>
+
+        <!-- Cult Classics -->
+        <section class="content-section" style="margin-top: 3rem;">
+            <h2 class="section-title">Cult Classics</h2>
+            <div class="media-scroller" id="cultClassicsScroller">
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+            </div>
+        </section>
+
+        <!-- Underrated Gems -->
+        <section class="content-section" style="margin-top: 3rem;">
+            <h2 class="section-title">Underrated Gems</h2>
+            <div class="media-scroller" id="underratedGemsScroller">
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+            </div>
+        </section>
+
+        <!-- Action & Thrillers -->
+        <section class="content-section" style="margin-top: 3rem;">
+            <h2 class="section-title">Action & Thrillers</h2>
+            <div class="media-scroller" id="actionThrillersScroller">
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+            </div>
+        </section>
+
+        <!-- Drama & Romance -->
+        <section class="content-section" style="margin-top: 3rem; margin-bottom: 3rem;">
+            <h2 class="section-title">Drama & Romance</h2>
+            <div class="media-scroller" id="dramaRomanceScroller">
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+                <div class="media-card skeleton"></div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Movie Details Modal -->
+    <div id="movieModal" class="modal" style="display: none;">
+        <div class="modal-content glass-panel">
+            <span class="close-modal" onclick="closeModal()">&times;</span>
+            <div class="modal-body">
+                <div class="modal-poster-container">
+                    <img id="modalPoster" src="" alt="Movie Poster" class="modal-poster">
                 </div>
+                <div class="modal-info">
+                    <!-- Modal Header -->
+                    <h2 id="modalTitle" style="margin-bottom: 1rem;">Movie Title</h2>
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
+                        <span style="color: #ffd700;">★ <span id="modalRating">N/A</span></span>
+                        <span id="modalYear">Year</span>
+                        <span id="modalRuntime">Runtime</span>
+                    </div>
 
-                <!-- Reviews Tab -->
-                <div id="tab-reviews" class="tab-content">
-                    <div id="modalReviews"></div>
-                    <div class="add-review-section"
-                        style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--glass-border);">
-                        <h3>Add Your Review</h3>
-                        <div class="rating-select" style="margin: 1rem 0; display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                            <button class="rating-btn" onclick="rateMovie(1)" data-rating="1">Bad 🔴</button>
-                            <button class="rating-btn" onclick="rateMovie(2)" data-rating="2">One Time Watch
-                                🟠</button>
-                            <button class="rating-btn" onclick="rateMovie(3)" data-rating="3">Good 🟡</button>
-                            <button class="rating-btn" onclick="rateMovie(4)" data-rating="4">Go For It 🟢</button>
-                            <button class="rating-btn" onclick="rateMovie(5)" data-rating="5">Perfection 🌟</button>
+                    <!-- Tab Navigation -->
+                    <div class="modal-tabs"
+                        style="display: flex; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 0.5rem;">
+                        <button class="tab-btn active" onclick="switchTab('overview')">Overview</button>
+                        <button class="tab-btn" onclick="switchTab('cast')">Cast & Crew</button>
+                        <button class="tab-btn" onclick="switchTab('reviews')">Reviews</button>
+                        <button class="tab-btn" onclick="switchTab('similar')">Similar</button>
+                        <button class="tab-btn" onclick="switchTab('ai')">Ask AI</button>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                        <button class="glass-button primary" onclick="watchNow()"><i class="fas fa-play"></i> Watch
+                            Now</button>
+                        <button class="glass-button" onclick="addToWatchLater()"><i class="fas fa-plus"></i> My
+                            List</button>
+                        <button class="glass-button" onclick="markAsWatched()"><i class="fas fa-check"></i> Mark
+                            Watched</button>
+                    </div>
+
+                    <!-- Overview Tab -->
+                    <div id="tab-overview" class="tab-content active">
+                        <p id="modalOverview" class="modal-overview">Overview text...</p>
+                        <div id="modalGenres" style="margin-top: 1rem;"></div>
+                        <div id="modalTrailer" style="margin-top: 2rem;"></div>
+                    </div>
+
+                    <!-- Cast Tab -->
+                    <div id="tab-cast" class="tab-content">
+                        <div class="cast-grid" id="modalCast"></div>
+                    </div>
+
+                    <!-- Reviews Tab -->
+                    <div id="tab-reviews" class="tab-content">
+                        <div id="modalReviews"></div>
+                        <div class="add-review-section"
+                            style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--glass-border);">
+                            <h3>Add Your Review</h3>
+                            <div class="rating-select"
+                                style="margin: 1rem 0; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                                <button class="rating-btn" onclick="rateMovie(1)" data-rating="1">Bad 🔴</button>
+                                <button class="rating-btn" onclick="rateMovie(2)" data-rating="2">One Time Watch
+                                    🟠</button>
+                                <button class="rating-btn" onclick="rateMovie(3)" data-rating="3">Good 🟡</button>
+                                <button class="rating-btn" onclick="rateMovie(4)" data-rating="4">Go For It 🟢</button>
+                                <button class="rating-btn" onclick="rateMovie(5)" data-rating="5">Perfection 🌟</button>
+                            </div>
+                            <textarea id="reviewText" class="glass-input" rows="3"
+                                placeholder="Write your review..."></textarea>
+                            <button class="glass-button" onclick="submitReview()" style="margin-top: 1rem;">Submit
+                                Review</button>
                         </div>
-                        <textarea id="reviewText" class="glass-input" rows="3"
-                            placeholder="Write your review..."></textarea>
-                        <button class="glass-button" onclick="submitReview()" style="margin-top: 1rem;">Submit
-                            Review</button>
                     </div>
-                </div>
 
-                <!-- Similar Tab -->
-                <div id="tab-similar" class="tab-content">
-                    <h3>Similar Movies</h3>
-                    <div class="media-scroller" id="modalSimilar"></div>
-                </div>
+                    <!-- Similar Tab -->
+                    <div id="tab-similar" class="tab-content">
+                        <h3>Similar Movies</h3>
+                        <div class="media-scroller" id="modalSimilar"></div>
+                    </div>
 
-                <!-- AI Tab -->
-                <div id="tab-ai" class="tab-content">
-                    <h3>Ask AI</h3>
-                    <div class="ai-chat-container" id="aiChat"
-                        style="min-height: 300px; max-height: 400px; overflow-y: auto; margin-bottom: 1rem; padding: 1rem; background: rgba(0, 0, 0, 0.2); border-radius: 12px;">
-                        <div class="ai-message ai">
-                            <p>Hi! I'm your AI movie assistant. Ask me anything about this movie!</p>
+                    <!-- AI Tab -->
+                    <div id="tab-ai" class="tab-content">
+                        <h3>Ask AI</h3>
+                        <div class="ai-chat-container" id="aiChat"
+                            style="min-height: 300px; max-height: 400px; overflow-y: auto; margin-bottom: 1rem; padding: 1rem; background: rgba(0, 0, 0, 0.2); border-radius: 12px;">
+                            <div class="ai-message ai">
+                                <p>Hi! I'm your AI movie assistant. Ask me anything about this movie!</p>
+                            </div>
                         </div>
-                    </div>
 
-                    <!-- Quick Prompts -->
-                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem;">
-                        <button class="glass-button" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;"
-                            onclick="document.getElementById('aiQuestion').value='How is the movie?'; askAI();">How
-                            is the movie?</button>
-                        <button class="glass-button" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;"
-                            onclick="document.getElementById('aiQuestion').value='What is the plot?'; askAI();">What
-                            is the plot?</button>
-                        <button class="glass-button" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;"
-                            onclick="document.getElementById('aiQuestion').value='Who are the main actors?'; askAI();">Main
-                            actors?</button>
-                        <button class="glass-button" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;"
-                            onclick="document.getElementById('aiQuestion').value='Is it worth watching?'; askAI();">Worth
-                            watching?</button>
-                    </div>
+                        <!-- Quick Prompts -->
+                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem;">
+                            <button class="glass-button" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;"
+                                onclick="document.getElementById('aiQuestion').value='How is the movie?'; askAI();">How
+                                is the movie?</button>
+                            <button class="glass-button" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;"
+                                onclick="document.getElementById('aiQuestion').value='What is the plot?'; askAI();">What
+                                is the plot?</button>
+                            <button class="glass-button" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;"
+                                onclick="document.getElementById('aiQuestion').value='Who are the main actors?'; askAI();">Main
+                                actors?</button>
+                            <button class="glass-button" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;"
+                                onclick="document.getElementById('aiQuestion').value='Is it worth watching?'; askAI();">Worth
+                                watching?</button>
+                        </div>
 
-                    <div class="ai-input-group" style="display: flex; gap: 1rem;">
-                        <input type="text" id="aiQuestion" class="glass-input" placeholder="Ask about this movie..."
-                            style="flex: 1; padding: 0.75rem; background: rgba(255, 255, 255, 0.1); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-primary);">
-                        <button class="glass-button" onclick="askAI()">Send</button>
+                        <div class="ai-input-group" style="display: flex; gap: 1rem;">
+                            <input type="text" id="aiQuestion" class="glass-input" placeholder="Ask about this movie..."
+                                style="flex: 1; padding: 0.75rem; background: rgba(255, 255, 255, 0.1); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-primary);">
+                            <button class="glass-button" onclick="askAI()">Send</button>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Search Modal -->
-<div id="searchModal" class="modal" style="display: none;">
-    <div class="modal-content glass-panel search-modal-content">
-        <span class="close-modal" onclick="closeSearch()">&times;</span>
-        <div class="search-container">
-            <i class="fas fa-search search-icon"></i>
-            <input type="text" id="modalSearchInput" placeholder="Search for movies, TV shows..."
-                class="search-input-large" autofocus>
+    <!-- Search Modal -->
+    <div id="searchModal" class="modal" style="display: none;">
+        <div class="modal-content glass-panel search-modal-content">
+            <span class="close-modal" onclick="closeSearch()">&times;</span>
+            <div class="search-container">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" id="modalSearchInput" placeholder="Search for movies, TV shows..."
+                    class="search-input-large" autofocus>
+            </div>
+            <div id="searchResults" class="search-results-grid"></div>
         </div>
-        <div id="searchResults" class="search-results-grid"></div>
     </div>
-</div>
 
-<script src="config.js"></script>
-<script type="module" src="main.js"></script>
+    <script src="config.js"></script>
+    <script type="module" src="main.js"></script>
 </body>
 
 </html>

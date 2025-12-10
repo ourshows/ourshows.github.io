@@ -1,21 +1,29 @@
+// Import Firebase modules
+import { auth, db, onAuthStateChanged, collection, getDocs } from './firebase-config.js';
+
+// Quick prompt function
+function usePrompt(promptText) {
+    document.getElementById('vibeInput').value = promptText;
+    findVibe();
+}
+
 async function findVibe() {
     const input = document.getElementById('vibeInput').value;
     if (!input) return;
 
     showLoading(true);
 
-    // Construct Prompt for Gemini
     const prompt = `
         You are a movie recommendation expert. 
         User Request: "${input}".
         
-        Return a JSON object with a list of 5 movie recommendations. 
+        Return a JSON object with a list of 5 movie or series recommendations. 
         Format: { "recommendations": [ { "title": "Movie Title", "year": "2020", "reason": "Why it fits" } ] }
         Do not include markdown formatting, just raw JSON.
     `;
 
     try {
-        const response = await callGemini(prompt);
+        const response = await callHuggingFace(prompt);
         const data = JSON.parse(cleanJson(response));
 
         displayResults(data.recommendations);
@@ -31,8 +39,6 @@ async function findVibe() {
 }
 
 async function roastMyTaste() {
-    // In a real app, we'd fetch the user's watchlist/history here.
-    // For now, we'll ask them to input their favorite movies.
     const input = document.getElementById('vibeInput').value;
     if (!input) {
         alert("Enter your favorite movies in the box above to get roasted!");
@@ -47,7 +53,7 @@ async function roastMyTaste() {
     `;
 
     try {
-        const response = await callGemini(prompt);
+        const response = await callHuggingFace(prompt);
         const textDiv = document.getElementById('aiTextResponse');
         textDiv.textContent = response;
         textDiv.style.display = 'block';
@@ -59,23 +65,110 @@ async function roastMyTaste() {
     }
 }
 
-async function callGemini(prompt) {
-    if (!window.APP_CONFIG || !window.APP_CONFIG.GEMINI_API_KEY) {
-        throw new Error("Gemini Key Missing");
+async function getPersonalizedRecs() {
+    showLoading(true);
+
+    try {
+        // Get current user
+        const user = auth.currentUser;
+        if (!user) {
+            alert("Please log in to get personalized recommendations!");
+            window.location.href = 'login.html';
+            return;
+        }
+
+        // Fetch user's watchlist from Firebase
+        const watchlistRef = collection(db, 'users', user.uid, 'watchlist');
+        const watchlistSnapshot = await getDocs(watchlistRef);
+
+        if (watchlistSnapshot.empty) {
+            alert("Your watchlist is empty! Add some movies first.");
+            showLoading(false);
+            return;
+        }
+
+        // Extract movie titles from watchlist
+        const watchedMovies = [];
+        watchlistSnapshot.forEach((doc) => {
+            const data = doc.data();
+            if (data.movieTitle) {
+                watchedMovies.push(data.movieTitle);
+            }
+        });
+
+        const movieList = watchedMovies.slice(0, 10).join(', ');
+
+        const prompt = `
+            Based on these movies in the user's watchlist: ${movieList}.
+            
+            Recommend 5 similar movies or series they would love.
+            Format: { "recommendations": [ { "title": "Movie Title", "year": "2020", "reason": "Why it fits their taste" } ] }
+            Do not include markdown formatting, just raw JSON.
+        `;
+
+        const response = await callHuggingFace(prompt);
+        const data = JSON.parse(cleanJson(response));
+
+        displayResults(data.recommendations);
+        document.getElementById('aiTextResponse').style.display = 'none';
+
+    } catch (e) {
+        console.error(e);
+        document.getElementById('aiTextResponse').textContent = "Couldn't fetch your watchlist. Try again!";
+        document.getElementById('aiTextResponse').style.display = 'block';
+    } finally {
+        showLoading(false);
+    }
+}
+
+async function callHuggingFace(prompt) {
+    if (!window.APP_CONFIG || !window.APP_CONFIG.HUGGINGFACE_API_KEY) {
+        throw new Error("Hugging Face API key not configured");
     }
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${window.APP_CONFIG.GEMINI_API_KEY}`;
+    const HF_API_KEY = window.APP_CONFIG.HUGGINGFACE_API_KEY;
+    const HF_MODEL = "meta-llama/Llama-3.2-3B-Instruct";
+    const url = `https://api-inference.huggingface.co/models/${HF_MODEL}`;
 
     const response = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Authorization': `Bearer ${HF_API_KEY}`,
+            'Content-Type': 'application/json'
+        },
         body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }]
+            inputs: prompt,
+            parameters: {
+                max_new_tokens: 300,
+                temperature: 0.7,
+                top_p: 0.9,
+                return_full_text: false
+            }
         })
     });
 
+    if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Hugging Face API Error:', errorData);
+
+        if (errorData.error && errorData.error.includes('loading')) {
+            throw new Error('AI model is warming up. Please try again in a few seconds.');
+        }
+
+        throw new Error(`API Error: ${errorData.error || response.statusText}`);
+    }
+
     const data = await response.json();
-    return data.candidates[0].content.parts[0].text;
+
+    // Hugging Face returns an array with generated text
+    if (Array.isArray(data) && data[0]?.generated_text) {
+        return data[0].generated_text;
+    } else if (typeof data === 'string') {
+        return data;
+    } else {
+        console.error('Unexpected API response:', data);
+        throw new Error('Invalid response format from AI.');
+    }
 }
 
 function cleanJson(text) {
@@ -121,7 +214,7 @@ async function displayResults(recommendations) {
 }
 
 async function searchTMDB(query, year) {
-    const url = new URL(`${window.APP_CONFIG.TMDB_BASE_URL}/search/movie`);
+    const url = new URL(`${window.APP_CONFIG.TMDB_BASE_URL}/search/multi`);
     url.searchParams.append('api_key', window.APP_CONFIG.TMDB_API_KEY);
     url.searchParams.append('query', query);
     if (year) url.searchParams.append('year', year);
@@ -138,3 +231,9 @@ async function searchTMDB(query, year) {
 function showLoading(show) {
     document.getElementById('loading').style.display = show ? 'block' : 'none';
 }
+
+// Expose functions to window for onclick handlers
+window.usePrompt = usePrompt;
+window.findVibe = findVibe;
+window.roastMyTaste = roastMyTaste;
+window.getPersonalizedRecs = getPersonalizedRecs;

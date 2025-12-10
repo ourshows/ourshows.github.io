@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Discover Users - OurShow</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="public/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -42,281 +42,235 @@
     <nav class="navbar">
         <div class="container nav-content">
             <a href="index.html" class="logo">OurShow</a>
-            <!DOCTYPE html>
-            <html lang="en">
+            <ul class="nav-links">
+                <li><a href="index.html" class="nav-link">Home</a></li>
+            </ul>
+        </div>
+    </nav>
 
-            <head>
-                <meta charset="UTF-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>Discover Users - OurShow</title>
-                <link rel="stylesheet" href="style.css">
-                <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap"
-                    rel="stylesheet">
-                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-                <style>
-                    .user-card {
-                        display: flex;
-                        align-items: center;
-                        gap: 1rem;
-                        padding: 1rem;
-                        border-bottom: 1px solid var(--glass-border);
-                        transition: background 0.2s;
-                    }
+    <!-- Search Hero Section -->
+    <section class="search-hero container" style="margin-top: 6rem;">
+        <h1 class="section-title" style="text-align: center; margin-bottom: 2rem;">Discover Content</h1>
 
-                    .user-card:hover {
-                        background: rgba(255, 255, 255, 0.05);
-                    }
+        <div class="search-input-wrapper">
+            <input type="text" id="mainSearchInput" class="glass-input large-search" placeholder="Search for movies...">
+            <button class="glass-button search-btn"
+                onclick="performSearch(document.getElementById('mainSearchInput').value)">
+                <i class="fas fa-search"></i>
+            </button>
 
-                    .user-avatar {
-                        width: 50px;
-                        height: 50px;
-                        border-radius: 50%;
-                        background: var(--primary-color);
-                    }
+            <!-- Search Results Dropdown -->
+            <div class="glass-panel suggestions-dropdown" id="search-results-dropdown">
+                <div id="autofillSection" style="display: none;">
+                    <div id="autofillResults"></div>
+                </div>
 
-                    .follow-btn {
-                        margin-left: auto;
-                        padding: 0.5rem 1rem;
-                        font-size: 0.8rem;
-                    }
-                </style>
-            </head>
-
-            <body>
-
-                <nav class="navbar">
-                    <div class="container nav-content">
-                        <a href="index.html" class="logo">OurShow</a>
-                        <ul class="nav-links">
-                            <li><a href="index.html" class="nav-link">Home</a></li>
-                        </ul>
+                <div id="trendingSection">
+                    <div style="padding: 1rem; border-bottom: 1px solid var(--glass-border);">
+                        <small
+                            style="color: var(--text-secondary); text-transform: uppercase; font-weight: bold;">Trending
+                            Searches</small>
                     </div>
-                </nav>
-
-                <!-- Search Hero Section -->
-                <section class="search-hero container" style="margin-top: 6rem;">
-                    <h1 class="section-title" style="text-align: center; margin-bottom: 2rem;">Discover Content</h1>
-
-                    <div class="search-input-wrapper">
-                        <input type="text" id="mainSearchInput" class="glass-input large-search"
-                            placeholder="Search for movies...">
-                        <button class="glass-button search-btn"
-                            onclick="performSearch(document.getElementById('mainSearchInput').value)">
-                            <i class="fas fa-search"></i>
-                        </button>
-
-                        <!-- Search Results Dropdown -->
-                        <div class="glass-panel suggestions-dropdown" id="search-results-dropdown">
-                            <div id="autofillSection" style="display: none;">
-                                <div id="autofillResults"></div>
-                            </div>
-
-                            <div id="trendingSection">
-                                <div style="padding: 1rem; border-bottom: 1px solid var(--glass-border);">
-                                    <small
-                                        style="color: var(--text-secondary); text-transform: uppercase; font-weight: bold;">Trending
-                                        Searches</small>
-                                </div>
-                                <div class="trending-tags" id="trendingChips" style="padding: 1rem;">
-                                    <!-- Trending chips injected here -->
-                                </div>
-                            </div>
-
-                            <div id="historySection" style="display: none;">
-                                <div style="padding: 1rem; border-bottom: 1px solid var(--glass-border);">
-                                    <small
-                                        style="color: var(--text-secondary); text-transform: uppercase; font-weight: bold;">Recent
-                                        Searches</small>
-                                </div>
-                                <div id="historyList"></div>
-                            </div>
-
-                            <div id="aiFallbackSection" style="display: none; padding: 2rem; text-align: center;">
-                                <p style="margin-bottom: 1rem;">No exact matches found.</p>
-                                <button class="glass-button" id="aiFallbackBtn">
-                                    <i class="fas fa-robot"></i> Ask AI for Recommendations
-                                </button>
-                            </div>
-                        </div>
+                    <div class="trending-tags" id="trendingChips" style="padding: 1rem;">
+                        <!-- Trending chips injected here -->
                     </div>
+                </div>
 
-                    <!-- Search Scopes -->
-                    <div style="display: flex; justify-content: center; gap: 1rem; margin-top: 2rem;">
-                        <button class="glass-button scope-btn active" data-scope="movie"
-                            onclick="toggleSearchScope('movie')">Movies</button>
-                        <button class="glass-button scope-btn" data-scope="tv" onclick="toggleSearchScope('tv')">TV
-                            Series</button>
-                        <button class="glass-button scope-btn" data-scope="person"
-                            onclick="toggleSearchScope('person')">People</button>
+                <div id="historySection" style="display: none;">
+                    <div style="padding: 1rem; border-bottom: 1px solid var(--glass-border);">
+                        <small
+                            style="color: var(--text-secondary); text-transform: uppercase; font-weight: bold;">Recent
+                            Searches</small>
                     </div>
-                </section>
+                    <div id="historyList"></div>
+                </div>
 
-                <!-- Filter Panel -->
-                <div class="container">
-                    <div class="glass-panel filter-panel" id="filter-controls-panel">
-                        <div class="filter-header" id="filterToggleBtn" onclick="toggleFilterPanel()">
-                            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                <i class="fas fa-sliders-h"></i> Filters
-                            </div>
-                            <i class="fas fa-chevron-down"></i>
-                        </div>
+                <div id="aiFallbackSection" style="display: none; padding: 2rem; text-align: center;">
+                    <p style="margin-bottom: 1rem;">No exact matches found.</p>
+                    <button class="glass-button" id="aiFallbackBtn">
+                        <i class="fas fa-robot"></i> Ask AI for Recommendations
+                    </button>
+                </div>
+            </div>
+        </div>
 
-                        <div class="filter-content">
-                            <div class="filter-grid">
-                                <div class="filter-group">
-                                    <label>Sort By</label>
-                                    <select class="glass-input" id="sortBySelect">
-                                        <option value="popularity.desc">Most Popular</option>
-                                        <option value="vote_average.desc">Top Rated</option>
-                                        <option value="primary_release_date.desc">Newest</option>
-                                    </select>
-                                </div>
-                                <div class="filter-group">
-                                    <label>Language</label>
-                                    <select class="glass-input" id="languageSelect">
-                                        <option value="">All Languages</option>
-                                        <option value="en">English</option>
-                                        <option value="ne">Nepali</option>
-                                        <option value="hi">Hindi</option>
-                                        <option value="ko">Korean</option>
-                                        <option value="ja">Japanese</option>
-                                    </select>
-                                </div>
-                                <div class="filter-group">
-                                    <label>Year Range</label>
-                                    <div style="display: flex; gap: 0.5rem;">
-                                        <input type="number" class="glass-input" id="yearFrom" placeholder="From">
-                                        <input type="number" class="glass-input" id="yearTo" placeholder="To">
-                                    </div>
-                                </div>
-                            </div>
+        <!-- Search Scopes -->
+        <div style="display: flex; justify-content: center; gap: 1rem; margin-top: 2rem;">
+            <button class="glass-button scope-btn active" data-scope="movie"
+                onclick="toggleSearchScope('movie')">Movies</button>
+            <button class="glass-button scope-btn" data-scope="tv" onclick="toggleSearchScope('tv')">TV
+                Series</button>
+            <button class="glass-button scope-btn" data-scope="person"
+                onclick="toggleSearchScope('person')">People</button>
+        </div>
+    </section>
 
-                            <div class="filter-group">
-                                <label>Genres</label>
-                                <div class="trending-tags" id="genrePills">
-                                    <!-- Genres injected here -->
-                                </div>
-                            </div>
+    <!-- Filter Panel -->
+    <div class="container">
+        <div class="glass-panel filter-panel" id="filter-controls-panel">
+            <div class="filter-header" id="filterToggleBtn" onclick="toggleFilterPanel()">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-sliders-h"></i> Filters
+                </div>
+                <i class="fas fa-chevron-down"></i>
+            </div>
 
-                            <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem;">
-                                <button class="glass-button" onclick="resetFilters()"
-                                    style="background: transparent;">Reset</button>
-                                <button class="glass-button" onclick="applyFilters()"
-                                    style="background: var(--primary-color); border: none;">Apply Filters</button>
-                            </div>
+            <div class="filter-content">
+                <div class="filter-grid">
+                    <div class="filter-group">
+                        <label>Sort By</label>
+                        <select class="glass-input" id="sortBySelect">
+                            <option value="popularity.desc">Most Popular</option>
+                            <option value="vote_average.desc">Top Rated</option>
+                            <option value="primary_release_date.desc">Newest</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Language</label>
+                        <select class="glass-input" id="languageSelect">
+                            <option value="">All Languages</option>
+                            <option value="en">English</option>
+                            <option value="ne">Nepali</option>
+                            <option value="hi">Hindi</option>
+                            <option value="ko">Korean</option>
+                            <option value="ja">Japanese</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Year Range</label>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <input type="number" class="glass-input" id="yearFrom" placeholder="From">
+                            <input type="number" class="glass-input" id="yearTo" placeholder="To">
                         </div>
                     </div>
                 </div>
 
-                <!-- Results Section -->
-                <div class="container" style="margin-bottom: 4rem;">
-                    <div id="resultsHeader" style="display: none; margin-bottom: 2rem;">
-                        <h2 id="resultsTitle" class="section-title">Results</h2>
-                        <p id="resultsCount" style="color: var(--text-secondary);"></p>
-                    </div>
-
-                    <div class="media-scroller" id="resultsGrid"
-                        style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 2rem; overflow: visible;">
-                        <!-- Results injected here -->
-                    </div>
-
-                    <!-- Empty State -->
-                    <div id="emptyState" style="text-align: center; padding: 4rem 0; color: var(--text-secondary);">
-                        <i class="fas fa-film" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
-                        <p>Start searching to discover amazing content.</p>
-                    </div>
-
-                    <!-- Load More -->
-                    <div id="loadMoreContainer" style="text-align: center; margin-top: 3rem; display: none;">
-                        <button class="glass-button" id="loadMoreBtn">Load More</button>
+                <div class="filter-group">
+                    <label>Genres</label>
+                    <div class="trending-tags" id="genrePills">
+                        <!-- Genres injected here -->
                     </div>
                 </div>
 
-                <!-- Movie Details Modal (Reused) -->
-                <div id="movieModal" class="modal" style="display: none;">
-                    <div class="modal-content glass-panel">
-                        <span class="close-modal" onclick="closeModal()">&times;</span>
-                        <div class="modal-body">
-                            <div class="modal-poster-container">
-                                <img id="modalPoster" src="" alt="Movie Poster" class="modal-poster">
+                <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem;">
+                    <button class="glass-button" onclick="resetFilters()"
+                        style="background: transparent;">Reset</button>
+                    <button class="glass-button" onclick="applyFilters()"
+                        style="background: var(--primary-color); border: none;">Apply Filters</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Section -->
+    <div class="container" style="margin-bottom: 4rem;">
+        <div id="resultsHeader" style="display: none; margin-bottom: 2rem;">
+            <h2 id="resultsTitle" class="section-title">Results</h2>
+            <p id="resultsCount" style="color: var(--text-secondary);"></p>
+        </div>
+
+        <div class="media-scroller" id="resultsGrid"
+            style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 2rem; overflow: visible;">
+            <!-- Results injected here -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" style="text-align: center; padding: 4rem 0; color: var(--text-secondary);">
+            <i class="fas fa-film" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+            <p>Start searching to discover amazing content.</p>
+        </div>
+
+        <!-- Load More -->
+        <div id="loadMoreContainer" style="text-align: center; margin-top: 3rem; display: none;">
+            <button class="glass-button" id="loadMoreBtn">Load More</button>
+        </div>
+    </div>
+
+    <!-- Movie Details Modal (Reused) -->
+    <div id="movieModal" class="modal" style="display: none;">
+        <div class="modal-content glass-panel">
+            <span class="close-modal" onclick="closeModal()">&times;</span>
+            <div class="modal-body">
+                <div class="modal-poster-container">
+                    <img id="modalPoster" src="" alt="Movie Poster" class="modal-poster">
+                </div>
+                <div class="modal-info">
+                    <h2 id="modalTitle" class="modal-title">Movie Title</h2>
+                    <div class="modal-meta">
+                        <span class="rating-badge">★ <span id="modalRating">0.0</span></span>
+                        <span id="modalYear">2023</span>
+                        <span id="modalRuntime">120 min</span>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button class="glass-button primary" onclick="watchNow()"><i class="fas fa-play"></i>
+                            Watch</button>
+                        <button class="glass-button" onclick="addToWatchLater()"><i class="fas fa-plus"></i>
+                            Watchlist</button>
+                        <button class="glass-button" onclick="markAsWatched()"><i class="fas fa-check"></i>
+                            Watched</button>
+                    </div>
+
+                    <div class="modal-tabs">
+                        <button class="tab-btn active" onclick="switchTab('overview')">Overview</button>
+                        <button class="tab-btn" onclick="switchTab('cast')">Cast & Crew</button>
+                        <button class="tab-btn" onclick="switchTab('reviews')">Reviews</button>
+                        <button class="tab-btn" onclick="switchTab('similar')">Similar</button>
+                        <button class="tab-btn" onclick="switchTab('ai')">Ask AI</button>
+                    </div>
+
+                    <div id="tab-overview" class="tab-content active">
+                        <p id="modalOverview" class="modal-overview">Overview text...</p>
+                        <div id="modalGenres" style="margin-top: 1rem;"></div>
+                        <div id="modalTrailer" style="margin-top: 2rem;"></div>
+                    </div>
+
+                    <div id="tab-cast" class="tab-content">
+                        <div class="cast-grid" id="modalCast"></div>
+                    </div>
+
+                    <div id="tab-reviews" class="tab-content">
+                        <div id="modalReviews"></div>
+                        <div class="add-review-section"
+                            style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--glass-border);">
+                            <h3>Add Your Review</h3>
+                            <div class="rating-select" style="margin: 1rem 0;">
+                                <button class="rating-btn" onclick="rateMovie(1)">1</button>
+                                <button class="rating-btn" onclick="rateMovie(2)">2</button>
+                                <button class="rating-btn" onclick="rateMovie(3)">3</button>
+                                <button class="rating-btn" onclick="rateMovie(4)">4</button>
+                                <button class="rating-btn" onclick="rateMovie(5)">5</button>
+                                <button class="rating-btn" onclick="rateMovie(6)">6</button>
+                                <button class="rating-btn" onclick="rateMovie(7)">7</button>
+                                <button class="rating-btn" onclick="rateMovie(8)">8</button>
+                                <button class="rating-btn" onclick="rateMovie(9)">9</button>
+                                <button class="rating-btn" onclick="rateMovie(10)">10</button>
                             </div>
-                            <div class="modal-info">
-                                <h2 id="modalTitle" class="modal-title">Movie Title</h2>
-                                <div class="modal-meta">
-                                    <span class="rating-badge">★ <span id="modalRating">0.0</span></span>
-                                    <span id="modalYear">2023</span>
-                                    <span id="modalRuntime">120 min</span>
-                                </div>
+                            <textarea id="reviewText" class="glass-input" rows="3"
+                                placeholder="Write your review..."></textarea>
+                            <button class="glass-button" onclick="submitReview()" style="margin-top: 1rem;">Submit
+                                Review</button>
+                        </div>
+                    </div>
 
-                                <div class="modal-actions">
-                                    <button class="glass-button primary" onclick="watchNow()"><i
-                                            class="fas fa-play"></i> Watch</button>
-                                    <button class="glass-button" onclick="addToWatchLater()"><i class="fas fa-plus"></i>
-                                        Watchlist</button>
-                                    <button class="glass-button" onclick="markAsWatched()"><i class="fas fa-check"></i>
-                                        Watched</button>
-                                </div>
+                    <div id="tab-similar" class="tab-content">
+                        <div class="media-scroller" id="modalSimilar"></div>
+                    </div>
 
-                                <div class="modal-tabs">
-                                    <button class="tab-btn active" onclick="switchTab('overview')">Overview</button>
-                                    <button class="tab-btn" onclick="switchTab('cast')">Cast & Crew</button>
-                                    <button class="tab-btn" onclick="switchTab('reviews')">Reviews</button>
-                                    <button class="tab-btn" onclick="switchTab('similar')">Similar</button>
-                                    <button class="tab-btn" onclick="switchTab('ai')">Ask AI</button>
-                                </div>
-
-                                <div id="tab-overview" class="tab-content active">
-                                    <p id="modalOverview" class="modal-overview">Overview text...</p>
-                                    <div id="modalGenres" style="margin-top: 1rem;"></div>
-                                    <div id="modalTrailer" style="margin-top: 2rem;"></div>
-                                </div>
-
-                                <div id="tab-cast" class="tab-content">
-                                    <div class="cast-grid" id="modalCast"></div>
-                                </div>
-
-                                <div id="tab-reviews" class="tab-content">
-                                    <div id="modalReviews"></div>
-                                    <div class="add-review-section"
-                                        style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--glass-border);">
-                                        <h3>Add Your Review</h3>
-                                        <div class="rating-select" style="margin: 1rem 0;">
-                                            <button class="rating-btn" onclick="rateMovie(1)">1</button>
-                                            <button class="rating-btn" onclick="rateMovie(2)">2</button>
-                                            <button class="rating-btn" onclick="rateMovie(3)">3</button>
-                                            <button class="rating-btn" onclick="rateMovie(4)">4</button>
-                                            <button class="rating-btn" onclick="rateMovie(5)">5</button>
-                                            <button class="rating-btn" onclick="rateMovie(6)">6</button>
-                                            <button class="rating-btn" onclick="rateMovie(7)">7</button>
-                                            <button class="rating-btn" onclick="rateMovie(8)">8</button>
-                                            <button class="rating-btn" onclick="rateMovie(9)">9</button>
-                                            <button class="rating-btn" onclick="rateMovie(10)">10</button>
-                                        </div>
-                                        <textarea id="reviewText" class="glass-input" rows="3"
-                                            placeholder="Write your review..."></textarea>
-                                        <button class="glass-button" onclick="submitReview()"
-                                            style="margin-top: 1rem;">Submit Review</button>
-                                    </div>
-                                </div>
-
-                                <div id="tab-similar" class="tab-content">
-                                    <div class="media-scroller" id="modalSimilar"></div>
-                                </div>
-
-                                <div id="tab-ai" class="tab-content">
-                                    <div style="text-align: center; padding: 2rem;">
-                                        <p>Ask our AI about this movie!</p>
-                                        <button class="glass-button" onclick="askAI()">Chat with AI</button>
-                                    </div>
-                                </div>
-                            </div>
+                    <div id="tab-ai" class="tab-content">
+                        <div style="text-align: center; padding: 2rem;">
+                            <p>Ask our AI about this movie!</p>
+                            <button class="glass-button" onclick="askAI()">Chat with AI</button>
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
 
-                <script src="config.js"></script>
-                <script type="module" src="discovery.js"></script>
+    <script src="config.js"></script>
+    <script type="module" src="discovery.js"></script>
 
-            </body>
+</body>
 
-            </html>
+</html>

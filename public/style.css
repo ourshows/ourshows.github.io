@@ -207,22 +207,6 @@ a {
     border: 1px solid rgba(255, 215, 0, 0.3);
 }
 
-.hero-desc {
-    font-size: 1.1rem;
-    color: var(--text-secondary);
-    margin-bottom: 2rem;
-    line-height: 1.6;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-
-.hero-actions {
-    display: flex;
-    gap: 1rem;
-}
-
 /* Content Sections */
 .content-section {
     margin-bottom: 3rem;

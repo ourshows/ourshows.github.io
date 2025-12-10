@@ -17,10 +17,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
     currentCategory = urlParams.get('category');
 
-    if (currentCategory) {
-        updateTitle(currentCategory);
-        loadContent(currentCategory, currentPage);
+    if (!currentCategory) {
+        currentCategory = 'trending';
     }
+
+    updateTitle(currentCategory);
+    loadContent(currentCategory, currentPage);
 
     document.getElementById('loadMoreBtn').addEventListener('click', () => {
         if (!isLoading) {
