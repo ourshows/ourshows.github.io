@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test - OurShow</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a2e;
+            color: #eee;
+        }
+
+        .test-section {
+            background: #16213e;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+            border: 1px solid #0f3460;
+        }
+
+        button {
+            background: #7c3aed;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+
+        button:hover {
+            background: #6d28d9;
+        }
+
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            background: #0f3460;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 14px;
+        }
+
+        .success {
+            color: #10b981;
+        }
+
+        .error {
+            color: #ef4444;
+        }
+
+        .loading {
+            color: #f59e0b;
+        }
+
+        h1 {
+            color: #7c3aed;
+        }
+
+        h2 {
+            color: #db2777;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🧪 API Test Suite</h1>
+    <p>This page tests your Hugging Face and TMDB API configurations.</p>
+
+    <!-- Config Check -->
+    <div class="test-section">
+        <h2>1. Configuration Check</h2>
+        <button onclick="checkConfig()">Check Config</button>
+        <div id="configResult" class="result"></div>
+    </div>
+
+    <!-- Hugging Face Test -->
+    <div class="test-section">
+        <h2>2. Hugging Face API Test</h2>
+        <button onclick="testHuggingFace()">Test Hugging Face</button>
+        <div id="hfResult" class="result"></div>
+    </div>
+
+    <!-- TMDB Test -->
+    <div class="test-section">
+        <h2>3. TMDB API Test</h2>
+        <button onclick="testTMDB()">Test TMDB</button>
+        <div id="tmdbResult" class="result"></div>
+    </div>
+
+    <!-- Full Integration Test -->
+    <div class="test-section">
+        <h2>4. Full Integration Test</h2>
+        <button onclick="testFullIntegration()">Test Movie Recommendation</button>
+        <div id="integrationResult" class="result"></div>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        function log(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'success' ? 'success' : type === 'error' ? 'error' : 'loading';
+            element.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+        }
+
+        function clearLog(elementId) {
+            document.getElementById(elementId).innerHTML = '';
+        }
+
+        // 1. Check Config
+        function checkConfig() {
+            clearLog('configResult');
+            log('configResult', 'Checking configuration...', 'loading');
+
+            if (!window.APP_CONFIG) {
+                log('configResult', '❌ ERROR: APP_CONFIG not found!', 'error');
+                log('configResult', 'Make sure config.js is loaded and defines window.APP_CONFIG', 'error');
+                return;
+            }
+
+            log('configResult', '✅ APP_CONFIG found', 'success');
+
+            // Check Hugging Face API Key
+            if (window.APP_CONFIG.HUGGINGFACE_API_KEY &&
+                window.APP_CONFIG.HUGGINGFACE_API_KEY !== 'YOUR_HUGGINGFACE_API_KEY_HERE') {
+                log('configResult', `✅ Hugging Face API Key: ${window.APP_CONFIG.HUGGINGFACE_API_KEY.substring(0, 10)}...`, 'success');
+            } else {
+                log('configResult', '❌ Hugging Face API Key not configured', 'error');
+            }
+
+            // Check TMDB API Key
+            if (window.APP_CONFIG.TMDB_API_KEY &&
+                window.APP_CONFIG.TMDB_API_KEY !== 'YOUR_TMDB_API_KEY_HERE') {
+                log('configResult', `✅ TMDB API Key: ${window.APP_CONFIG.TMDB_API_KEY.substring(0, 10)}...`, 'success');
+            } else {
+                log('configResult', '❌ TMDB API Key not configured', 'error');
+            }
+
+            log('configResult', '\nFull Config:', 'info');
+            log('configResult', JSON.stringify(window.APP_CONFIG, null, 2), 'info');
+        }
+
+        // 2. Test Hugging Face API
+        async function testHuggingFace() {
+            clearLog('hfResult');
+            log('hfResult', 'Testing Hugging Face API...', 'loading');
+
+            if (!window.APP_CONFIG || !window.APP_CONFIG.HUGGINGFACE_API_KEY) {
+                log('hfResult', '❌ API key not configured', 'error');
+                return;
+            }
+
+            const apiKey = window.APP_CONFIG.HUGGINGFACE_API_KEY;
+            const model = 'meta-llama/Llama-3.2-3B-Instruct';
+            const url = `https://api-inference.huggingface.co/models/${model}`;
+
+            log('hfResult', `Model: ${model}`, 'info');
+            log('hfResult', `URL: ${url}`, 'info');
+            log('hfResult', 'Sending request...', 'loading');
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        inputs: 'Say hello in one sentence.',
+                        parameters: {
+                            max_new_tokens: 50,
+                            temperature: 0.7,
+                            return_full_text: false
+                        }
+                    })
+                });
+
+                log('hfResult', `Response Status: ${response.status} ${response.statusText}`,
+                    response.ok ? 'success' : 'error');
+
+                const data = await response.json();
+                log('hfResult', '\nResponse Data:', 'info');
+                log('hfResult', JSON.stringify(data, null, 2), 'info');
+
+                if (response.ok) {
+                    if (Array.isArray(data) && data[0]?.generated_text) {
+                        log('hfResult', '\n✅ SUCCESS! AI Response:', 'success');
+                        log('hfResult', data[0].generated_text, 'success');
+                    } else {
+                        log('hfResult', '\n⚠️ Unexpected response format', 'error');
+                    }
+                } else {
+                    log('hfResult', '\n❌ API Error:', 'error');
+                    if (data.error) {
+                        log('hfResult', data.error, 'error');
+
+                        if (data.error.includes('loading')) {
+                            log('hfResult', '\n💡 Model is loading. Wait 20-30 seconds and try again.', 'loading');
+                        } else if (data.error.includes('rate limit')) {
+                            log('hfResult', '\n💡 Rate limit reached. Wait a minute and try again.', 'loading');
+                        } else if (data.error.includes('authorization')) {
+                            log('hfResult', '\n💡 Invalid API key. Check your Hugging Face token.', 'error');
+                        }
+                    }
+                }
+
+            } catch (error) {
+                log('hfResult', `\n❌ Network Error: ${error.message}`, 'error');
+                log('hfResult', 'Check your internet connection', 'error');
+            }
+        }
+
+        // 3. Test TMDB API
+        async function testTMDB() {
+            clearLog('tmdbResult');
+            log('tmdbResult', 'Testing TMDB API...', 'loading');
+
+            if (!window.APP_CONFIG || !window.APP_CONFIG.TMDB_API_KEY) {
+                log('tmdbResult', '❌ API key not configured', 'error');
+                return;
+            }
+
+            const apiKey = window.APP_CONFIG.TMDB_API_KEY;
+            const url = `${window.APP_CONFIG.TMDB_BASE_URL}/search/movie?api_key=${apiKey}&query=Inception`;
+
+            log('tmdbResult', `URL: ${url}`, 'info');
+            log('tmdbResult', 'Searching for "Inception"...', 'loading');
+
+            try {
+                const response = await fetch(url);
+
+                log('tmdbResult', `Response Status: ${response.status} ${response.statusText}`,
+                    response.ok ? 'success' : 'error');
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    log('tmdbResult', `\n✅ SUCCESS! Found ${data.results.length} results`, 'success');
+
+                    if (data.results[0]) {
+                        const movie = data.results[0];
+                        log('tmdbResult', `\nFirst Result:`, 'info');
+                        log('tmdbResult', `Title: ${movie.title}`, 'info');
+                        log('tmdbResult', `Year: ${movie.release_date?.substring(0, 4)}`, 'info');
+                        log('tmdbResult', `Rating: ${movie.vote_average}/10`, 'info');
+                        log('tmdbResult', `Poster: ${window.APP_CONFIG.TMDB_IMAGE_SMALL_URL}${movie.poster_path}`, 'info');
+                    }
+                } else {
+                    log('tmdbResult', '\n❌ API Error:', 'error');
+                    log('tmdbResult', JSON.stringify(data, null, 2), 'error');
+                }
+
+            } catch (error) {
+                log('tmdbResult', `\n❌ Network Error: ${error.message}`, 'error');
+            }
+        }
+
+        // 4. Full Integration Test
+        async function testFullIntegration() {
+            clearLog('integrationResult');
+            log('integrationResult', 'Testing full AI + TMDB integration...', 'loading');
+
+            if (!window.APP_CONFIG || !window.APP_CONFIG.HUGGINGFACE_API_KEY || !window.APP_CONFIG.TMDB_API_KEY) {
+                log('integrationResult', '❌ APIs not configured', 'error');
+                return;
+            }
+
+            // Step 1: Get AI recommendation
+            log('integrationResult', '\nStep 1: Asking AI for movie recommendations...', 'loading');
+
+            const prompt = `You are a movie expert. Recommend 3 action movies.
+Return ONLY this JSON format (no markdown):
+{
+  "recommendations": [
+    {"title": "Movie Title", "year": "2020", "reason": "Why it's good"}
+  ]
+}`;
+
+            try {
+                const hfResponse = await fetch(`https://api-inference.huggingface.co/models/meta-llama/Llama-3.2-3B-Instruct`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${window.APP_CONFIG.HUGGINGFACE_API_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        inputs: prompt,
+                        parameters: {
+                            max_new_tokens: 300,
+                            temperature: 0.7,
+                            return_full_text: false
+                        }
+                    })
+                });
+
+                if (!hfResponse.ok) {
+                    const error = await hfResponse.json();
+                    log('integrationResult', `❌ Hugging Face Error: ${error.error}`, 'error');
+                    return;
+                }
+
+                const hfData = await hfResponse.json();
+                const aiText = hfData[0]?.generated_text || '';
+
+                log('integrationResult', '✅ AI Response received', 'success');
+                log('integrationResult', `Raw response: ${aiText.substring(0, 200)}...`, 'info');
+
+                // Step 2: Parse JSON
+                log('integrationResult', '\nStep 2: Parsing AI response...', 'loading');
+
+                let recommendations;
+                try {
+                    const cleaned = aiText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+                    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+                    if (jsonMatch) {
+                        const parsed = JSON.parse(jsonMatch[0]);
+                        recommendations = parsed.recommendations;
+                        log('integrationResult', `✅ Parsed ${recommendations.length} recommendations`, 'success');
+                    } else {
+                        log('integrationResult', '❌ No JSON found in response', 'error');
+                        return;
+                    }
+                } catch (e) {
+                    log('integrationResult', `❌ JSON Parse Error: ${e.message}`, 'error');
+                    return;
+                }
+
+                // Step 3: Search TMDB for each movie
+                log('integrationResult', '\nStep 3: Searching TMDB for movies...', 'loading');
+
+                for (const rec of recommendations) {
+                    const tmdbUrl = `${window.APP_CONFIG.TMDB_BASE_URL}/search/movie?api_key=${window.APP_CONFIG.TMDB_API_KEY}&query=${encodeURIComponent(rec.title)}`;
+
+                    try {
+                        const tmdbResponse = await fetch(tmdbUrl);
+                        const tmdbData = await tmdbResponse.json();
+
+                        if (tmdbData.results && tmdbData.results[0]) {
+                            log('integrationResult', `✅ ${rec.title} - Found on TMDB`, 'success');
+                        } else {
+                            log('integrationResult', `⚠️ ${rec.title} - Not found on TMDB`, 'error');
+                        }
+                    } catch (e) {
+                        log('integrationResult', `❌ ${rec.title} - TMDB Error: ${e.message}`, 'error');
+                    }
+                }
+
+                log('integrationResult', '\n✅ INTEGRATION TEST COMPLETE!', 'success');
+
+            } catch (error) {
+                log('integrationResult', `\n❌ Integration Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-run config check on load
+        window.addEventListener('load', () => {
+            setTimeout(checkConfig, 500);
+        });
+    </script>
+</body>
+
+</html>
