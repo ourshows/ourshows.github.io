@@ -23,6 +23,8 @@
                     <li><a href="index.html" class="nav-link active"><i class="fas fa-home"></i> Home</a></li>
                     <li><a href="discovery.html" class="nav-link"><i class="fas fa-compass"></i> Discover</a></li>
                     <li><a href="collection.html" class="nav-link"><i class="fas fa-bookmark"></i> Collections</a></li>
+                    <li><a href="communitychat.html" class="nav-link"><i class="fas fa-comments"></i> Chat</a></li>
+                    <li><a href="post.html" class="nav-link"><i class="fas fa-newspaper"></i> Posts</a></li>
                     <li><a href="ai.html" class="nav-link"><i class="fas fa-robot"></i> AI Assistant</a></li>
                 </ul>
 
@@ -37,9 +39,9 @@
                         <i class="fas fa-moon"></i>
                     </button>
 
-                    <button class="auth-btn" id="navAuthBtn">
+                    <a href="login.html" class="auth-btn" id="navAuthBtn">
                         <i class="fas fa-sign-in-alt"></i> Login
-                    </button>
+                    </a>
 
                     <button class="mobile-menu-btn" id="mobileMenuBtn">
                         <i class="fas fa-bars"></i>
@@ -70,7 +72,8 @@
         <!-- Trending Section -->
         <section class="content-section">
             <div class="section-header">
-                <h2 class="section-title">Trending Now</h2>
+                <h2 class="section-title"><i class="fas fa-fire"
+                        style="-webkit-text-fill-color: #ff6b6b; margin-right: 0.5rem;"></i>Trending Now</h2>
                 <div class="section-actions">
                     <button class="filter-chip active" onclick="filterTrending('all')">All</button>
                     <button class="filter-chip" onclick="filterTrending('movie')">Movies</button>
@@ -89,7 +92,8 @@
 
         <!-- Top Rated -->
         <section class="content-section" style="margin-top: 3rem;">
-            <h2 class="section-title">Top Rated</h2>
+            <h2 class="section-title"><i class="fas fa-star"
+                    style="-webkit-text-fill-color: #ffd700; margin-right: 0.5rem;"></i>Top Rated</h2>
             <div class="media-scroller" id="topRatedScroller">
                 <div class="media-card skeleton"></div>
                 <div class="media-card skeleton"></div>
@@ -101,7 +105,8 @@
 
         <!-- Upcoming -->
         <section class="content-section" style="margin-top: 3rem;">
-            <h2 class="section-title">Coming Soon</h2>
+            <h2 class="section-title"><i class="fas fa-calendar-alt"
+                    style="-webkit-text-fill-color: #4ecdc4; margin-right: 0.5rem;"></i>Coming Soon</h2>
             <div class="media-scroller" id="upcomingScroller">
                 <div class="media-card skeleton"></div>
                 <div class="media-card skeleton"></div>
@@ -113,7 +118,8 @@
 
         <!-- Now Playing -->
         <section class="content-section" style="margin-top: 3rem;">
-            <h2 class="section-title">Now in Theaters</h2>
+            <h2 class="section-title"><i class="fas fa-film"
+                    style="-webkit-text-fill-color: #ff6b6b; margin-right: 0.5rem;"></i>Now in Theaters</h2>
             <div class="media-scroller" id="nowPlayingScroller">
                 <div class="media-card skeleton"></div>
                 <div class="media-card skeleton"></div>
@@ -149,7 +155,8 @@
 
         <!-- New to Stream -->
         <section class="content-section" style="margin-top: 3rem;">
-            <h2 class="section-title">New to Stream</h2>
+            <h2 class="section-title"><i class="fas fa-stream"
+                    style="-webkit-text-fill-color: #a855f7; margin-right: 0.5rem;"></i>New to Stream</h2>
             <div class="media-scroller" id="newToStreamScroller">
                 <div class="media-card skeleton"></div>
                 <div class="media-card skeleton"></div>
@@ -161,7 +168,8 @@
 
         <!-- Highest Grossing -->
         <section class="content-section" style="margin-top: 3rem;">
-            <h2 class="section-title">Highest Grossing (2020+)</h2>
+            <h2 class="section-title"><i class="fas fa-trophy"
+                    style="-webkit-text-fill-color: #ffd700; margin-right: 0.5rem;"></i>Highest Grossing (2020+)</h2>
             <div class="media-scroller" id="highestGrossingScroller">
                 <div class="media-card skeleton"></div>
                 <div class="media-card skeleton"></div>
@@ -173,7 +181,8 @@
 
         <!-- Cult Classics -->
         <section class="content-section" style="margin-top: 3rem;">
-            <h2 class="section-title">Cult Classics</h2>
+            <h2 class="section-title"><i class="fas fa-crown"
+                    style="-webkit-text-fill-color: #f39c12; margin-right: 0.5rem;"></i>Cult Classics</h2>
             <div class="media-scroller" id="cultClassicsScroller">
                 <div class="media-card skeleton"></div>
                 <div class="media-card skeleton"></div>
@@ -185,7 +194,8 @@
 
         <!-- Underrated Gems -->
         <section class="content-section" style="margin-top: 3rem;">
-            <h2 class="section-title">Underrated Gems</h2>
+            <h2 class="section-title"><i class="fas fa-gem"
+                    style="-webkit-text-fill-color: #3498db; margin-right: 0.5rem;"></i>Underrated Gems</h2>
             <div class="media-scroller" id="underratedGemsScroller">
                 <div class="media-card skeleton"></div>
                 <div class="media-card skeleton"></div>
@@ -197,7 +207,8 @@
 
         <!-- Action & Thrillers -->
         <section class="content-section" style="margin-top: 3rem;">
-            <h2 class="section-title">Action & Thrillers</h2>
+            <h2 class="section-title"><i class="fas fa-bolt"
+                    style="-webkit-text-fill-color: #e74c3c; margin-right: 0.5rem;"></i>Action & Thrillers</h2>
             <div class="media-scroller" id="actionThrillersScroller">
                 <div class="media-card skeleton"></div>
                 <div class="media-card skeleton"></div>
@@ -209,7 +220,8 @@
 
         <!-- Drama & Romance -->
         <section class="content-section" style="margin-top: 3rem; margin-bottom: 3rem;">
-            <h2 class="section-title">Drama & Romance</h2>
+            <h2 class="section-title"><i class="fas fa-heart"
+                    style="-webkit-text-fill-color: #e91e63; margin-right: 0.5rem;"></i>Drama & Romance</h2>
             <div class="media-scroller" id="dramaRomanceScroller">
                 <div class="media-card skeleton"></div>
                 <div class="media-card skeleton"></div>
@@ -218,6 +230,7 @@
                 <div class="media-card skeleton"></div>
             </div>
         </section>
+
 
     </main>
 

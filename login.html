@@ -5,7 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - OurShow</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="public/style.css">
+    <link rel="stylesheet" href="themes.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -103,35 +104,118 @@
         </div>
     </div>
 
+    <!-- Firebase SDK v9 (modular) -->
     <script type="module">
-        import { auth, googleProvider, signInWithPopup, signInWithEmailAndPassword } from './firebase-config.js';
+        // Import Firebase modules from CDN
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
 
+        // Import from your existing firebase-config.js
+        import { app } from './firebase-config.js';
+
+        // Initialize Firebase auth with existing app
+        let auth, googleProvider;
+
+        try {
+            auth = getAuth(app);
+            googleProvider = new GoogleAuthProvider();
+
+            // Optional: Add custom parameters to Google provider
+            googleProvider.setCustomParameters({
+                prompt: 'select_account'
+            });
+
+            console.log('Firebase initialized successfully');
+        } catch (error) {
+            console.error('Firebase initialization error:', error);
+        }
+
+        // Google Login Handler
         window.handleGoogleLogin = async () => {
             try {
+                console.log('Starting Google sign-in...');
                 const result = await signInWithPopup(auth, googleProvider);
                 const user = result.user;
-                console.log("User signed in:", user);
+
+                console.log('User signed in successfully:', user.email);
+
+                // Store user info in localStorage
+                localStorage.setItem('userEmail', user.email);
+                localStorage.setItem('userName', user.displayName);
+                localStorage.setItem('userPhoto', user.photoURL);
+                localStorage.setItem('userId', user.uid);
+                localStorage.setItem('isLoggedIn', 'true');
+
+                // Redirect to homepage
                 window.location.href = 'index.html';
+
             } catch (error) {
-                console.error("Error signing in with Google:", error);
-                alert("Login failed: " + error.message);
+                console.error('Google sign-in error:', error);
+
+                // Handle specific error cases
+                if (error.code === 'auth/popup-closed-by-user') {
+                    alert('Sign-in cancelled. Please try again.');
+                } else if (error.code === 'auth/popup-blocked') {
+                    alert('Pop-up blocked. Please allow pop-ups for this site and try again.');
+                } else if (error.code === 'auth/cancelled-popup-request') {
+                    // User opened another popup, ignore
+                    console.log('Another popup was opened');
+                } else {
+                    alert('Login failed: ' + error.message);
+                }
             }
         };
 
+        // Email/Password Login Handler
         window.handleEmailLogin = async (e) => {
             e.preventDefault();
-            const email = e.target.querySelector('input[type="email"]').value;
-            const password = e.target.querySelector('input[type="password"]').value;
 
             try {
-                await signInWithEmailAndPassword(auth, email, password);
+                const email = e.target.querySelector('input[type="email"]').value;
+                const password = e.target.querySelector('input[type="password"]').value;
+
+                console.log('Starting email sign-in...');
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                console.log('User signed in successfully:', user.email);
+
+                // Store user info in localStorage
+                localStorage.setItem('userEmail', user.email);
+                localStorage.setItem('userName', user.displayName || email.split('@')[0]);
+                localStorage.setItem('userId', user.uid);
+                localStorage.setItem('isLoggedIn', 'true');
+
+                // Redirect to homepage
                 window.location.href = 'index.html';
+
             } catch (error) {
-                console.error("Error signing in with Email:", error);
-                alert("Login failed: " + error.message);
+                console.error('Email sign-in error:', error);
+
+                // Handle specific error cases
+                if (error.code === 'auth/user-not-found') {
+                    alert('No account found with this email. Please sign up first.');
+                } else if (error.code === 'auth/wrong-password') {
+                    alert('Incorrect password. Please try again.');
+                } else if (error.code === 'auth/invalid-email') {
+                    alert('Invalid email address.');
+                } else if (error.code === 'auth/too-many-requests') {
+                    alert('Too many failed login attempts. Please try again later.');
+                } else {
+                    alert('Login failed: ' + error.message);
+                }
             }
         };
+
+        // Check if user is already logged in
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                console.log('User already logged in:', user.email);
+                // Optionally auto-redirect if already logged in
+                // window.location.href = 'index.html';
+            }
+        });
     </script>
+
 </body>
 
 </html>
