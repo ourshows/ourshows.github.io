@@ -1001,3 +1001,6 @@ console.log('Exposed to window:', {
     renderCustomList: typeof window.renderCustomList,
     toggleTheme: typeof window.toggleTheme
 });
+
+// Initialize App
+document.addEventListener('DOMContentLoaded', initApp);
