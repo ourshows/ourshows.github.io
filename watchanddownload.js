@@ -17,46 +17,16 @@ function setupDownloadButtons() {
     // App Download Button
     const btnApp = document.getElementById('btnApp');
     if (btnApp) {
-        btnApp.onclick = async (e) => {
+        btnApp.onclick = (e) => {
             e.preventDefault();
-            const originalText = btnApp.innerHTML;
-            btnApp.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Downloading...';
-            btnApp.disabled = true;
-
-            try {
-                // Fetch the APK file
-                const response = await fetch('/app/PP_Cine.apk');
-
-                if (!response.ok) {
-                    throw new Error(`File not found (${response.status})`);
-                }
-
-                // Convert to blob
-                const blob = await response.blob();
-
-                // Create download link
-                const url = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = 'PP_Cine.apk'; // Force filename
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                window.URL.revokeObjectURL(url);
-
-                // Success feedback
-                btnApp.innerHTML = '<i class="fas fa-check"></i> Download Started';
-                setTimeout(() => {
-                    btnApp.innerHTML = originalText;
-                    btnApp.disabled = false;
-                }, 3000);
-
-            } catch (error) {
-                console.error('Download error:', error);
-                alert('Download failed! Please check connection.\nError: ' + error.message);
-                btnApp.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Retry Download';
-                btnApp.disabled = false;
-            }
+            // Direct download trigger - Instant start
+            const link = document.createElement('a');
+            link.href = '/app/PP_Cine.apk';
+            link.download = 'PP_Cine.apk';
+            link.target = '_blank'; // Fail-safe to prevent page navigation
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         };
     }
 
