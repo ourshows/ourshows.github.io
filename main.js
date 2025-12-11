@@ -515,11 +515,17 @@ function renderCards(items, containerId, defaultType) {
         const rating = item.vote_average ? item.vote_average.toFixed(1) : 'N/A';
         const year = (item.release_date || item.first_air_date || '').split('-')[0];
         const title = item.title || item.name;
+        const mediaType = item.media_type || defaultType;
 
         card.innerHTML = `
             <div class="media-poster-container">
                 <img class="media-poster" src="${window.APP_CONFIG.TMDB_IMAGE_SMALL_URL}${item.poster_path}" loading="lazy" alt="${title}">
                 <div class="card-rating-badge">★ ${rating}</div>
+                <div class="card-overlay">
+                    <button class="card-download-btn" onclick="event.stopPropagation(); window.location.href='watchanddownload.html?id=${item.id}&type=${mediaType}'">
+                        <i class="fas fa-download"></i> Watch
+                    </button>
+                </div>
             </div>
             <div class="media-info">
                 <div class="media-title" title="${title}">${title}</div>
@@ -527,7 +533,7 @@ function renderCards(items, containerId, defaultType) {
             </div>
         `;
 
-        card.onclick = () => openMovieModal(item.id, item.media_type || defaultType);
+        card.onclick = () => openMovieModal(item.id, mediaType);
         container.appendChild(card);
     });
 }
