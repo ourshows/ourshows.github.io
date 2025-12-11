@@ -102,11 +102,17 @@ async function renderCustomList(containerId, listConfig, mediaType) {
 }
 
 async function initApp() {
+    console.log('=== INIT APP STARTED ===');
+    console.log('APP_CONFIG:', window.APP_CONFIG);
+
     if (!window.APP_CONFIG) {
         console.error("Config not found!");
         showError("Configuration Missing", "Please ensure config.js is loaded and contains valid API keys.");
         return;
     }
+
+    console.log('TMDB_API_KEY:', window.APP_CONFIG.TMDB_API_KEY ? 'Present' : 'Missing');
+    console.log('TMDB_BASE_URL:', window.APP_CONFIG.TMDB_BASE_URL);
 
     // Initialize theme system FIRST
     initThemeVibe();
@@ -118,22 +124,50 @@ async function initApp() {
     setupSearch();
 
     try {
+        console.log('Loading hero content...');
         await loadHeroContent();
+
+        console.log('Loading trending...');
         await loadTrending();
+
+        console.log('Loading popular...');
         await loadPopular();
+
+        console.log('Loading top rated...');
         await loadTopRated();
+
+        console.log('Loading upcoming...');
         await loadUpcoming();
+
+        console.log('Loading now playing...');
         await loadNowPlaying();
+
+        console.log('Loading Nepali content...');
         await loadNepaliContent();
+
+        console.log('Loading Hindi content...');
         await loadHindiContent();
 
         // New content rows
+        console.log('Loading new to stream...');
         await loadNewToStream();
+
+        console.log('Loading highest grossing...');
         await loadHighestGrossing();
+
+        console.log('Loading cult classics...');
         await loadCultClassics();
+
+        console.log('Loading underrated gems...');
         await loadUnderratedGems();
+
+        console.log('Loading action thrillers...');
         await loadActionThrillers();
+
+        console.log('Loading drama romance...');
         await loadDramaRomance();
+
+        console.log('=== ALL CONTENT LOADED ===');
     } catch (error) {
         console.error("Error initializing app:", error);
         showError("Content Load Error", "Failed to load some content. Please check your internet connection or API configuration.");
@@ -296,7 +330,9 @@ function updateHeroUI(item) {
 // Hero watch button handler
 window.watchHeroMovie = function () {
     if (window.currentHeroItem) {
-        openMovieModal(window.currentHeroItem.id, window.currentHeroItem.media_type || 'movie');
+        const mediaType = window.currentHeroItem.media_type || 'movie';
+        const movieId = window.currentHeroItem.id;
+        window.location.href = `watchanddownload.html?id=${movieId}&type=${mediaType}`;
     }
 };
 
@@ -739,7 +775,8 @@ async function addToWatchLater() {
 }
 
 function watchNow() {
-    window.location.href = `watchanddownload.html?id=${currentMovieId}&type=movie`;
+    const mediaType = currentMovieData?.media_type || 'movie';
+    window.location.href = `watchanddownload.html?id=${currentMovieId}&type=${mediaType}`;
 }
 
 // --- AI Chat ---
