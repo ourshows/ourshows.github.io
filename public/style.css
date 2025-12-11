@@ -361,7 +361,7 @@ a {
 
 
 /* Hero Section */
-.hero {
+.hero-section {
     height: 80vh;
     position: relative;
     display: flex;
@@ -370,7 +370,7 @@ a {
     margin-bottom: 2rem;
 }
 
-.hero-bg {
+.hero-background {
     position: absolute;
     top: 0;
     left: 0;
@@ -380,6 +380,7 @@ a {
     z-index: -1;
     mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
     -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
+    transition: all 1s ease-in-out;
 }
 
 .hero-content {
