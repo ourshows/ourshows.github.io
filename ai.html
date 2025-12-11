@@ -4,154 +4,341 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Vibe - OurShow</title>
+    <title>AI Assistant - OurShow</title>
     <link rel="stylesheet" href="public/style.css">
+    <link rel="stylesheet" href="themes.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         .ai-container {
-            max-width: 800px;
-            margin: 4rem auto;
-            text-align: center;
+            max-width: 900px;
+            margin: 5rem auto 2rem;
+            padding: 0 1.5rem;
         }
 
-        .ai-input-group {
-            position: relative;
+        .ai-header {
+            text-align: center;
             margin-bottom: 2rem;
         }
 
-        .ai-input {
-            width: 100%;
-            padding: 1.5rem;
-            border-radius: 24px;
-            background: rgba(30, 41, 59, 0.6);
+        .ai-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .chat-container {
+            background: var(--glass-bg);
             border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            min-height: 400px;
+            max-height: 500px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .chat-message {
+            display: flex;
+            gap: 1rem;
+            animation: fadeInUp 0.3s ease-out;
+        }
+
+        .chat-message.user {
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            display: flex;
+            align-items: center;
+            justify-content: center;
             color: white;
             font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .message-content {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem 1.25rem;
+            border-radius: 16px;
+            max-width: 70%;
+            border: 1px solid var(--glass-border);
+        }
+
+        .chat-message.user .message-content {
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            border: none;
+        }
+
+        .typing-indicator {
+            display: none;
+            padding: 1rem;
+        }
+
+        .typing-indicator.active {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            animation: typingBounce 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typingBounce {
+
+            0%,
+            60%,
+            100% {
+                transform: translateY(0);
+            }
+
+            30% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .quick-prompts {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .prompt-chip {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            padding: 0.6rem 1rem;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+        }
+
+        .prompt-chip:hover {
+            background: var(--primary-color);
+            transform: translateY(-2px);
+        }
+
+        .input-container {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .ai-input {
+            flex: 1;
+            padding: 1rem 1.5rem;
+            border-radius: 25px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            font-size: 1rem;
             outline: none;
             transition: all 0.3s;
         }
 
         .ai-input:focus {
-            border-color: var(--accent-color);
-            box-shadow: 0 0 20px rgba(219, 39, 119, 0.2);
+            border-color: var(--primary-color);
+            box-shadow: 0 0 20px rgba(124, 58, 237, 0.3);
         }
 
-        .ai-btn-group {
+        .send-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s;
             display: flex;
-            gap: 1rem;
+            align-items: center;
             justify-content: center;
-            margin-bottom: 2rem;
-            flex-wrap: wrap;
         }
 
-        .ai-result-grid {
+        .send-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 20px rgba(124, 58, 237, 0.5);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .movie-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            gap: 1.5rem;
-            text-align: left;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
         }
 
-        .chat-bubble {
+        .movie-card-mini {
             background: rgba(255, 255, 255, 0.05);
-            padding: 1.5rem;
-            border-radius: 16px;
-            margin-bottom: 2rem;
             border: 1px solid var(--glass-border);
-            text-align: left;
-            line-height: 1.6;
-            display: none;
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s;
         }
 
-        .loading-spinner {
-            display: none;
-            font-size: 2rem;
-            color: var(--accent-color);
-            animation: spin 1s linear infinite;
+        .movie-card-mini:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(124, 58, 237, 0.3);
         }
 
-        @keyframes spin {
-            100% {
-                transform: rotate(360deg);
-            }
+        .movie-card-mini img {
+            width: 100%;
+            aspect-ratio: 2/3;
+            object-fit: cover;
+        }
+
+        .movie-card-mini .info {
+            padding: 0.75rem;
+        }
+
+        .movie-card-mini .title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .movie-card-mini .reason {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            line-height: 1.3;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
     </style>
 </head>
 
 <body>
 
-    <nav class="navbar">
+    <!-- Navbar -->
+    <nav class="navbar" id="navbar">
         <div class="container nav-content">
-            <a href="index.html" class="logo">OurShow AI</a>
-            <ul class="nav-links">
-                <li><a href="index.html" class="nav-link">Home</a></li>
-            </ul>
+            <a href="index.html" class="logo">OurShow</a>
+            <div class="nav-right">
+                <ul class="nav-links" id="navLinks">
+                    <li><a href="index.html" class="nav-link"><i class="fas fa-home"></i> Home</a></li>
+                    <li><a href="discovery.html" class="nav-link"><i class="fas fa-compass"></i> Discover</a></li>
+                    <li><a href="collection.html" class="nav-link"><i class="fas fa-bookmark"></i> Collections</a></li>
+                    <li><a href="communitychat.html" class="nav-link"><i class="fas fa-comments"></i> Chat</a></li>
+                    <li><a href="post.html" class="nav-link"><i class="fas fa-newspaper"></i> Posts</a></li>
+                    <li><a href="ai.html" class="nav-link active"><i class="fas fa-robot"></i> AI Assistant</a></li>
+                </ul>
+                <div class="nav-actions">
+                    <button class="icon-btn theme-toggle" onclick="toggleTheme()" title="Toggle Theme">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <a href="login.html" class="auth-btn" id="navAuthBtn">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </a>
+                </div>
+            </div>
         </div>
     </nav>
 
+    <!-- AI Content -->
     <div class="container ai-container">
-        <h1 style="font-size: 3rem; margin-bottom: 1rem;">What's the <span
-                style="color: var(--accent-color)">Vibe</span>?</h1>
-        <p style="color: var(--text-secondary); margin-bottom: 2rem;">Describe your mood, occasion, or specific taste.
-        </p>
-
-        <div class="ai-input-group">
-            <input type="text" id="vibeInput" class="ai-input"
-                placeholder="e.g., 'Movies for a rainy Sunday that feel like a warm hug'">
-        </div>
-
-        <div class="ai-btn-group">
-            <button class="glass-button" onclick="findVibe()">
-                <i class="fas fa-magic"></i> Find Movies
-            </button>
-            <button class="glass-button" onclick="roastMyTaste()">
-                <i class="fas fa-fire"></i> Roast My Taste
-            </button>
-            <button class="glass-button" onclick="getPersonalizedRecs()">
-                <i class="fas fa-sparkles"></i> Based on My Watchlist
-            </button>
+        <div class="ai-header">
+            <h1><i class="fas fa-robot"></i> AI Movie Assistant</h1>
+            <p style="color: var(--text-secondary);">Ask me anything about movies, get personalized recommendations, or
+                just chat!</p>
         </div>
 
         <!-- Quick Prompts -->
-        <div style="margin-bottom: 2rem;">
-            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1rem;">Quick Prompts:</p>
-            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center;">
-                <button class="glass-button" style="padding: 0.5rem 1rem; font-size: 0.85rem;"
-                    onclick="usePrompt('Recommend me 5 trending movies right now')">
-                    🔥 Trending Movies
-                </button>
-                <button class="glass-button" style="padding: 0.5rem 1rem; font-size: 0.85rem;"
-                    onclick="usePrompt('Suggest 5 best series to binge watch this weekend')">
-                    📺 Best Series
-                </button>
-                <button class="glass-button" style="padding: 0.5rem 1rem; font-size: 0.85rem;"
-                    onclick="usePrompt('Movies like Inception with mind-bending plots')">
-                    🧠 Mind-Bending
-                </button>
-                <button class="glass-button" style="padding: 0.5rem 1rem; font-size: 0.85rem;"
-                    onclick="usePrompt('Romantic comedies that will make me laugh and cry')">
-                    💕 Rom-Coms
-                </button>
-                <button class="glass-button" style="padding: 0.5rem 1rem; font-size: 0.85rem;"
-                    onclick="usePrompt('Action movies with amazing fight scenes')">
-                    💥 Action-Packed
-                </button>
-                <button class="glass-button" style="padding: 0.5rem 1rem; font-size: 0.85rem;"
-                    onclick="usePrompt('Underrated hidden gems I probably have not seen')">
-                    💎 Hidden Gems
-                </button>
+        <div class="quick-prompts">
+            <div class="prompt-chip" onclick="usePrompt('Recommend 5 trending movies right now')">
+                🔥 Trending Movies
+            </div>
+            <div class="prompt-chip" onclick="usePrompt('Best series to binge watch this weekend')">
+                📺 Binge-Worthy Series
+            </div>
+            <div class="prompt-chip" onclick="usePrompt('Movies like Inception with mind-bending plots')">
+                🧠 Mind-Bending
+            </div>
+            <div class="prompt-chip" onclick="usePrompt('Romantic comedies that will make me laugh and cry')">
+                💕 Rom-Coms
+            </div>
+            <div class="prompt-chip" onclick="usePrompt('Action movies with amazing fight scenes')">
+                💥 Action-Packed
+            </div>
+            <div class="prompt-chip" onclick="usePrompt('Underrated hidden gems I probably have not seen')">
+                💎 Hidden Gems
             </div>
         </div>
 
-        <div id="loading" class="loading-spinner"><i class="fas fa-circle-notch"></i></div>
+        <!-- Chat Container -->
+        <div class="chat-container" id="chatContainer">
+            <div class="chat-message">
+                <div class="message-avatar">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="message-content">
+                    <p>👋 Hi! I'm your AI movie assistant. I can help you discover amazing movies and shows based on
+                        your mood, preferences, or just have a chat about cinema. What are you in the mood for today?
+                    </p>
+                </div>
+            </div>
 
-        <div id="aiTextResponse" class="chat-bubble"></div>
-        <div id="aiResults" class="ai-result-grid"></div>
+            <div class="typing-indicator" id="typingIndicator">
+                <div class="message-avatar">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div style="display: flex; gap: 5px; padding: 1rem;">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Container -->
+        <div class="input-container">
+            <input type="text" id="aiInput" class="ai-input" placeholder="Ask me anything about movies..."
+                onkeypress="if(event.key==='Enter') sendMessage()">
+            <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
     </div>
 
     <script src="config.js"></script>
-    <script type="module" src="firebase-config.js"></script>
+    <script src="auth.js"></script>
     <script type="module" src="ai.js"></script>
+
 </body>
 
 </html>

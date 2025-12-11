@@ -5,185 +5,229 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profile - OurShow</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="public/style.css">
+    <link rel="stylesheet" href="themes.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        .profile-container {
+            max-width: 800px;
+            margin: 6rem auto 2rem;
+            padding: 2rem;
+        }
+
         .profile-header {
             text-align: center;
-            padding: 4rem 0;
-            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.2), transparent);
+            margin-bottom: 3rem;
         }
 
         .profile-avatar {
-            width: 150px;
-            height: 150px;
+            width: 120px;
+            height: 120px;
             border-radius: 50%;
             border: 4px solid var(--primary-color);
-            margin-bottom: 1.5rem;
-            object-fit: cover;
+            margin-bottom: 1rem;
         }
 
-        .profile-stats {
-            display: flex;
-            justify-content: center;
-            gap: 3rem;
-            margin: 2rem 0;
-        }
-
-        .p-stat {
-            text-align: center;
-        }
-
-        .p-stat-val {
-            font-size: 1.5rem;
+        .profile-name {
+            font-size: 2rem;
             font-weight: 700;
+            margin-bottom: 0.5rem;
         }
 
-        .p-stat-label {
+        .profile-email {
             color: var(--text-secondary);
-            font-size: 0.9rem;
+            font-size: 1.1rem;
         }
 
-        .profile-nav {
-            display: flex;
-            justify-content: center;
-            gap: 1rem;
+        .profile-section {
             margin-bottom: 2rem;
+        }
+
+        .profile-section h2 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .profile-section h2::before {
+            content: '';
+            width: 4px;
+            height: 24px;
+            background: var(--primary-color);
+            border-radius: 2px;
+        }
+
+        .profile-info {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 1rem 0;
             border-bottom: 1px solid var(--glass-border);
-            padding-bottom: 1rem;
         }
 
-        .tab-link {
-            padding: 0.5rem 1.5rem;
-            cursor: pointer;
-            border-radius: 20px;
-            transition: background 0.3s;
+        .info-row:last-child {
+            border-bottom: none;
         }
 
-        .tab-link.active {
-            background: var(--glass-highlight);
-            color: var(--primary-color);
+        .info-label {
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .info-value {
+            color: var(--text-primary);
             font-weight: 600;
         }
 
-        .tab-pane {
-            display: none;
-        }
-
-        .tab-pane.active {
-            display: block;
-        }
-
-        .movie-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 1.5rem;
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
             margin-top: 2rem;
+            flex-wrap: wrap;
         }
 
-        .movie-card {
+        .logout-btn {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
             cursor: pointer;
-            transition: transform 0.3s;
+            transition: all 0.3s;
         }
 
-        .movie-card:hover {
-            transform: scale(1.05);
-        }
-
-        .movie-card img {
-            width: 100%;
-            border-radius: 12px;
-        }
-
-        .edit-buttons {
-            margin-top: 1rem;
-        }
-
-        #saveBtn,
-        #cancelBtn,
-        #uploadPicBtn {
-            display: none;
+        .logout-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
         }
     </style>
 </head>
 
 <body>
 
-    <nav class="navbar">
+    <!-- Navbar (same as index.html) -->
+    <nav class="navbar" id="navbar">
         <div class="container nav-content">
             <a href="index.html" class="logo">OurShow</a>
-            <ul class="nav-links">
-                <li><a href="index.html" class="nav-link"><i class="fas fa-home"></i> Home</a></li>
-            </ul>
+
+            <div class="nav-right">
+                <ul class="nav-links" id="navLinks">
+                    <li><a href="index.html" class="nav-link"><i class="fas fa-home"></i> Home</a></li>
+                    <li><a href="discovery.html" class="nav-link"><i class="fas fa-compass"></i> Discover</a></li>
+                    <li><a href="collection.html" class="nav-link"><i class="fas fa-bookmark"></i> Collections</a></li>
+                    <li><a href="communitychat.html" class="nav-link"><i class="fas fa-comments"></i> Chat</a></li>
+                    <li><a href="post.html" class="nav-link"><i class="fas fa-newspaper"></i> Posts</a></li>
+                    <li><a href="ai.html" class="nav-link"><i class="fas fa-robot"></i> AI Assistant</a></li>
+                </ul>
+
+                <div class="nav-actions">
+                    <button class="icon-btn theme-toggle" onclick="toggleTheme()" title="Toggle Theme">
+                        <i class="fas fa-moon"></i>
+                    </button>
+
+                    <a href="profile.html" class="auth-btn" id="navAuthBtn">
+                        <i class="fas fa-user-circle"></i> Profile
+                    </a>
+                </div>
+            </div>
         </div>
     </nav>
 
-    <div class="profile-header">
-        <img id="profilePic" src="https://ui-avatars.com/api/?name=User&background=6366f1&color=fff"
-            class="profile-avatar" alt="Profile">
-        <h1 id="userName">Loading...</h1>
-        <p id="userEmail" style="color: var(--text-secondary);"></p>
-
-        <div class="edit-buttons">
-            <button class="glass-button" id="editBtn" onclick="enableEdit()"><i class="fas fa-edit"></i> Edit
-                Profile</button>
-            <button class="glass-button" id="saveBtn" onclick="saveProfile()"><i class="fas fa-save"></i> Save</button>
-            <button class="glass-button" id="cancelBtn" onclick="cancelEdit()"><i class="fas fa-times"></i>
-                Cancel</button>
-            <button class="glass-button" id="uploadPicBtn" onclick="uploadProfilePic()"><i class="fas fa-camera"></i>
-                Change Picture</button>
+    <!-- Profile Content -->
+    <div class="profile-container">
+        <div class="glass-panel profile-header">
+            <img id="profileAvatar" src="" alt="Profile" class="profile-avatar">
+            <h1 class="profile-name" id="profileName">Loading...</h1>
+            <p class="profile-email" id="profileEmail">Loading...</p>
         </div>
 
-        <div class="profile-stats">
-            <div class="p-stat">
-                <div class="p-stat-val" id="watchlistCount">0</div>
-                <div class="p-stat-label">Watchlist</div>
-            </div>
-            <div class="p-stat">
-                <div class="p-stat-val" id="watchedCount">0</div>
-                <div class="p-stat-label">Watched</div>
-            </div>
-            <div class="p-stat">
-                <div class="p-stat-val" id="reviewsCount">0</div>
-                <div class="p-stat-label">Reviews</div>
+        <div class="profile-section">
+            <h2>Account Information</h2>
+            <div class="glass-panel profile-info">
+                <div class="info-row">
+                    <span class="info-label">Email</span>
+                    <span class="info-value" id="infoEmail">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">User ID</span>
+                    <span class="info-value" id="infoUserId">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Account Status</span>
+                    <span class="info-value" style="color: #2ecc71;">Active</span>
+                </div>
             </div>
         </div>
 
-        <button class="glass-button" onclick="window.location.href='stats.html'">View Full Stats</button>
-    </div>
-
-    <div class="container">
-        <div class="profile-nav">
-            <div class="tab-link active" onclick="switchTab('watchlist')">Watchlist</div>
-            <div class="tab-link" onclick="switchTab('watched')">Watched</div>
-            <div class="tab-link" onclick="switchTab('reviews')">Reviews</div>
-        </div>
-
-        <!-- Watchlist Tab -->
-        <div id="watchlist" class="tab-pane active">
-            <div id="watchlistGrid" class="movie-grid">
-                <p style="grid-column: 1/-1; text-align: center;">Loading...</p>
+        <div class="profile-section">
+            <h2>Quick Stats</h2>
+            <div class="glass-panel profile-info">
+                <div class="info-row">
+                    <span class="info-label">Movies Watched</span>
+                    <span class="info-value">0</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Watchlist Items</span>
+                    <span class="info-value">0</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Reviews Written</span>
+                    <span class="info-value">0</span>
+                </div>
             </div>
         </div>
 
-        <!-- Watched Tab -->
-        <div id="watched" class="tab-pane">
-            <div id="watchedGrid" class="movie-grid">
-                <p style="grid-column: 1/-1; text-align: center;">Loading...</p>
-            </div>
-        </div>
-
-        <!-- Reviews Tab -->
-        <div id="reviews" class="tab-pane">
-            <div id="reviewsGrid">
-                <p style="text-align: center;">Loading...</p>
-            </div>
+        <div class="action-buttons">
+            <button class="glass-button primary">
+                <i class="fas fa-edit"></i> Edit Profile
+            </button>
+            <button class="glass-button">
+                <i class="fas fa-cog"></i> Settings
+            </button>
+            <button class="logout-btn" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
         </div>
     </div>
 
-    <script src="config.js"></script>
-    <script src="profile.js" type="module"></script>
+    <script src="auth.js"></script>
+    <script>
+        // Load user profile data
+        function loadProfile() {
+            const authState = window.getAuthState();
+
+            if (!authState.isLoggedIn) {
+                alert('Please login first');
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Update profile display
+            document.getElementById('profileAvatar').src = authState.userPhoto || 'https://ui-avatars.com/api/?name=User&background=7c3aed&color=fff';
+            document.getElementById('profileName').textContent = authState.userName || 'User';
+            document.getElementById('profileEmail').textContent = authState.userEmail || 'No email';
+            document.getElementById('infoEmail').textContent = authState.userEmail || 'No email';
+            document.getElementById('infoUserId').textContent = localStorage.getItem('userId') || 'N/A';
+        }
+
+        // Load profile on page load
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', loadProfile);
+        } else {
+            loadProfile();
+        }
+    </script>
+
 </body>
 
 </html>

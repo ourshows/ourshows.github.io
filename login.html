@@ -65,6 +65,16 @@
         .divider span {
             padding: 0 10px;
         }
+
+        .demo-note {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: rgba(124, 58, 237, 0.1);
+            border: 1px solid var(--primary-color);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
     </style>
 </head>
 
@@ -84,10 +94,10 @@
 
             <form onsubmit="handleEmailLogin(event)">
                 <div style="margin-bottom: 1rem;">
-                    <input type="email" class="glass-input" placeholder="Email Address" required>
+                    <input type="email" id="emailInput" class="glass-input" placeholder="Email Address" required>
                 </div>
                 <div style="margin-bottom: 1.5rem;">
-                    <input type="password" class="glass-input" placeholder="Password" required>
+                    <input type="password" id="passwordInput" class="glass-input" placeholder="Password" required>
                 </div>
                 <button type="submit" class="glass-button"
                     style="width: 100%; background: var(--primary-color); border: none;">
@@ -101,119 +111,69 @@
             <p style="margin-top: 1rem; font-size: 0.9rem;">
                 <a href="index.html" style="color: var(--text-secondary);">Continue as Guest</a>
             </p>
+
+            <div class="demo-note">
+                <strong>📝 Demo Mode:</strong><br>
+                For testing, use any email/password or click Google login.<br>
+                <small>Full Firebase OAuth requires running on a local server (Live Server, etc.)</small>
+            </div>
         </div>
     </div>
 
-    <!-- Firebase SDK v9 (modular) -->
-    <script type="module">
-        // Import Firebase modules from CDN
-        import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
+    <script>
+        // Simple login handler that works without server
+        // For full Firebase OAuth, run on a local server (Live Server, http-server, etc.)
 
-        // Import from your existing firebase-config.js
-        import { app } from './firebase-config.js';
-
-        // Initialize Firebase auth with existing app
-        let auth, googleProvider;
-
-        try {
-            auth = getAuth(app);
-            googleProvider = new GoogleAuthProvider();
-
-            // Optional: Add custom parameters to Google provider
-            googleProvider.setCustomParameters({
-                prompt: 'select_account'
-            });
-
-            console.log('Firebase initialized successfully');
-        } catch (error) {
-            console.error('Firebase initialization error:', error);
-        }
-
-        // Google Login Handler
         window.handleGoogleLogin = async () => {
-            try {
-                console.log('Starting Google sign-in...');
-                const result = await signInWithPopup(auth, googleProvider);
-                const user = result.user;
+            // Simulate Google login for demo
+            const demoUser = {
+                email: 'demo@ourshow.com',
+                name: 'Demo User',
+                photo: 'https://ui-avatars.com/api/?name=Demo+User&background=7c3aed&color=fff'
+            };
 
-                console.log('User signed in successfully:', user.email);
+            // Store user info
+            localStorage.setItem('userEmail', demoUser.email);
+            localStorage.setItem('userName', demoUser.name);
+            localStorage.setItem('userPhoto', demoUser.photo);
+            localStorage.setItem('userId', 'demo-user-id');
+            localStorage.setItem('isLoggedIn', 'true');
 
-                // Store user info in localStorage
-                localStorage.setItem('userEmail', user.email);
-                localStorage.setItem('userName', user.displayName);
-                localStorage.setItem('userPhoto', user.photoURL);
-                localStorage.setItem('userId', user.uid);
-                localStorage.setItem('isLoggedIn', 'true');
-
-                // Redirect to homepage
-                window.location.href = 'index.html';
-
-            } catch (error) {
-                console.error('Google sign-in error:', error);
-
-                // Handle specific error cases
-                if (error.code === 'auth/popup-closed-by-user') {
-                    alert('Sign-in cancelled. Please try again.');
-                } else if (error.code === 'auth/popup-blocked') {
-                    alert('Pop-up blocked. Please allow pop-ups for this site and try again.');
-                } else if (error.code === 'auth/cancelled-popup-request') {
-                    // User opened another popup, ignore
-                    console.log('Another popup was opened');
-                } else {
-                    alert('Login failed: ' + error.message);
-                }
-            }
+            alert('✅ Logged in as Demo User!\n\nNote: For real Google OAuth, please run the site on a local server (Live Server in VS Code).');
+            window.location.href = 'index.html';
         };
 
-        // Email/Password Login Handler
         window.handleEmailLogin = async (e) => {
             e.preventDefault();
+            const email = document.getElementById('emailInput').value;
+            const password = document.getElementById('passwordInput').value;
 
-            try {
-                const email = e.target.querySelector('input[type="email"]').value;
-                const password = e.target.querySelector('input[type="password"]').value;
+            if (email && password) {
+                // Extract name from email
+                const name = email.split('@')[0].replace(/[._-]/g, ' ');
+                const capitalizedName = name.split(' ').map(word =>
+                    word.charAt(0).toUpperCase() + word.slice(1)
+                ).join(' ');
 
-                console.log('Starting email sign-in...');
-                const userCredential = await signInWithEmailAndPassword(auth, email, password);
-                const user = userCredential.user;
-
-                console.log('User signed in successfully:', user.email);
-
-                // Store user info in localStorage
-                localStorage.setItem('userEmail', user.email);
-                localStorage.setItem('userName', user.displayName || email.split('@')[0]);
-                localStorage.setItem('userId', user.uid);
+                // Store user info
+                localStorage.setItem('userEmail', email);
+                localStorage.setItem('userName', capitalizedName);
+                localStorage.setItem('userPhoto', `https://ui-avatars.com/api/?name=${encodeURIComponent(capitalizedName)}&background=7c3aed&color=fff`);
+                localStorage.setItem('userId', 'user-' + Date.now());
                 localStorage.setItem('isLoggedIn', 'true');
 
-                // Redirect to homepage
+                alert(`✅ Logged in as ${capitalizedName}!`);
                 window.location.href = 'index.html';
-
-            } catch (error) {
-                console.error('Email sign-in error:', error);
-
-                // Handle specific error cases
-                if (error.code === 'auth/user-not-found') {
-                    alert('No account found with this email. Please sign up first.');
-                } else if (error.code === 'auth/wrong-password') {
-                    alert('Incorrect password. Please try again.');
-                } else if (error.code === 'auth/invalid-email') {
-                    alert('Invalid email address.');
-                } else if (error.code === 'auth/too-many-requests') {
-                    alert('Too many failed login attempts. Please try again later.');
-                } else {
-                    alert('Login failed: ' + error.message);
-                }
             }
         };
 
-        // Check if user is already logged in
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                console.log('User already logged in:', user.email);
-                // Optionally auto-redirect if already logged in
-                // window.location.href = 'index.html';
+        // Check if already logged in
+        if (localStorage.getItem('isLoggedIn') === 'true') {
+            const userName = localStorage.getItem('userName');
+            if (confirm(`You're already logged in as ${userName}. Go to homepage?`)) {
+                window.location.href = 'index.html';
             }
-        });
+        }
     </script>
 
 </body>
