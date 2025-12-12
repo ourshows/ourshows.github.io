@@ -777,6 +777,92 @@ a {
     border-top: 1px solid var(--glass-border);
 }
 
+/* ============================================
+   LOGIN PAGE ANIMATION
+   ============================================ */
+.login-body {
+    overflow: hidden;
+    position: relative;
+    background: #000;
+}
+
+.login-background {
+    position: fixed;
+    top: -10%;
+    left: -10%;
+    width: 120%;
+    height: 120%;
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    z-index: 0;
+    opacity: 0.4;
+    transform: rotate(-15deg) scale(1.1);
+}
+
+.poster-track {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    width: 250px;
+    flex-shrink: 0;
+}
+
+.poster-track.scrolling-up {
+    animation: scrollUp 40s linear infinite;
+}
+
+.poster-track.scrolling-down {
+    animation: scrollDown 40s linear infinite;
+}
+
+.track-poster {
+    width: 100%;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    aspect-ratio: 2/3;
+    object-fit: cover;
+    filter: grayscale(30%);
+    transition: filter 0.3s;
+}
+
+.track-poster:hover {
+    filter: grayscale(0%);
+}
+
+@keyframes scrollUp {
+    0% {
+        transform: translateY(0);
+    }
+
+    100% {
+        transform: translateY(-50%);
+    }
+}
+
+@keyframes scrollDown {
+    0% {
+        transform: translateY(-50%);
+    }
+
+    100% {
+        transform: translateY(0);
+    }
+}
+
+/* Ensure login box stays on top */
+.login-container {
+    position: relative;
+    z-index: 10;
+}
+
+.login-box {
+    background: rgba(0, 0, 0, 0.6) !important;
+    backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5) !important;
+}
+
 .filter-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));

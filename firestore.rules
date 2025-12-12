@@ -13,32 +13,44 @@ service cloud.firestore {
     
     // Users collection - profiles, watchlists, watched history
     match /users/{userId} {
-      // Anyone can read user profiles (for discovery, following)
       allow read: if true;
       
-      // Only the user can create/update their own profile
       allow create, update: if isSignedIn() && isOwner(userId);
       allow delete: if isSignedIn() && isOwner(userId);
       
-      // Watchlist subcollection
       match /watchlist/{movieId} {
         allow read: if true;
         allow write: if isSignedIn() && isOwner(userId);
       }
       
-      // Watched history subcollection
       match /watched/{movieId} {
         allow read: if true;
         allow write: if isSignedIn() && isOwner(userId);
       }
       
-      // User stats/badges
       match /stats/{statId} {
         allow read: if true;
         allow write: if isSignedIn() && isOwner(userId);
       }
     }
     
+    // Clubs (New Feature)
+    match /clubs/{clubId} {
+      allow read: if true;
+      
+      // Allow creating clubs if authenticated
+      allow create: if isSignedIn() && 
+                      request.resource.data.createdBy == request.auth.uid &&
+                      request.resource.data.name != null;
+      
+      // Allow updates (e.g. for members joining)
+      // Refined to ensure only signed-in users can update
+      allow update: if isSignedIn();
+      
+      // Only owner can delete
+      allow delete: if isSignedIn() && resource.data.createdBy == request.auth.uid;
+    }
+
     // Posts/Social Feed
     match /posts/{postId} {
       allow read: if true;
@@ -50,7 +62,6 @@ service cloud.firestore {
       allow update, delete: if isSignedIn() && 
                                resource.data.userId == request.auth.uid;
       
-      // Comments on posts
       match /comments/{commentId} {
         allow read: if true;
         
@@ -75,7 +86,7 @@ service cloud.firestore {
       allow delete: if isSignedIn() && 
                       resource.data.userId == request.auth.uid;
       
-      allow update: if false; // Messages are immutable
+      allow update: if false; 
     }
     
     // Movie/Series reviews

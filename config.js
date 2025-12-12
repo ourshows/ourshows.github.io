@@ -1,7 +1,10 @@
+// OurShow Configuration
+// This file is gitignored for security - never commit API keys!
+
 const CONFIG = {
     TMDB_API_KEY: "798ae7de540b25e908c68ea2ca408347",
     TMDB_READ_ACCESS_TOKEN: "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI3OThhZTdkZTU0MGIyNWU5MDhjNjhlYTJjYTQwODM0NyIsIm5iZiI6MTc2MzEzMTEzMy41OTcsInN1YiI6IjY5MTczZWZkYjgzYWRmMjI4ZWFjMmIzYyIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.h7oLTTe5UHaaXPZHZSMtQs_c5fa8DBQq8b0gN2gVIPw",
-    GEMINI_API_KEY: "AIzaSyD2gLkiIl_ld6nF6I1KSycq5iEy6xuFKR8",
+    HUGGINGFACE_API_KEY: "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",
     TMDB_BASE_URL: "https://api.themoviedb.org/3",
     TMDB_IMAGE_BASE_URL: "https://image.tmdb.org/t/p/original",
     TMDB_IMAGE_SMALL_URL: "https://image.tmdb.org/t/p/w500",

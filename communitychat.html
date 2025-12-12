@@ -5,46 +5,80 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Community Chat - OurShow</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="public/style.css">
+    <link rel="stylesheet" href="public/modal.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         .chat-layout {
             display: flex;
             height: calc(100vh - 80px);
-            /* Adjust for navbar */
             margin-top: 80px;
             gap: 1rem;
             padding-bottom: 1rem;
+            position: relative;
         }
 
         .sidebar {
             width: 300px;
-            background: rgba(15, 23, 42, 0.6);
+            background: rgba(15, 23, 42, 0.8);
             border-right: 1px solid var(--glass-border);
             display: flex;
             flex-direction: column;
             border-radius: 16px;
+            backdrop-filter: blur(12px);
         }
 
         .chat-area {
             flex: 1;
-            background: rgba(15, 23, 42, 0.4);
+            background: rgba(15, 23, 42, 0.6);
             border-radius: 16px;
             display: flex;
             flex-direction: column;
             border: 1px solid var(--glass-border);
             overflow: hidden;
+            backdrop-filter: blur(12px);
+            position: relative;
         }
 
         .channel-list {
             list-style: none;
             padding: 1rem;
             overflow-y: auto;
+            flex: 1;
+        }
+
+        .channel-section-title {
+            padding: 0 1rem;
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .create-club-btn {
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 4px;
+            transition: all 0.2s;
+            border-radius: 4px;
+        }
+
+        .create-club-btn:hover {
+            background: rgba(124, 58, 237, 0.1);
+            transform: scale(1.1);
         }
 
         .channel-item {
-            padding: 1rem;
+            padding: 0.8rem 1rem;
             border-radius: 8px;
             cursor: pointer;
             transition: background 0.2s;
@@ -52,16 +86,18 @@
             align-items: center;
             gap: 0.8rem;
             color: var(--text-secondary);
+            margin-bottom: 0.25rem;
         }
 
         .channel-item:hover,
         .channel-item.active {
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.1);
             color: var(--text-primary);
         }
 
         .channel-item.active {
             border-left: 3px solid var(--primary-color);
+            background: linear-gradient(90deg, rgba(124, 58, 237, 0.1) 0%, transparent 100%);
         }
 
         .messages-container {
@@ -71,6 +107,7 @@
             display: flex;
             flex-direction: column;
             gap: 1rem;
+            scroll-behavior: smooth;
         }
 
         .message {
@@ -79,12 +116,31 @@
             border-radius: 12px;
             background: rgba(255, 255, 255, 0.05);
             position: relative;
+            animation: fadeIn 0.3s ease-out;
+            word-wrap: break-word;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .message.self {
             align-self: flex-end;
             background: var(--primary-color);
             color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message:not(.self) {
+            border-bottom-left-radius: 4px;
         }
 
         .message-meta {
@@ -93,6 +149,7 @@
             margin-bottom: 0.25rem;
             display: flex;
             justify-content: space-between;
+            gap: 1rem;
         }
 
         .spoiler-content {
@@ -100,6 +157,9 @@
             cursor: pointer;
             transition: filter 0.3s;
             user-select: none;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 0 4px;
+            border-radius: 4px;
         }
 
         .spoiler-content.revealed {
@@ -108,21 +168,102 @@
 
         .input-area {
             padding: 1rem;
-            background: rgba(2, 6, 23, 0.5);
+            background: rgba(2, 6, 23, 0.8);
             display: flex;
             gap: 1rem;
             align-items: center;
+            border-top: 1px solid var(--glass-border);
         }
 
         .spoiler-toggle {
             color: var(--text-secondary);
             cursor: pointer;
             font-size: 1.2rem;
+            transition: color 0.3s;
+            padding: 0.5rem;
+        }
+
+        .spoiler-toggle:hover {
+            color: var(--text-primary);
         }
 
         .spoiler-toggle.active {
             color: #ef4444;
-            /* Red for warning */
+        }
+
+        /* Mobile Header in Chat Area */
+        .chat-header-mobile {
+            display: none;
+            /* Hidden on desktop */
+            padding: 1rem;
+            border-bottom: 1px solid var(--glass-border);
+            align-items: center;
+            gap: 1rem;
+            background: rgba(15, 23, 42, 0.9);
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            .chat-layout {
+                margin-top: 60px;
+                height: calc(100vh - 60px);
+                padding: 0;
+            }
+
+            .sidebar {
+                position: absolute;
+                left: 0;
+                top: 0;
+                height: 100%;
+                width: 280px;
+                z-index: 100;
+                transform: translateX(-100%);
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                border-radius: 0;
+                border-right: 1px solid rgba(255, 255, 255, 0.1);
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+                box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
+            }
+
+            .chat-area {
+                border-radius: 0;
+                border: none;
+                width: 100%;
+            }
+
+            .chat-header-mobile {
+                display: flex;
+                justify-content: space-between;
+            }
+
+            .current-channel-title {
+                font-weight: 600;
+                font-size: 1.1rem;
+            }
+
+            .sidebar-overlay {
+                display: none;
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 90;
+                backdrop-filter: blur(4px);
+            }
+
+            .sidebar-overlay.active {
+                display: block;
+            }
+
+            .input-area {
+                padding: 0.75rem;
+                gap: 0.5rem;
+            }
         }
     </style>
 </head>
@@ -139,53 +280,80 @@
     </nav>
 
     <div class="container chat-layout">
-        <aside class="sidebar glass-panel">
-            <div style="padding: 1.5rem; border-bottom: 1px solid var(--glass-border);">
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+        <aside class="sidebar glass-panel" id="sidebar">
+            <div
+                style="padding: 1.5rem; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;">
                 <h3>Channels</h3>
+                <button class="icon-btn" id="closeSidebarBtn"
+                    style="display: none; @media(min-width:769px){display:none;}">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
+
             <ul class="channel-list">
-                <li class="channel-item active">
+                <li class="channel-item active" data-channel="global" id="globalChatBtn">
                     <i class="fas fa-globe"></i> Global Chat
                 </li>
-                <li class="channel-item">
-                    <i class="fas fa-film"></i> Movie Spoilers
-                </li>
-                <li class="channel-item">
-                    <i class="fas fa-tv"></i> Series Discussion
-                </li>
+
+                <!-- Clubs Section -->
+                <div class="channel-section-title">
+                    <span>Clubs</span>
+                    <button class="create-club-btn" id="createClubBtnTrigger" title="Create New Club">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+
+                <div id="clubsListContainer">
+                    <!-- Dynamic Clubs will appear here -->
+                    <div style="text-align: center; font-size: 0.8rem; color: var(--text-secondary); padding: 1rem;">
+                        Loading clubs...
+                    </div>
+                </div>
             </ul>
         </aside>
 
         <main class="chat-area glass-panel">
+            <div class="chat-header-mobile">
+                <button class="icon-btn" id="mobileMenuBtn">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <span class="current-channel-title" id="currentChannelTitle">Global Chat</span>
+                <div style="width: 40px;"></div>
+            </div>
+
             <div class="messages-container" id="messagesList">
-                <!-- Mock Messages -->
-                <div class="message">
-                    <div class="message-meta"><span>User123</span> <span>10:00 AM</span></div>
-                    Has anyone seen the new Marvel movie?
-                </div>
-                <div class="message self">
-                    <div class="message-meta"><span>Me</span> <span>10:01 AM</span></div>
-                    Yes! It was amazing.
-                </div>
-                <div class="message">
-                    <div class="message-meta"><span>SpoilerGuy</span> <span>10:05 AM</span></div>
-                    <span class="spoiler-content" onclick="this.classList.toggle('revealed')">The main character dies at
-                        the end! (Click to reveal)</span>
+                <div style="text-align: center; margin-top: 2rem; color: var(--text-secondary);">
+                    Loading messages...
                 </div>
             </div>
 
             <div class="input-area">
                 <i class="fas fa-eye-slash spoiler-toggle" id="spoilerToggle" title="Toggle Spoiler Mode"></i>
                 <input type="text" class="glass-input" id="msgInput" placeholder="Type a message...">
-                <button class="glass-button" onclick="sendMessage()">
+                <button class="glass-button" id="sendBtn">
                     <i class="fas fa-paper-plane"></i>
                 </button>
             </div>
         </main>
     </div>
 
+    <!-- Create Club Modal -->
+    <div id="createClubModal" class="modal" style="display: none;">
+        <div class="modal-content glass-panel" style="max-width: 400px;">
+            <span class="close-modal" id="closeClubModal">&times;</span>
+            <h2 style="margin-bottom: 1.5rem;">Create a Club</h2>
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary);">Club Name</label>
+                <input type="text" id="newClubName" class="glass-input" placeholder="e.g. Anime Fans">
+            </div>
+            <button class="glass-button primary" id="confirmCreateClubBtn" style="width: 100%;">Create Club</button>
+        </div>
+    </div>
+
     <script src="config.js"></script>
-    <script src="communitychat.js"></script>
+    <script type="module" src="communitychat.js"></script>
 </body>
 
 </html>

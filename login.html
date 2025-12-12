@@ -10,172 +10,336 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        .login-container {
-            min-height: 100vh;
+        /* Split Layout Styles */
+        body.login-body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #000;
+            height: 100vh;
+            display: flex;
+        }
+
+        /* Left Side: Login Form */
+        .login-pane {
+            flex: 1;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 1rem;
+            z-index: 20;
+            background: rgba(3, 7, 18, 0.95);
+            /* Dark background for contrast */
+            position: relative;
+            box-shadow: 20px 0 50px rgba(0, 0, 0, 0.8);
         }
 
         .login-box {
             width: 100%;
-            max-width: 400px;
-            padding: 2.5rem;
-            text-align: center;
+            max-width: 420px;
+            padding: 3rem;
+            background: transparent !important;
+            /* Remove glass panel background to blend */
+            box-shadow: none !important;
+            border: none !important;
         }
 
-        .social-btn {
-            width: 100%;
-            padding: 0.75rem;
-            border-radius: 12px;
-            border: 1px solid var(--glass-border);
-            background: white;
-            color: #333;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            cursor: pointer;
-            transition: transform 0.2s;
-            margin-bottom: 1.5rem;
-        }
-
-        .social-btn:hover {
-            transform: translateY(-2px);
-        }
-
-        .divider {
-            display: flex;
-            align-items: center;
-            margin: 1.5rem 0;
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-        }
-
-        .divider::before,
-        .divider::after {
-            content: '';
+        /* Right Side: Waterfall Animation */
+        .visual-pane {
             flex: 1;
-            height: 1px;
-            background: var(--glass-border);
+            position: relative;
+            background: #0f0f0f;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
         }
 
-        .divider span {
-            padding: 0 10px;
+        /* Gradient Overlay on Waterfall */
+        .visual-pane::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to right, rgba(3, 7, 18, 1) 0%, transparent 20%, transparent 80%, rgba(3, 7, 18, 0.4) 100%);
+            z-index: 10;
+            pointer-events: none;
         }
 
-        .demo-note {
-            margin-top: 2rem;
-            padding: 1rem;
-            background: rgba(124, 58, 237, 0.1);
-            border: 1px solid var(--primary-color);
-            border-radius: 8px;
-            font-size: 0.9rem;
-            color: var(--text-secondary);
+        .waterfall-container {
+            display: flex;
+            gap: 1.5rem;
+            height: 120%;
+            transform: translateY(-10%);
+        }
+
+        .poster-track {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            width: 180px;
+            /* Slightly slimmer columns */
+            flex-shrink: 0;
+        }
+
+        .poster-track.scrolling-up {
+            animation: scrollUp 60s linear infinite;
+        }
+
+        .poster-track.scrolling-down {
+            animation: scrollDown 60s linear infinite;
+        }
+
+        .track-poster {
+            width: 100%;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
+            aspect-ratio: 2/3;
+            object-fit: cover;
+            filter: brightness(0.7);
+            transition: filter 0.3s, transform 0.3s;
+        }
+
+        .track-poster:hover {
+            filter: brightness(1);
+            transform: scale(1.05);
+            z-index: 5;
+        }
+
+        @keyframes scrollUp {
+            0% {
+                transform: translateY(0);
+            }
+
+            100% {
+                transform: translateY(-50%);
+            }
+        }
+
+        @keyframes scrollDown {
+            0% {
+                transform: translateY(-50%);
+            }
+
+            100% {
+                transform: translateY(0);
+            }
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            body.login-body {
+                flex-direction: column;
+            }
+
+            .visual-pane {
+                display: none;
+            }
+
+            .login-pane {
+                width: 100%;
+                /* Premium gradient for mobile */
+                background: linear-gradient(to bottom, #0f0c29, #302b63, #24243e);
+                padding: 1.5rem;
+            }
+
+            .login-box {
+                padding: 1.5rem;
+                max-width: 100%;
+            }
+
+            .logo {
+                font-size: 2.8rem !important;
+            }
+        }
+
+        /* Custom Input Styles override */
+        .glass-input {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .glass-input:focus {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: var(--primary-color);
         }
     </style>
 </head>
 
-<body>
+<body class="login-body">
 
-    <div class="login-container">
-        <div class="glass-panel login-box">
-            <h1 class="logo" style="font-size: 2.5rem; margin-bottom: 0.5rem;">OurShow</h1>
-            <p style="color: var(--text-secondary); margin-bottom: 2rem;">Welcome back, movie buff!</p>
+    <!-- Left Pane: Login Form -->
+    <div class="login-pane">
+        <div class="login-box">
+            <h1 class="logo"
+                style="font-size: 3.5rem; margin-bottom: 0.5rem; text-shadow: 0 4px 20px rgba(124, 58, 237, 0.5);">
+                OurShow</h1>
+            <p
+                style="color: var(--text-secondary); margin-bottom: 3rem; font-size: 1.2rem; line-height: 1.6; font-weight: 500;">
+                Discover, Discuss, and Recommend.
+            </p>
 
-            <button class="social-btn" onclick="handleGoogleLogin()">
-                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20" alt="Google">
+            <button class="social-btn" id="googleLoginBtn" style="transition: all 0.3s; border: none; font-size: 1rem;">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="24" alt="Google">
                 Continue with Google
             </button>
 
-            <div class="divider"><span>OR</span></div>
+            <div class="divider" style="margin: 2rem 0;"><span>OR CONTINUE WITH EMAIL</span></div>
 
-            <form onsubmit="handleEmailLogin(event)">
-                <div style="margin-bottom: 1rem;">
-                    <input type="email" id="emailInput" class="glass-input" placeholder="Email Address" required>
+            <form id="emailLoginForm">
+                <div style="margin-bottom: 1.2rem;">
+                    <input type="email" id="emailInput" class="glass-input" placeholder="Email Address" required
+                        style="padding: 1rem;">
                 </div>
-                <div style="margin-bottom: 1.5rem;">
-                    <input type="password" id="passwordInput" class="glass-input" placeholder="Password" required>
+                <div style="margin-bottom: 2rem;">
+                    <input type="password" id="passwordInput" class="glass-input" placeholder="Password" required
+                        style="padding: 1rem;">
                 </div>
-                <button type="submit" class="glass-button"
-                    style="width: 100%; background: var(--primary-color); border: none;">
+                <button type="submit" class="glass-button" id="loginBtn"
+                    style="width: 100%; background: linear-gradient(135deg, var(--primary-color), var(--accent-color)); border: none; padding: 1rem; font-size: 1.1rem; font-weight: 600;">
                     Log In
                 </button>
             </form>
 
-            <p style="margin-top: 1.5rem; font-size: 0.9rem; color: var(--text-secondary);">
-                Don't have an account? <a href="#" style="color: var(--primary-color);">Sign up</a>
-            </p>
-            <p style="margin-top: 1rem; font-size: 0.9rem;">
-                <a href="index.html" style="color: var(--text-secondary);">Continue as Guest</a>
-            </p>
-
-            <div class="demo-note">
-                <strong>📝 Demo Mode:</strong><br>
-                For testing, use any email/password or click Google login.<br>
-                <small>Full Firebase OAuth requires running on a local server (Live Server, etc.)</small>
+            <div style="margin-top: 2rem; display: flex; flex-direction: column; gap: 1.5rem; text-align: center;">
+                <p style="font-size: 0.95rem; color: var(--text-secondary);">
+                    New here? <a href="#" style="color: var(--primary-color); font-weight: 600;">Create an account</a>
+                </p>
+                <a href="index.html"
+                    style="color: var(--text-secondary); text-decoration: none; font-size: 0.9rem; transition: color 0.3s;">
+                    Skip and Continue as Guest &rarr;
+                </a>
             </div>
         </div>
     </div>
 
-    <script>
-        // Simple login handler that works without server
-        // For full Firebase OAuth, run on a local server (Live Server, http-server, etc.)
+    <!-- Right Pane: Waterfall Animation -->
+    <div class="visual-pane">
+        <div class="waterfall-container" id="waterfallContainer">
+            <!-- Tracks injected by JS -->
+        </div>
+    </div>
 
-        window.handleGoogleLogin = async () => {
-            // Simulate Google login for demo
-            const demoUser = {
-                email: 'demo@ourshow.com',
-                name: 'Demo User',
-                photo: 'https://ui-avatars.com/api/?name=Demo+User&background=7c3aed&color=fff'
-            };
+    <!-- Scripts -->
+    <script src="config.js"></script>
 
-            // Store user info
-            localStorage.setItem('userEmail', demoUser.email);
-            localStorage.setItem('userName', demoUser.name);
-            localStorage.setItem('userPhoto', demoUser.photo);
-            localStorage.setItem('userId', 'demo-user-id');
-            localStorage.setItem('isLoggedIn', 'true');
+    <!-- Firebase SDK -->
+    <script type="module">
+        // Import pre-initialized auth objects from our config module
+        import { auth, googleProvider, signInWithPopup, signInWithEmailAndPassword } from "./firebase-config.js";
 
-            alert('✅ Logged in as Demo User!\n\nNote: For real Google OAuth, please run the site on a local server (Live Server in VS Code).');
-            window.location.href = 'index.html';
-        };
+        // --- Google Login ---
+        document.getElementById('googleLoginBtn').addEventListener('click', async () => {
+            if (!auth) {
+                alert("Error: Firebase Authentication is not available. Check firebase-config.js.");
+                return;
+            }
+            try {
+                // Use the exported googleProvider instance
+                const result = await signInWithPopup(auth, googleProvider);
+                saveUser(result.user);
+            } catch (error) {
+                console.error(error);
+                alert("Login Failed: " + error.message);
+            }
+        });
 
-        window.handleEmailLogin = async (e) => {
+        // --- Email Login ---
+        document.getElementById('emailLoginForm').addEventListener('submit', (e) => {
             e.preventDefault();
             const email = document.getElementById('emailInput').value;
-            const password = document.getElementById('passwordInput').value;
+            const pass = document.getElementById('passwordInput').value;
 
-            if (email && password) {
-                // Extract name from email
-                const name = email.split('@')[0].replace(/[._-]/g, ' ');
-                const capitalizedName = name.split(' ').map(word =>
-                    word.charAt(0).toUpperCase() + word.slice(1)
-                ).join(' ');
-
-                // Store user info
-                localStorage.setItem('userEmail', email);
-                localStorage.setItem('userName', capitalizedName);
-                localStorage.setItem('userPhoto', `https://ui-avatars.com/api/?name=${encodeURIComponent(capitalizedName)}&background=7c3aed&color=fff`);
-                localStorage.setItem('userId', 'user-' + Date.now());
-                localStorage.setItem('isLoggedIn', 'true');
-
-                alert(`✅ Logged in as ${capitalizedName}!`);
-                window.location.href = 'index.html';
+            if (auth) {
+                signInWithEmailAndPassword(auth, email, pass)
+                    .then(cred => saveUser(cred.user))
+                    .catch(err => alert("Error: " + err.message));
+            } else {
+                // Should not really happen if auth is present, but fallback:
+                alert("Firebase Auth instance not found for email login.");
             }
-        };
+        });
 
-        // Check if already logged in
-        if (localStorage.getItem('isLoggedIn') === 'true') {
-            const userName = localStorage.getItem('userName');
-            if (confirm(`You're already logged in as ${userName}. Go to homepage?`)) {
-                window.location.href = 'index.html';
+        function saveUser(user) {
+            localStorage.setItem('userEmail', user.email);
+            localStorage.setItem('userName', user.displayName || user.email.split('@')[0]);
+            localStorage.setItem('userPhoto', user.photoURL || `https://ui-avatars.com/api/?name=${user.email}&background=random`);
+            localStorage.setItem('userId', user.uid);
+            localStorage.setItem('isLoggedIn', 'true');
+            window.location.href = 'index.html';
+        }
+
+        // --- Waterfall Animation Logic ---
+        async function initWaterfall() {
+            if (!window.APP_CONFIG) return;
+
+            const trendingUrl = `${window.APP_CONFIG.TMDB_BASE_URL}/trending/all/week?api_key=${window.APP_CONFIG.TMDB_API_KEY}`;
+            const cultUrl = `${window.APP_CONFIG.TMDB_BASE_URL}/movie/top_rated?api_key=${window.APP_CONFIG.TMDB_API_KEY}&page=1`; // Proxy for Cult Classics
+
+            try {
+                // Fetch both sources in parallel
+                // Use Promise.allSettled to avoid failing everything if one fails
+                const results = await Promise.allSettled([
+                    fetch(trendingUrl),
+                    fetch(cultUrl)
+                ]);
+
+                // Helper to get json from settled promise
+                const getData = async (res) => {
+                    if (res.status === 'fulfilled' && res.value.ok) {
+                        return await res.value.json();
+                    }
+                    return { results: [] };
+                };
+
+                const trendingData = await getData(results[0]);
+                const cultData = await getData(results[1]);
+
+                const trendingPosters = (trendingData.results || []).filter(m => m.poster_path).map(m => m.poster_path);
+                const cultPosters = (cultData.results || []).filter(m => m.poster_path).map(m => m.poster_path);
+
+                if (trendingPosters.length || cultPosters.length) {
+                    // Fallback if one list is empty, use the other
+                    const list1 = trendingPosters.length ? trendingPosters : cultPosters;
+                    const list2 = cultPosters.length ? cultPosters : trendingPosters;
+                    createMixedTracks(list1, list2);
+                }
+            } catch (e) {
+                console.error("Animation load failed", e);
             }
         }
-    </script>
 
+        function createMixedTracks(trending, cult) {
+            const container = document.getElementById('waterfallContainer');
+            // We want 4 tracks for the split view
+            const tracksConfig = [
+                { source: trending, speed: 50, dir: 'up' },    // Left: Trending
+                { source: cult, speed: 70, dir: 'down' },      // Middle-Left: Cult (Top Rated)
+                { source: trending, speed: 55, dir: 'up' },    // Middle-Right: Trending
+                { source: cult, speed: 65, dir: 'down' },      // Right: Cult
+            ];
+
+            tracksConfig.forEach(config => {
+                const track = document.createElement('div');
+                track.className = `poster-track scrolling-${config.dir}`;
+                track.style.animationDuration = `${config.speed}s`;
+
+                // Duplicate images to create infinite loop illusion
+                // Mix 15 images
+                const images = [...config.source, ...config.source].slice(0, 15);
+
+                images.forEach(path => {
+                    const img = document.createElement('img');
+                    img.src = `${window.APP_CONFIG.TMDB_IMAGE_SMALL_URL}${path}`;
+                    img.className = 'track-poster';
+                    img.loading = 'lazy';
+                    track.appendChild(img);
+                });
+
+                container.appendChild(track);
+            });
+        }
+
+        initWaterfall();
+
+    </script>
 </body>
 
 </html>
