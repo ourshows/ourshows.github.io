@@ -195,7 +195,8 @@
             <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
                 <div class="avatar"
                     style="width: 48px; height: 48px; border-radius: 50%; background: var(--primary-color); display: flex; align-items: center; justify-content: center;">
-                    <i class="fas fa-pen"></i></div>
+                    <i class="fas fa-pen"></i>
+                </div>
                 <textarea class="glass-input" id="postContent" rows="3" placeholder="What keeps you entertained today?"
                     style="font-size: 1.1rem;"></textarea>
             </div>
@@ -269,7 +270,8 @@
             <i class="fas fa-comments" style="font-size: 4rem; color: var(--glass-border); margin-bottom: 1.5rem;"></i>
             <h2>Your Messages</h2>
             <p style="color: var(--text-secondary); max-width: 400px; margin: 1rem auto 2rem;">Select a friend from the
-                <strong>Add Friends</strong> tab or search specifically to start a conversation.</p>
+                <strong>Add Friends</strong> tab or search specifically to start a conversation.
+            </p>
             <button class="glass-button" onclick="switchTab('connect')">Find People</button>
         </div>
 
@@ -334,9 +336,50 @@
         </div>
     </section>
 
+    <div class="mobile-tabs">
+        <button class="mobile-tab-btn" onclick="switchTab('connect')" id="btnConnect"><i
+                class="fas fa-user-friends"></i></button>
+        <button class="mobile-tab-btn active" onclick="switchTab('feed')" id="btnFeed"><i
+                class="fas fa-stream"></i></button>
+        <button class="mobile-tab-btn" onclick="switchTab('chat')" id="btnChat"><i
+                class="fas fa-comment-alt"></i></button>
+    </div>
+
     <script src="config.js"></script>
+    <!-- Main Logic -->
     <script type="module" src="post.js"></script>
     <script src="main.js"></script>
+
+    <script>
+        // Tab Switching Logic (Inline for reliability)
+        window.switchTab = function (tabId) {
+            console.log('Switching to tab:', tabId);
+
+            // 1. Update Top Tabs (Desktop)
+            document.querySelectorAll('.social-nav .tab-btn').forEach(btn => btn.classList.remove('active'));
+            const desktopBtn = document.getElementById('tab-' + tabId);
+            if (desktopBtn) desktopBtn.classList.add('active');
+
+            // 2. Update Bottom Tabs (Mobile)
+            document.querySelectorAll('.mobile-tab-btn').forEach(btn => btn.classList.remove('active'));
+            const mobileMap = { 'connect': 'btnConnect', 'feed': 'btnFeed', 'chat': 'btnChat', 'profile': '' };
+            if (mobileMap[tabId]) {
+                document.getElementById(mobileMap[tabId])?.classList.add('active');
+            }
+
+            // 3. Update Sections
+            document.querySelectorAll('.content-section').forEach(sec => sec.classList.remove('active'));
+            const section = document.getElementById('section-' + tabId);
+            if (section) {
+                section.classList.add('active');
+            } else {
+                console.error('Section not found: section-' + tabId);
+            }
+
+            // 4. Mobile Scroll
+            window.scrollTo(0, 0);
+        };
+    </script>
 </body>
 
 </html>

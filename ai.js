@@ -155,54 +155,56 @@ If they ask about movies, provide thoughtful insights. Be enthusiastic about cin
 }
 
 // Call Hugging Face API
+// Call Hugging Face API (via Firebase Function Proxy)
 async function callHuggingFace(prompt) {
-    if (!window.APP_CONFIG || !window.APP_CONFIG.HUGGINGFACE_API_KEY) {
-        throw new Error('Hugging Face API key not configured in config.js');
-    }
+    // Use the proxy URL (configured in firebase.json rewrites)
+    // If running locally with emulators, this might need adjustment, but for deployed app it's relative.
+    // We try to detect if we are on localhost and allow fallback or use relative path.
+    const url = '/api/ai';
 
-    const HF_API_KEY = window.APP_CONFIG.HUGGINGFACE_API_KEY;
-    const HF_MODEL = 'meta-llama/Llama-3.2-3B-Instruct';
-    const url = `https://api-inference.huggingface.co/models/${HF_MODEL}`;
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                inputs: prompt,
+                parameters: {
+                    max_new_tokens: 400,
+                    temperature: 0.7,
+                    top_p: 0.9,
+                    return_full_text: false
+                }
+            })
+        });
 
-    const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${HF_API_KEY}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            inputs: prompt,
-            parameters: {
-                max_new_tokens: 400,
-                temperature: 0.7,
-                top_p: 0.9,
-                return_full_text: false
+        if (!response.ok) {
+            const errorData = await response.json();
+
+            if (errorData.error && errorData.error.includes('loading')) {
+                throw new Error('AI model is warming up. Please try again in a few seconds.');
             }
-        })
-    });
 
-    if (!response.ok) {
-        const errorData = await response.json();
+            if (errorData.error && errorData.error.includes('rate limit')) {
+                throw new Error('Too many requests. Please wait a moment and try again.');
+            }
 
-        if (errorData.error && errorData.error.includes('loading')) {
-            throw new Error('AI model is warming up. Please try again in a few seconds.');
+            throw new Error(errorData.error || 'Failed to get AI response');
         }
 
-        if (errorData.error && errorData.error.includes('rate limit')) {
-            throw new Error('Too many requests. Please wait a moment and try again.');
+        const data = await response.json();
+
+        if (Array.isArray(data) && data[0]?.generated_text) {
+            return data[0].generated_text.trim();
+        } else if (typeof data === 'string') {
+            return data.trim();
+        } else {
+            throw new Error('Unexpected response format from AI');
         }
-
-        throw new Error(errorData.error || 'Failed to get AI response');
-    }
-
-    const data = await response.json();
-
-    if (Array.isArray(data) && data[0]?.generated_text) {
-        return data[0].generated_text.trim();
-    } else if (typeof data === 'string') {
-        return data.trim();
-    } else {
-        throw new Error('Unexpected response format from AI');
+    } catch (error) {
+        console.error('AI Proxy Error:', error);
+        throw error;
     }
 }
 

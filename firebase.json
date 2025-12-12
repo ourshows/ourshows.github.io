@@ -1,11 +1,21 @@
 {
+  "functions": {
+    "source": "functions"
+  },
   "hosting": {
     "public": ".",
     "ignore": [
       "firebase.json",
       "**/.*",
       "**/node_modules/**",
-      "app/**"
+      "app/**",
+      "functions/**"
+    ],
+    "rewrites": [
+      {
+        "source": "/api/ai",
+        "function": "huggingFaceProxy"
+      }
     ]
   },
   "firestore": {
