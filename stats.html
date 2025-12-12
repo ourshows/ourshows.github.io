@@ -5,7 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Stats - OurShow</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="public/style.css">
+    <link rel="stylesheet" href="themes.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -20,6 +21,8 @@
             padding: 2rem;
             text-align: center;
             background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01));
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
         }
 
         .stat-value {
@@ -101,33 +104,60 @@
 
 <body>
 
-    <nav class="navbar">
+    <nav class="navbar" id="navbar">
         <div class="container nav-content">
-            <a href="index.html" class="logo">OurShow Stats</a>
-            <ul class="nav-links">
-                <li><a href="index.html" class="nav-link">Home</a></li>
-            </ul>
+            <a href="index.html" class="logo">OurShow</a>
+
+            <div class="nav-right" id="navRight">
+                <ul class="nav-links" id="navLinks">
+                    <li><a href="index.html" class="nav-link"><i class="fas fa-home"></i> Home</a></li>
+                    <li><a href="discovery.html" class="nav-link"><i class="fas fa-compass"></i> Discover</a></li>
+                    <li><a href="collectiom.html" class="nav-link"><i class="fas fa-bookmark"></i> Collections</a></li>
+                    <li><a href="watchedlist.html" class="nav-link active"><i class="fas fa-list"></i> Watchlist</a>
+                    </li>
+                    <li><a href="communitychat.html" class="nav-link"><i class="fas fa-comments"></i> Chat</a></li>
+                </ul>
+
+                <div class="nav-actions">
+                    <button class="icon-btn theme-toggle" onclick="toggleTheme()" title="Toggle Theme">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <a href="login.html" class="auth-btn" id="navAuthBtn">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </a>
+                </div>
+            </div>
+            <button class="mobile-menu-btn" id="mobileMenuBtn">
+                <i class="fas fa-bars"></i>
+            </button>
         </div>
     </nav>
 
-    <div class="container" style="margin-top: 4rem;">
-        <h1 class="section-title">Your Viewing Habits</h1>
+    <div class="container" style="margin-top: 7rem;">
+        <div
+            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+            <h1 class="section-title" style="margin-bottom: 0;">Your Viewing Habits</h1>
+            <div style="display: flex; gap: 1rem;">
+                <a href="watchedlist.html" class="glass-button"><i class="fas fa-check-circle"></i> Watched History</a>
+                <a href="watchlater.html" class="glass-button"><i class="fas fa-clock"></i> Watch Later</a>
+            </div>
+        </div>
 
         <div class="stats-grid">
             <div class="glass-panel stat-card">
-                <div class="stat-value" id="totalHours">142</div>
+                <div class="stat-value" id="totalHours">0</div>
                 <div class="stat-label">Hours Watched</div>
             </div>
             <div class="glass-panel stat-card">
-                <div class="stat-value" id="moviesCount">45</div>
+                <div class="stat-value" id="moviesCount">0</div>
                 <div class="stat-label">Movies</div>
             </div>
             <div class="glass-panel stat-card">
-                <div class="stat-value" id="seriesCount">12</div>
+                <div class="stat-value" id="seriesCount">0</div>
                 <div class="stat-label">Series Completed</div>
             </div>
             <div class="glass-panel stat-card">
-                <div class="stat-value" id="streakDays">7</div>
+                <div class="stat-value" id="streakDays">0</div>
                 <div class="stat-label">Day Streak 🔥</div>
             </div>
         </div>
@@ -135,28 +165,41 @@
         <div class="badges-section">
             <h2 class="section-title">Achievements</h2>
             <div class="badges-grid">
-                <div class="badge" title="Watched 10 movies in a week">
-                    <i class="fas fa-couch"></i>
-                    <span>Binge Watcher</span>
-                </div>
-                <div class="badge" title="Watched 5 Horror movies">
-                    <i class="fas fa-ghost"></i>
-                    <span>Fearless</span>
-                </div>
-                <div class="badge locked" title="Watch 100 movies (Locked)">
-                    <i class="fas fa-film"></i>
-                    <span>Cinephile</span>
-                </div>
-                <div class="badge locked" title="Review 50 items (Locked)">
-                    <i class="fas fa-pen-nib"></i>
-                    <span>Critic</span>
-                </div>
+                <!-- Badges will be generated by JS -->
             </div>
+        </div>
+
+        <div id="loading" style="text-align: center; margin-top: 2rem;">
+            <i class="fas fa-spinner fa-spin fa-2x"></i>
         </div>
     </div>
 
     <script src="config.js"></script>
     <script src="stats.js" type="module"></script>
+    <script src="auth.js"></script>
+
+    <script>
+        // Theme Toggle Simple Script for this page if not imported
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            document.querySelector('.theme-toggle i').className = newTheme === 'light' ? 'fas fa-sun' : 'fas fa-moon';
+        }
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+
+        // Mobile Menu
+        const mobileBtn = document.getElementById('mobileMenuBtn');
+        const navRight = document.getElementById('navRight');
+        if (mobileBtn && navRight) {
+            mobileBtn.addEventListener('click', () => {
+                navRight.classList.toggle('active');
+            });
+        }
+    </script>
 </body>
 
 </html>

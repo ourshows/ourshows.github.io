@@ -5,47 +5,114 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Watch Later - OurShow</title>
-    <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="public/style.css">
+    <link rel="stylesheet" href="public/modal.css">
+    <link rel="stylesheet" href="themes.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 
 <body>
 
-    <nav class="navbar">
+    <nav class="navbar" id="navbar">
         <div class="container nav-content">
             <a href="index.html" class="logo">OurShow</a>
-            <ul class="nav-links">
-                <li><a href="index.html" class="nav-link">Home</a></li>
-                <li><a href="profile.html" class="nav-link">Profile</a></li>
-            </ul>
+
+            <div class="nav-right" id="navRight">
+                <ul class="nav-links" id="navLinks">
+                    <li><a href="index.html" class="nav-link"><i class="fas fa-home"></i> Home</a></li>
+                    <li><a href="discovery.html" class="nav-link"><i class="fas fa-compass"></i> Discover</a></li>
+                    <li><a href="collection.html" class="nav-link"><i class="fas fa-bookmark"></i> Collections</a></li>
+                    <li><a href="watchedlist.html" class="nav-link active"><i class="fas fa-list"></i> Watchlist</a>
+                    </li>
+                    <li><a href="communitychat.html" class="nav-link"><i class="fas fa-comments"></i> Chat</a></li>
+                    <li><a href="post.html" class="nav-link"><i class="fas fa-newspaper"></i> Posts</a></li>
+                    <li><a href="ai.html" class="nav-link"><i class="fas fa-robot"></i> AI Assistant</a></li>
+                </ul>
+
+                <div class="nav-actions">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="Search..." id="searchInput">
+                        <div class="search-results" id="searchResults"></div>
+                    </div>
+
+                    <button class="icon-btn theme-toggle" onclick="toggleTheme()" title="Toggle Theme">
+                        <i class="fas fa-moon"></i>
+                    </button>
+
+                    <a href="login.html" class="auth-btn" id="navAuthBtn">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </a>
+                </div>
+            </div>
+
+            <button class="mobile-menu-btn" id="mobileMenuBtn">
+                <i class="fas fa-bars"></i>
+            </button>
         </div>
     </nav>
 
-    <div class="container" style="margin-top: 6rem;">
-        <h1 class="section-title">Watch Later</h1>
-
-        <div class="media-scroller" style="flex-wrap: wrap; overflow: visible; gap: 1.5rem;">
-            <!-- Mock Data -->
-            <div class="media-card">
-                <img class="media-poster" src="https://image.tmdb.org/t/p/w200/8Vt6mWEReuy4Of61Lnj5Xj704m8.jpg"
-                    alt="Poster">
-                <div class="media-info">
-                    <div class="media-title">Spider-Man: ATSV</div>
-                    <div class="media-year">2023</div>
-                </div>
+    <div class="container" style="margin-top: 7rem; min-height: 80vh;">
+        <div
+            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+            <h1 class="section-title" style="margin-bottom: 0;">Watch Later</h1>
+            <div style="display: flex; gap: 1rem;">
+                <a href="watchedlist.html" class="glass-button"><i class="fas fa-check-circle"></i> Watched History</a>
+                <a href="stats.html" class="glass-button"><i class="fas fa-chart-pie"></i> Stats</a>
             </div>
-            <div class="media-card">
-                <img class="media-poster" src="https://image.tmdb.org/t/p/w200/h8gHn0OzSb8D93uU9n87k8WGf8.jpg"
-                    alt="Poster">
-                <div class="media-info">
-                    <div class="media-title">John Wick 4</div>
-                    <div class="media-year">2023</div>
+        </div>
+
+        <div id="loading" style="text-align: center; padding: 2rem; display: none;">
+            <i class="fas fa-spinner fa-spin fa-2x"></i>
+        </div>
+
+        <div id="watchLaterContainer" class="media-scroller"
+            style="flex-wrap: wrap; overflow: visible; gap: 1.5rem; justify-content: flex-start;">
+            <!-- Dynamic Content -->
+        </div>
+
+        <div id="emptyState" style="text-align: center; padding: 4rem; display: none; color: var(--text-secondary);">
+            <i class="fas fa-bookmark fa-3x" style="margin-bottom: 1rem; opacity: 0.5;"></i>
+            <h3>Your list is empty</h3>
+            <p>Save movies and shows here to watch them later.</p>
+            <a href="index.html" class="glass-button primary" style="margin-top: 1rem; display: inline-block;">Browse
+                Content</a>
+        </div>
+    </div>
+
+    <!-- Movie Details Modal -->
+    <div id="movieModal" class="modal" style="display: none;">
+        <div class="modal-content glass-panel">
+            <span class="close-modal" onclick="closeModal()">&times;</span>
+            <div class="modal-body">
+                <div class="modal-poster-container">
+                    <img id="modalPoster" src="" alt="Movie Poster" class="modal-poster">
+                </div>
+                <div class="modal-info">
+                    <h2 id="modalTitle" style="margin-bottom: 1rem;">Movie Title</h2>
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
+                        <span style="color: #ffd700;">★ <span id="modalRating">N/A</span></span>
+                        <span id="modalYear">Year</span>
+                    </div>
+                    <p id="modalOverview" class="modal-overview">Overview text...</p>
+
+                    <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                        <button class="glass-button primary" onclick="watchNow()"><i class="fas fa-play"></i> Watch
+                            Now</button>
+                        <button class="glass-button" onclick="moveToWatched()"><i class="fas fa-check"></i> Mark
+                            Watched</button>
+                        <button class="glass-button danger" onclick="removeFromWatchLater()"><i
+                                class="fas fa-trash"></i> Remove</button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <script src="config.js"></script>
+    <script type="module" src="watchlater.js"></script>
+    <script src="auth.js"></script>
 </body>
 
 </html>

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Results - OurShow</title>
+    <link rel="stylesheet" href="public/style.css">
+    <link rel="stylesheet" href="public/modal.css">
+    <link rel="stylesheet" href="themes.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .search-header {
+            margin-top: 80px;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .search-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .search-query {
+            color: var(--primary-color);
+            font-style: italic;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 2rem;
+            padding-bottom: 4rem;
+        }
+
+        /* Mobile responsive adjustments */
+        @media (max-width: 768px) {
+            .results-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .results-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.8rem;
+            }
+
+            .media-card {
+                height: 250px;
+                /* Smaller cards on mobile */
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav class="navbar" id="navbar">
+        <div class="container nav-content">
+            <a href="index.html" class="logo">OurShow</a>
+
+            <div class="nav-right" id="navRight">
+                <ul class="nav-links" id="navLinks">
+                    <li><a href="index.html" class="nav-link"><i class="fas fa-home"></i> Home</a></li>
+                    <li><a href="discovery.html" class="nav-link"><i class="fas fa-compass"></i> Discover</a></li>
+                    <li><a href="collection.html" class="nav-link"><i class="fas fa-bookmark"></i> Collections</a></li>
+                    <li><a href="watchedlist.html" class="nav-link"><i class="fas fa-list"></i> Watchlist</a></li>
+                    <li><a href="communitychat.html" class="nav-link"><i class="fas fa-comments"></i> Chat</a></li>
+                </ul>
+
+                <div class="nav-actions">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="Search..." id="navSearchInput">
+                    </div>
+
+                    <button class="icon-btn theme-toggle" onclick="toggleTheme()" title="Toggle Theme">
+                        <i class="fas fa-moon"></i>
+                    </button>
+
+                    <a href="login.html" class="auth-btn" id="navAuthBtn">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </a>
+                </div>
+            </div>
+
+            <button class="mobile-menu-btn" id="mobileMenuBtn">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="search-header">
+            <h1 class="search-title">Results for "<span class="search-query" id="queryDisplay">...</span>"</h1>
+            <p id="resultsCount">Searching...</p>
+        </div>
+
+        <div id="loading" style="text-align: center; margin-top: 4rem;">
+            <i class="fas fa-spinner fa-spin fa-3x"></i>
+        </div>
+
+        <div id="resultsContainer" class="results-grid">
+            <!-- Results will be injected here -->
+        </div>
+
+        <div id="emptyState" style="display: none; text-align: center; margin-top: 4rem;">
+            <i class="fas fa-search fa-3x" style="color: var(--text-secondary); margin-bottom: 1rem;"></i>
+            <h3>No results found</h3>
+            <p>Try checking your spelling or search for something else.</p>
+        </div>
+    </div>
+
+    <!-- Modal for details -->
+    <div id="movieModal" class="modal">
+        <div class="modal-content glass-panel">
+            <span class="close-modal" onclick="closeModal()">&times;</span>
+            <div class="modal-body">
+                <img id="modalPoster" src="" alt="Movie Poster" class="modal-poster">
+                <div class="modal-info">
+                    <h2 id="modalTitle" class="modal-title"></h2>
+                    <div class="modal-meta">
+                        <span id="modalRating" class="rating-badge"></span>
+                        <span id="modalYear"></span>
+                    </div>
+                    <p id="modalOverview" class="modal-overview"></p>
+                    <div class="modal-actions">
+                        <button class="glass-button primary" id="modalWatchBtn">
+                            <i class="fas fa-play"></i> Watch Now
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="firebase-config.js" type="module"></script>
+    <script src="auth.js"></script>
+    <script src="search.js" type="module"></script>
+
+    <script>
+        // Simple Theme & Mobile Menu (if not imported centrally)
+        // Re-using logic to match other pages
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            document.querySelector('.theme-toggle i').className = newTheme === 'light' ? 'fas fa-sun' : 'fas fa-moon';
+        }
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+
+        const mobileBtn = document.getElementById('mobileMenuBtn');
+        const navRight = document.getElementById('navRight');
+        if (mobileBtn && navRight) {
+            mobileBtn.addEventListener('click', () => {
+                navRight.classList.toggle('active');
+            });
+        }
+
+        // Modal Logic (Global handlers for HTML attributes)
+        window.closeModal = function () {
+            document.getElementById('movieModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+    </script>
+</body>
+
+</html>

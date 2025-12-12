@@ -5,16 +5,34 @@ let currentUser = null;
 let watchedItems = [];
 
 onAuthStateChanged(auth, async (user) => {
+    updateAuthUI(user);
     if (user) {
         currentUser = user;
         await loadWatchedItems(user.uid);
     } else {
         console.log('No user, showing default stats');
+        document.getElementById('loading').style.display = 'none';
         updateStatsUI({ totalMovies: 0, totalSeries: 0, totalHours: 0, streak: 0 });
     }
 });
 
+function updateAuthUI(user) {
+    const authBtn = document.getElementById('navAuthBtn');
+    if (authBtn) {
+        if (user) {
+            authBtn.innerHTML = '<i class="fas fa-user"></i> ' + (user.displayName || user.email.split('@')[0]);
+            authBtn.href = 'profile.html';
+        } else {
+            authBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login';
+            authBtn.href = 'login.html';
+        }
+    }
+}
+
 async function loadWatchedItems(userId) {
+    const loading = document.getElementById('loading');
+    if (loading) loading.style.display = 'block';
+
     try {
         const watchedRef = collection(db, 'users', userId, 'watched');
         const querySnapshot = await getDocs(watchedRef);
@@ -28,6 +46,8 @@ async function loadWatchedItems(userId) {
         await calculateStats();
     } catch (error) {
         console.error('Error loading watched items:', error);
+    } finally {
+        if (loading) loading.style.display = 'none';
     }
 }
 
@@ -40,7 +60,7 @@ async function fetchTMDBDetails(id, type) {
         if (!res.ok) return null;
         return await res.json();
     } catch (e) {
-        console.error('Error fetching TMDB details:', e);
+        // console.error('Error fetching TMDB details:', e);
         return null;
     }
 }
@@ -56,33 +76,47 @@ async function calculateStats() {
         let type = item.mediaType || 'movie';
 
         // Fetch details to get runtime
+        // Optimization: Use locally stored runtime if we saved it in watched object (to save API calls)
+        // If not, fetch.
+        let runtime = 0;
+
+        // Assuming we didn't save runtime in the lite object, we try to fetch.
+        // NOTE: fetching for *every* watched item might hit rate limits if list is huge.
+        // Ideally we should cache or store runtime in Firestore.
+        // For now, we will try to fetch but fail gracefully.
+
         const details = await fetchTMDBDetails(item.movieId, type);
 
         if (details) {
             if (type === 'movie') {
                 totalMovies++;
-                totalMinutes += details.runtime || 0;
+                runtime = details.runtime || 120; // fallback avg
             } else if (type === 'tv') {
                 totalSeries++;
-                // For TV, estimate based on episode run time * number of episodes, 
-                // or just use episode_run_time array average if available.
+                // For TV, estimate
                 const avgRuntime = (details.episode_run_time && details.episode_run_time.length > 0)
                     ? details.episode_run_time[0]
-                    : 45; // Default 45 min
+                    : 45;
 
                 const episodes = details.number_of_episodes || 1;
-                totalMinutes += avgRuntime * episodes;
+                // Note: user might have watched only a few eps, but "watched" usually implies completion or tracking.
+                // If we don't track episodes, we assume completion of Series? Or just add "1 unit" of watching?
+                // For simple stats, let's assume if it's in watched list, they watched the whole thing (or we just count it as an item).
+                // Let's cap series runtime contribution to avoid massive numbers if they mark One Piece as watched.
+                // Let's just say 1 series = 10 hours avg or calculate properly.
+                runtime = avgRuntime * episodes;
             }
         } else {
             // Fallback if fetch fails
             if (type === 'movie') {
                 totalMovies++;
-                totalMinutes += 120;
+                runtime = 120;
             } else {
                 totalSeries++;
-                totalMinutes += 450; // Approx 10 eps * 45 min
+                runtime = 450; // Approx 10 eps * 45 min
             }
         }
+        totalMinutes += runtime;
     });
 
     await Promise.all(promises);
@@ -116,13 +150,19 @@ function calculateStreak() {
         const currentDate = new Date(sorted[i].timestamp.seconds * 1000);
         const nextDate = new Date(sorted[i + 1].timestamp.seconds * 1000);
 
-        const diffDays = Math.floor((currentDate - nextDate) / oneDayMs);
+        // Reset hours to compare dates only
+        currentDate.setHours(0, 0, 0, 0);
+        nextDate.setHours(0, 0, 0, 0);
+
+        const diffTime = Math.abs(currentDate - nextDate);
+        const diffDays = Math.ceil(diffTime / oneDayMs);
 
         if (diffDays === 1) {
             streak++;
         } else if (diffDays > 1) {
             break;
         }
+        // if diffDays == 0 (same day), continue
     }
 
     return streak;
@@ -139,18 +179,26 @@ function animateValue(id, start, end, duration) {
     const element = document.getElementById(id);
     if (!element) return;
 
-    const range = end - start;
-    const increment = range / (duration / 16);
-    let currentValue = start;
+    if (end === 0) {
+        element.textContent = 0;
+        return;
+    }
 
+    const range = end - start;
+    const increment = end > start ? 1 : -1;
+    const stepTime = Math.abs(Math.floor(duration / range));
+
+    // If range is huge, stepTime might be 0. Cap it.
+    const safeStepTime = Math.max(stepTime, 10);
+
+    let currentValue = start;
     const timer = setInterval(() => {
         currentValue += increment;
-        if ((increment > 0 && currentValue >= end) || (increment < 0 && currentValue <= end)) {
-            currentValue = end;
+        element.textContent = currentValue;
+        if (currentValue == end) {
             clearInterval(timer);
         }
-        element.textContent = Math.floor(currentValue);
-    }, 16);
+    }, safeStepTime);
 }
 
 function updateBadges(totalMovies, totalSeries, totalHours, streak) {

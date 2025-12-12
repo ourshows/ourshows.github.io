@@ -1,0 +1,227 @@
+import { auth, db, onAuthStateChanged, collection, getDocs, doc, deleteDoc } from './firebase-config.js';
+
+// Initialize Theme
+// Check if initThemeVibe is available globally (from themes.css/js if separate) or manually handle
+// Assuming themes.css handles the variables, and we might need a toggler.
+// For now, simpler theme toggle if not imported from elsewhere.
+window.toggleTheme = function () {
+    const html = document.documentElement;
+    const currentTheme = html.getAttribute('data-theme');
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    html.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+
+    // Update icon
+    const icon = document.querySelector('.theme-toggle i');
+    if (icon) {
+        icon.className = newTheme === 'light' ? 'fas fa-sun' : 'fas fa-moon';
+    }
+}
+
+// Load saved theme
+const savedTheme = localStorage.getItem('theme') || 'dark';
+document.documentElement.setAttribute('data-theme', savedTheme);
+
+// Auth State
+onAuthStateChanged(auth, (user) => {
+    updateAuthUI(user);
+    if (user) {
+        loadWatchedList(user.uid);
+    } else {
+        showEmptyState();
+        document.getElementById('loading').style.display = 'none';
+        // Optionally redirect or show "Login to view"
+    }
+});
+
+function updateAuthUI(user) {
+    const authBtn = document.getElementById('navAuthBtn');
+    if (authBtn) {
+        if (user) {
+            authBtn.innerHTML = '<i class="fas fa-user"></i> ' + (user.displayName || user.email.split('@')[0]);
+            authBtn.onclick = (e) => {
+                e.preventDefault();
+                window.location.href = 'profile.html';
+            };
+            authBtn.href = 'profile.html';
+        } else {
+            authBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login';
+            authBtn.onclick = null;
+            authBtn.href = 'login.html';
+        }
+    }
+}
+
+async function loadWatchedList(userId) {
+    const loading = document.getElementById('loading');
+    const container = document.getElementById('watchedContainer');
+    const emptyState = document.getElementById('emptyState');
+
+    loading.style.display = 'block';
+    container.innerHTML = '';
+    emptyState.style.display = 'none';
+
+    try {
+        const querySnapshot = await getDocs(collection(db, 'users', userId, 'watched'));
+
+        if (querySnapshot.empty) {
+            loading.style.display = 'none';
+            emptyState.style.display = 'block';
+            return;
+        }
+
+        const watchedItems = [];
+        querySnapshot.forEach((doc) => {
+            watchedItems.push({ id: doc.id, ...doc.data() });
+        });
+
+        // Sort by timestamp if available (descending)
+        watchedItems.sort((a, b) => {
+            if (b.timestamp && a.timestamp) {
+                return b.timestamp.seconds - a.timestamp.seconds;
+            }
+            return 0;
+        });
+
+        loading.style.display = 'none';
+        renderCards(watchedItems);
+
+    } catch (error) {
+        console.error("Error loading watched list:", error);
+        loading.style.display = 'none';
+        container.innerHTML = `<p style="color: red; width: 100%; text-align: center;">Error loading content. Please try again.</p>`;
+    }
+}
+
+function renderCards(items) {
+    const container = document.getElementById('watchedContainer');
+    container.innerHTML = '';
+
+    if (items.length === 0) {
+        document.getElementById('emptyState').style.display = 'block';
+        return;
+    }
+
+    items.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'media-card';
+
+        const posterUrl = item.posterPath ? `${window.APP_CONFIG.TMDB_IMAGE_SMALL_URL}${item.posterPath}` : 'https://via.placeholder.com/200x300?text=No+Poster';
+        const rating = item.rating ? Number(item.rating).toFixed(1) : 'N/A';
+        const mediaType = item.mediaType || 'movie';
+
+        card.innerHTML = `
+            <div class="media-poster-container">
+                <img class="media-poster" src="${posterUrl}" loading="lazy" alt="${item.movieTitle}">
+                <div class="card-rating-badge">★ ${rating}</div>
+                <div class="card-overlay">
+                     <button class="card-download-btn" onclick="event.stopPropagation(); window.location.href='watchanddownload.html?id=${item.movieId}&type=${mediaType}'">
+                        <i class="fas fa-play"></i> Watch Again
+                    </button>
+                    <button class="card-download-btn" style="margin-top: 0.5rem; background: rgba(220, 38, 38, 0.8);" onclick="event.stopPropagation(); removeMovie('${item.id}')">
+                        <i class="fas fa-trash"></i> Remove
+                    </button>
+                </div>
+            </div>
+            <div class="media-info">
+                <div class="media-title" title="${item.movieTitle}">${item.movieTitle}</div>
+            </div>
+        `;
+
+        // Open modal on click (simplified for now, re-using openMovieModal if we want full details, 
+        // but need to fetch them again or store them. For now, simple view)
+        // To be fully consistent, we should use the same openMovieModal logic as main.js
+        // We will define a basic one here or assume main.js functions are globally available? 
+        // main.js is a module, so functions aren't global unless attached to window.
+        // We recreated the modal in HTML, so let's attach a minimal open handler.
+
+        card.onclick = () => openLocalModal(item);
+
+        container.appendChild(card);
+    });
+}
+
+// Modal Logic
+let currentItemToRemove = null;
+
+function openLocalModal(item) {
+    const modal = document.getElementById('movieModal');
+    const posterUrl = item.posterPath ? `${window.APP_CONFIG.TMDB_IMAGE_SMALL_URL}${item.posterPath}` : 'https://via.placeholder.com/200x300';
+
+    document.getElementById('modalPoster').src = posterUrl;
+    document.getElementById('modalTitle').textContent = item.movieTitle;
+    document.getElementById('modalRating').textContent = item.rating ? Number(item.rating).toFixed(1) : 'N/A';
+    // We might not have year/overview stored in the minimal watched object. 
+    // If not, we can hide or fetch. For now, safely handle missing.
+    document.getElementById('modalYear').textContent = '';
+    document.getElementById('modalOverview').textContent = 'Watched on: ' + (item.timestamp ? new Date(item.timestamp.seconds * 1000).toLocaleDateString() : 'Unknown date');
+
+    currentItemToRemove = item.id;
+
+    // Setup Watch Now button
+    const watchBtn = document.querySelector('#movieModal .glass-button.primary');
+    watchBtn.onclick = () => window.location.href = `watchanddownload.html?id=${item.movieId}&type=${item.mediaType || 'movie'}`;
+
+    modal.style.display = 'block';
+    document.body.style.overflow = 'hidden';
+}
+
+window.closeModal = function () {
+    document.getElementById('movieModal').style.display = 'none';
+    document.body.style.overflow = 'auto';
+    currentItemToRemove = null;
+}
+
+window.removeFromWatched = function () {
+    if (currentItemToRemove) {
+        removeMovie(currentItemToRemove);
+        closeModal();
+    }
+}
+
+window.removeMovie = async function (docId) {
+    if (!auth.currentUser) return;
+
+    if (!confirm('Remove this title from your watched history?')) return;
+
+    try {
+        await deleteDoc(doc(db, 'users', auth.currentUser.uid, 'watched', docId));
+        // Refresh list
+        loadWatchedList(auth.currentUser.uid);
+    } catch (error) {
+        console.error('Error removing item:', error);
+        alert('Failed to remove item.');
+    }
+}
+
+// Navbar Setup (Mobile)
+const mobileBtn = document.getElementById('mobileMenuBtn');
+const navRight = document.getElementById('navRight');
+if (mobileBtn && navRight) {
+    mobileBtn.addEventListener('click', () => {
+        navRight.classList.toggle('active');
+        const icon = mobileBtn.querySelector('i');
+        if (navRight.classList.contains('active')) {
+            icon.classList.remove('fa-bars');
+            icon.classList.add('fa-times');
+        } else {
+            icon.classList.remove('fa-times');
+            icon.classList.add('fa-bars');
+        }
+    });
+}
+
+// Search (Redirect to index with query or implement simple search)
+// For simplicity, redirect to index search logic or just standard search
+const searchInput = document.getElementById('searchInput');
+if (searchInput) {
+    searchInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            // Placeholder: redirect to discovery or index? 
+            // Better: just alert not implemented or do nothing as it's not the main focus 
+            // OR reuse the search logic from main.js if accessible. 
+            // Since we are in a separate module, simplest is:
+            window.location.href = `index.html?search=${encodeURIComponent(searchInput.value)}`;
+        }
+    });
+}
