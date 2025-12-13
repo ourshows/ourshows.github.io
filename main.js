@@ -1,5 +1,5 @@
 // Import Firebase modules
-import { auth, db, onAuthStateChanged, collection, addDoc, serverTimestamp, doc, setDoc } from './firebase-config.js';
+import { auth, db, onAuthStateChanged, collection, addDoc, serverTimestamp, doc, setDoc, getDocs, getDoc, deleteDoc, query, where, orderBy, limit } from './firebase-wrapper.js';
 
 // Import custom lists
 import { CUSTOM_LISTS, REGIONAL_CONFIG } from './custom_lists.js';
@@ -41,6 +41,9 @@ window.addToWatchLater = addToWatchLater;
 window.watchNow = watchNow;
 window.askAI = askAI;
 window.openMovieModal = openMovieModal;
+window.openAddToCollectionModal = openAddToCollectionModal;
+window.closeAddToCollectionModal = closeAddToCollectionModal;
+window.addToCollectionConfirm = addToCollectionConfirm;
 
 // Initialize App
 if (document.readyState === 'loading') {
@@ -115,10 +118,15 @@ async function initApp() {
     console.log('TMDB_BASE_URL:', window.APP_CONFIG.TMDB_BASE_URL);
 
     // Initialize theme system FIRST
-    initThemeVibe();
+    if (typeof window.initThemeVibe === 'function') {
+        window.initThemeVibe();
+    }
     if (typeof setupAppearanceUI === 'function') {
         setupAppearanceUI();
     }
+
+    // Use global loader if available
+    if (window.ourShowLoader) window.ourShowLoader.show();
 
     setupNavbar();
     setupSearch();
@@ -171,6 +179,11 @@ async function initApp() {
     } catch (error) {
         console.error("Error initializing app:", error);
         showError("Content Load Error", "Failed to load some content. Please check your internet connection or API configuration.");
+    } finally {
+        // Hide loader when done (success or fail)
+        if (window.ourShowLoader) {
+            setTimeout(() => window.ourShowLoader.hide(), 500); // Small buffer
+        }
     }
 
     // Add "More >>" links to section headings
@@ -785,6 +798,69 @@ function watchNow() {
     window.location.href = `watchanddownload.html?id=${currentMovieId}&type=${mediaType}`;
 }
 
+async function addToCollectionConfirm(collectionId) {
+    if (!currentUser || !currentMovieId) return;
+
+    try {
+        await addDoc(collection(db, 'users', currentUser.uid, 'custom_collections', collectionId, 'items'), {
+            movieId: currentMovieId,
+            movieTitle: currentMovieData.title || currentMovieData.name,
+            posterPath: currentMovieData.poster_path,
+            rating: currentMovieData.vote_average,
+            mediaType: currentMovieData.media_type || 'movie',
+            addedAt: serverTimestamp()
+        });
+
+        alert('Added to collection!');
+        closeAddToCollectionModal();
+    } catch (err) {
+        console.error("Error adding to collection:", err);
+        alert('Failed to add to collection.');
+    }
+}
+
+async function openAddToCollectionModal() {
+    if (!currentUser) {
+        alert('Please log in.');
+        window.location.href = 'login.html';
+        return;
+    }
+
+    const modal = document.getElementById('addToCollectionModal');
+    const list = document.getElementById('userCollectionsList');
+    if (modal) modal.style.display = 'block';
+
+    list.innerHTML = '<div style="text-align: center;">Loading...</div>';
+
+    try {
+        const snap = await getDocs(collection(db, 'users', currentUser.uid, 'custom_collections'));
+        list.innerHTML = '';
+
+        if (snap.empty) {
+            list.innerHTML = '<div style="text-align: center; padding: 1rem;">No custom collections found. <a href="collection.html" style="color: var(--primary-color);">Create one</a></div>';
+            return;
+        }
+
+        snap.forEach(doc => {
+            const data = doc.data();
+            const btn = document.createElement('button');
+            btn.className = 'glass-button';
+            btn.style.justifyContent = 'flex-start';
+            btn.style.textAlign = 'left';
+            btn.innerHTML = `<i class="fas fa-folder"></i> ${data.name}`;
+            btn.onclick = () => addToCollectionConfirm(doc.id);
+            list.appendChild(btn);
+        });
+    } catch (err) {
+        console.error("Error loading collections:", err);
+        list.innerHTML = '<div style="color: red;">Error loading collections.</div>';
+    }
+}
+
+function closeAddToCollectionModal() {
+    document.getElementById('addToCollectionModal').style.display = 'none';
+}
+
 // --- AI Chat ---
 async function askAI() {
     const question = document.getElementById('aiQuestion').value.trim();
@@ -1001,6 +1077,19 @@ console.log('Exposed to window:', {
     renderCustomList: typeof window.renderCustomList,
     toggleTheme: typeof window.toggleTheme
 });
+
+// Expose Collection Functions
+window.openMovieModal = openMovieModal;
+window.watchHeroMovie = watchHeroMovie;
+window.addToWatchLater = addToWatchLater;
+window.openAddToCollectionModal = openAddToCollectionModal;
+window.closeAddToCollectionModal = closeAddToCollectionModal;
+window.addToCollectionConfirm = addToCollectionConfirm;
+window.createNewCollection = createNewCollection;
+window.handleCreateCollection = handleCreateCollection;
+window.closeCreateCollectionModal = closeCreateCollectionModal;
+// Note: Some might be in collection.js, but if main.js defines them, we expose them.
+// If collection.js defines them, it should handle its own exposure (which it does).
 
 // Initialize App
 document.addEventListener('DOMContentLoaded', initApp);

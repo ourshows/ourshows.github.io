@@ -2,57 +2,94 @@
 // Can be imported and used by any page
 
 const loaderHTML = `
-<div id="globalLoader" style="
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: var(--bg-darker);
-    z-index: 9999;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: opacity 0.5s;
-">
-    <div style="text-align: center;">
-        <div class="logo" style="font-size: 3rem; margin-bottom: 1rem; animation: pulse 2s infinite;">OurShow</div>
-        <div style="color: var(--text-secondary);">Loading your experience...</div>
+<div id="globalLoader" class="loader-container">
+    <div class="loader-content">
+        <div class="film-reel">
+            <div class="film-reel-holes"></div>
+        </div>
+        <div class="loader-text" id="loaderText">Loading...</div>
+        <div class="loader-progress">
+            <div class="loader-bar"></div>
+        </div>
     </div>
 </div>
-<style>
-@keyframes pulse {
-    0% { opacity: 0.5; transform: scale(0.95); }
-    50% { opacity: 1; transform: scale(1.05); }
-    100% { opacity: 0.5; transform: scale(0.95); }
-}
-</style>
 `;
 
 class LoadingManager {
     constructor() {
+        this.messages = [
+            "Dimming the lights...",
+            "Popping the popcorn...",
+            "Rolling the film...",
+            "Checking projector...",
+            "Finding your seat...",
+            "Loading blockbuster..."
+        ];
+
         if (!document.getElementById('globalLoader')) {
             const div = document.createElement('div');
             div.innerHTML = loaderHTML;
-            document.body.appendChild(div);
+            document.body.appendChild(div.firstElementChild);
         }
+
         this.loader = document.getElementById('globalLoader');
+        this.textElement = document.getElementById('loaderText');
+        this.interval = null;
+    }
+
+    startMessageRotation() {
+        // Random initial message
+        if (this.textElement) {
+            this.textElement.textContent = this.messages[Math.floor(Math.random() * this.messages.length)];
+
+            // Rotate every 2 seconds
+            this.interval = setInterval(() => {
+                const msg = this.messages[Math.floor(Math.random() * this.messages.length)];
+                this.textElement.style.opacity = '0';
+                setTimeout(() => {
+                    this.textElement.textContent = msg;
+                    this.textElement.style.opacity = '1';
+                }, 300);
+            }, 2000);
+        }
     }
 
     show() {
-        this.loader.style.opacity = '1';
-        this.loader.style.pointerEvents = 'all';
+        if (this.loader) {
+            this.loader.style.visibility = 'visible';
+            this.loader.style.opacity = '1';
+            this.startMessageRotation();
+        }
     }
 
     hide() {
-        this.loader.style.opacity = '0';
-        this.loader.style.pointerEvents = 'none';
-        setTimeout(() => {
-            // Optional: remove from DOM if needed, but keeping it hidden is fine
-        }, 500);
+        if (this.loader) {
+            this.loader.style.opacity = '0';
+            setTimeout(() => {
+                this.loader.style.visibility = 'hidden';
+                if (this.interval) clearInterval(this.interval);
+            }, 600); // Match CSS transition
+        }
     }
 }
 
-// Auto-hide on load
-window.addEventListener('load', () => {
-    const loader = new LoadingManager();
-    setTimeout(() => loader.hide(), 800); // Fake delay for smooth transition
+// Auto-init and export
+window.addEventListener('DOMContentLoaded', () => {
+    window.ourShowLoader = new LoadingManager();
+    window.ourShowLoader.show(); // Show immediately on load
 });
+
+// Fallback: If nothing calls hide() after a long time, hide it
+window.addEventListener('load', () => {
+    setTimeout(() => {
+        // Only auto-hide if main.js hasn't taken control (we can assume if it's still running it might be stuck)
+        // But for now, let's just let main.js handle it. 
+        // If main.js fails, we might want a failsafe.
+        if (window.ourShowLoader) {
+            // window.ourShowLoader.hide(); 
+        }
+    }, 10000); // 10s failsafe
+});
+
+// Export for manual use if needed in modules
+window.LoadingManager = LoadingManager;

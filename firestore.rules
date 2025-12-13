@@ -32,6 +32,17 @@ service cloud.firestore {
         allow read: if true;
         allow write: if isSignedIn() && isOwner(userId);
       }
+
+      // Custom Collections
+      match /custom_collections/{collectionId} {
+        allow read: if true;
+        allow write: if isSignedIn() && isOwner(userId);
+        
+        match /items/{itemId} {
+          allow read: if true;
+          allow write: if isSignedIn() && isOwner(userId);
+        }
+      }
     }
     
     // Clubs (New Feature)

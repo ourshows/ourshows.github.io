@@ -318,3 +318,16 @@
         gap: 1rem;
     }
 }
+
+/* Similar Movies Grid */
+.similar-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 1.5rem;
+    padding: 1rem 0;
+}
+
+.similar-grid .media-card {
+    width: 100%;
+    /* Override fixed width */
+}

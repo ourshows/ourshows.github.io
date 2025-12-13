@@ -277,15 +277,14 @@
                     </div>
 
                     <!-- Action Buttons -->
-                    <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
-                        <button class="glass-button primary" onclick="watchNow()"><i class="fas fa-play"></i> Watch
-                            Now</button>
-                        <button class="glass-button" onclick="addToWatchLater()"><i class="fas fa-plus"></i> My
-                            List</button>
-                        <button class="glass-button" onclick="markAsWatched()"><i class="fas fa-check"></i> Mark
-                            Watched</button>
-                    </div>
-
+                    <button class="glass-button primary" onclick="watchNow()"><i class="fas fa-play"></i> Watch
+                        Now</button>
+                    <button class="glass-button" onclick="addToWatchLater()"><i class="fas fa-plus"></i> My
+                        List</button>
+                    <button class="glass-button" onclick="openAddToCollectionModal()"><i class="fas fa-folder-plus"></i>
+                        Collection</button>
+                    <button class="glass-button" onclick="markAsWatched()"><i class="fas fa-check"></i> Mark
+                        Watched</button>
                     <!-- Overview Tab -->
                     <div id="tab-overview" class="tab-content active">
                         <p id="modalOverview" class="modal-overview">Overview text...</p>
@@ -323,7 +322,7 @@
                     <!-- Similar Tab -->
                     <div id="tab-similar" class="tab-content">
                         <h3>Similar Movies</h3>
-                        <div class="media-scroller" id="modalSimilar"></div>
+                        <div class="similar-grid" id="modalSimilar"></div>
                     </div>
 
                     <!-- AI Tab -->
@@ -361,24 +360,37 @@
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Search Modal -->
-    <div id="searchModal" class="modal" style="display: none;">
-        <div class="modal-content glass-panel search-modal-content">
-            <span class="close-modal" onclick="closeSearch()">&times;</span>
-            <div class="search-container">
-                <i class="fas fa-search search-icon"></i>
-                <input type="text" id="modalSearchInput" placeholder="Search for movies, TV shows..."
-                    class="search-input-large" autofocus>
+        <!-- Search Modal -->
+        <div id="searchModal" class="modal" style="display: none;">
+            <div class="modal-content glass-panel search-modal-content">
+                <span class="close-modal" onclick="closeSearch()">&times;</span>
+                <div class="search-container">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" id="modalSearchInput" placeholder="Search for movies, TV shows..."
+                        class="search-input-large" autofocus>
+                </div>
+                <div id="searchResults" class="search-results-grid"></div>
             </div>
-            <div id="searchResults" class="search-results-grid"></div>
         </div>
-    </div>
 
-    <script src="config.js"></script>
-    <script type="module" src="main.js"></script>
-    <script src="auth.js"></script>
+        <div id="addToCollectionModal" class="modal" style="display: none; z-index: 2000;">
+            <div class="modal-content glass-panel" style="max-width: 400px;">
+                <span class="close-modal" onclick="closeAddToCollectionModal()">&times;</span>
+                <div class="modal-body">
+                    <h3 style="margin-bottom: 1rem;">Add to Collection</h3>
+                    <div id="userCollectionsList"
+                        style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 300px; overflow-y: auto;">
+                        <!-- Collections injected here -->
+                        <div style="text-align: center; color: var(--text-secondary);">Loading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script src="config.js"></script>
+        <script type="module" src="main.js"></script>
+        <script src="auth.js"></script>
 </body>
 
 </html>
