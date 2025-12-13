@@ -86,7 +86,7 @@ window.addEventListener('load', () => {
         // But for now, let's just let main.js handle it. 
         // If main.js fails, we might want a failsafe.
         if (window.ourShowLoader) {
-            // window.ourShowLoader.hide(); 
+            window.ourShowLoader.hide();
         }
     }, 10000); // 10s failsafe
 });
