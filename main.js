@@ -1,4 +1,5 @@
 // Import Firebase modules
+console.log('MAIN.JS LOADED');
 import { auth, db, onAuthStateChanged, collection, addDoc, serverTimestamp, doc, setDoc, getDocs, getDoc, deleteDoc, query, where, orderBy, limit } from './firebase-wrapper.js';
 
 // Import custom lists
