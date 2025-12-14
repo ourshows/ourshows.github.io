@@ -101,8 +101,12 @@ function isMovieRequest(message) {
 
 // Call AI API (Groq Direct - Client Side)
 async function callAI(messages, systemPrompt, jsonMode = false) {
-    const GROQ_API_KEY = "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";
+    const apiKey = window.APP_CONFIG?.GROQ_API_KEY;
     const url = "https://api.groq.com/openai/v1/chat/completions";
+
+    if (!apiKey) {
+        throw new Error("GROQ_API_KEY is not configured.");
+    }
 
     try {
         // Prepare full messages array
@@ -115,7 +119,7 @@ async function callAI(messages, systemPrompt, jsonMode = false) {
         const response = await fetch(url, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${GROQ_API_KEY}`,
+                'Authorization': `Bearer ${apiKey}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({

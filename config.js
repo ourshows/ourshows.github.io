@@ -8,3 +8,6 @@ const CONFIG = {
 };
 
 window.APP_CONFIG = CONFIG;
+
+window.APP_CONFIG = window.APP_CONFIG || {};
+window.APP_CONFIG.GROQ_API_KEY = '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';
