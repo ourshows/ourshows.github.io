@@ -1,17 +1,18 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
+const Groq = require("groq-sdk");
 
 admin.initializeApp();
 
 /**
- * Proxy for Hugging Face API
- * Expects: { inputs: string, parameters: object }
+ * Proxy for Groq API (replacing Hugging Face)
+ * Expects: { messages: [{role: string, content: string}], systemPrompt?: string }
  */
-exports.huggingFaceProxy = functions.https.onRequest(async (req, res) => {
+exports.aiProxy = functions.https.onRequest(async (req, res) => {
     // CORS configuration
     res.set("Access-Control-Allow-Origin", "*");
-    res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-    res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.set("Access-Control-Allow-Headers", "Content-Type");
 
     if (req.method === "OPTIONS") {
         res.status(204).send("");
@@ -19,61 +20,50 @@ exports.huggingFaceProxy = functions.https.onRequest(async (req, res) => {
     }
 
     // Check for API key in environment config
-    // Run: firebase functions:config:set huggingface.key="YOUR_KEY"
-    const HF_API_KEY = functions.config().huggingface?.key;
+    // Run: firebase functions:config:set groq.key="YOUR_KEY"
+    const GROQ_API_KEY = functions.config().groq?.key;
 
-    if (!HF_API_KEY) {
-        console.error("Hugging Face API key not found in functions config.");
+    if (!GROQ_API_KEY) {
+        console.error("Groq API key not found in functions config.");
         res.status(500).json({ error: "Server configuration error: API Key missing." });
         return;
     }
 
-    const HF_MODEL = "meta-llama/Llama-3.2-3B-Instruct";
-    const url = `https://api-inference.huggingface.co/models/${HF_MODEL}`;
+    const groq = new Groq({ apiKey: GROQ_API_KEY });
 
     try {
-        const { inputs, parameters } = req.body;
+        const { messages, systemPrompt, jsonMode } = req.body;
 
-        if (!inputs) {
-            res.status(400).json({ error: "Missing 'inputs' in request body." });
+        if (!messages || !Array.isArray(messages)) {
+            res.status(400).json({ error: "Missing or invalid 'messages' in request body." });
             return;
         }
 
-        const response = await fetch(url, {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${HF_API_KEY}`,
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                inputs,
-                parameters: parameters || {
-                    max_new_tokens: 400,
-                    temperature: 0.7,
-                    top_p: 0.9,
-                    return_full_text: false
-                }
-            })
+        // Construct messages array
+        let fullMessages = [];
+        if (systemPrompt) {
+            fullMessages.push({ role: "system", content: systemPrompt });
+        }
+        fullMessages = fullMessages.concat(messages);
+
+        const completion = await groq.chat.completions.create({
+            messages: fullMessages,
+            model: "llama-3.3-70b-versatile",
+            temperature: 0.7,
+            max_tokens: 1024,
+            top_p: 1,
+            stream: false,
+            response_format: jsonMode ? { type: "json_object" } : { type: "text" }
         });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error("Hugging Face API Error:", response.status, errorText);
-            let errorJson;
-            try {
-                errorJson = JSON.parse(errorText);
-            } catch (e) {
-                errorJson = { error: errorText };
-            }
-            res.status(response.status).json(errorJson);
-            return;
-        }
-
-        const data = await response.json();
-        res.status(200).json(data);
+        const reply = completion.choices[0]?.message?.content || "";
+        res.status(200).json({ reply });
 
     } catch (error) {
-        console.error("Proxy error:", error);
-        res.status(500).json({ error: "Internal server error" });
+        console.error("Groq API Error:", error);
+        res.status(500).json({ error: error.message || "Internal server error" });
     }
 });
+
+// Keep legacy export name alias if needed, or we just update firebase.json rewrites
+exports.huggingFaceProxy = exports.aiProxy;

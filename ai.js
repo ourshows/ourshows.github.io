@@ -6,8 +6,11 @@ let conversationHistory = [];
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
-    // Focus input on load
-    document.getElementById('aiInput').focus();
+    const input = document.getElementById('aiInput');
+    if (!input) return; // Exit if AI elements aren't present
+
+    // Focus input on load (only if standalone page, maybe not in modal to avoid annoying scroll)
+    // input.focus(); 
 
     // Load conversation history from localStorage
     const saved = localStorage.getItem('aiConversation');
@@ -96,116 +99,108 @@ function isMovieRequest(message) {
     return keywords.some(keyword => lowerMessage.includes(keyword));
 }
 
+// Call AI API (Groq Direct - Client Side)
+async function callAI(messages, systemPrompt, jsonMode = false) {
+    const GROQ_API_KEY = "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";
+    const url = "https://api.groq.com/openai/v1/chat/completions";
+
+    try {
+        // Prepare full messages array
+        let fullMessages = [];
+        if (systemPrompt) {
+            fullMessages.push({ role: "system", content: systemPrompt });
+        }
+        fullMessages = fullMessages.concat(messages);
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${GROQ_API_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                messages: fullMessages,
+                model: "llama-3.3-70b-versatile",
+                temperature: 0.7,
+                max_tokens: 1024,
+                top_p: 1,
+                stream: false,
+                response_format: jsonMode ? { type: "json_object" } : { type: "text" }
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error?.message || `AI Error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data.choices[0]?.message?.content || "";
+
+    } catch (error) {
+        console.error('AI Request Error:', error);
+        throw error;
+    }
+}
+
 // Handle movie recommendations
 async function handleMovieRecommendation(userMessage) {
-    const prompt = `You are a movie recommendation expert. 
-User Request: "${userMessage}"
-
-Provide 5 movie or TV show recommendations that match their request.
-Return ONLY a JSON object in this exact format (no markdown, no extra text):
-{
-  "message": "A brief friendly response explaining why these recommendations fit",
-  "recommendations": [
+    const systemPrompt = `You are a movie recommendation engine. 
+    You MUST respond with a valid JSON object strictly matching this schema:
     {
-      "title": "Movie Title",
-      "year": "2020",
-      "reason": "Brief reason why it fits (max 15 words)"
+      "message": "Friendly text intro",
+      "recommendations": [
+        { "title": "Exact Title", "year": "YYYY", "reason": "Short reason" }
+      ]
     }
-  ]
-}`;
+    Provide 5 top-tier recommendations based on the user's request.`;
 
-    const response = await callHuggingFace(prompt);
-    const data = parseAIResponse(response);
+    // We can send just the user request or recent history. 
+    // For recommendations, the immediate query is usually most important.
+    const messages = [{ role: 'user', content: userMessage }];
+
+    const responseText = await callAI(messages, systemPrompt, true); // jsonMode = true
+    const data = parseAIResponse(responseText);
 
     if (data && data.recommendations && data.recommendations.length > 0) {
-        // Add AI message
-        addMessageToUI(data.message || 'Here are some great recommendations for you:', false);
+        addMessageToUI(data.message || 'Here are my picks:', false);
 
-        // Add conversation to history
         conversationHistory.push({
             role: 'assistant',
             content: data.message
         });
 
-        // Display movie cards
         await displayMovieCards(data.recommendations);
     } else {
-        throw new Error('Could not parse movie recommendations');
+        // Fallback if JSON fails (rare with jsonMode)
+        addMessageToUI("I found some movies but couldn't display them properly. " + responseText, false);
     }
 }
 
 // Handle general chat
 async function handleGeneralChat(userMessage) {
-    const prompt = `You are a friendly, knowledgeable movie assistant for OurShow, a movie streaming platform.
-User said: "${userMessage}"
+    const systemPrompt = `You are 'OurShow AI', a witty and knowledgeable movie companion. 
+    Keep responses concise (under 3 sentences) unless asked for a deep dive. 
+    Be enthusiastic about cinema.`;
 
-Respond in a helpful, conversational way. Keep responses under 100 words.
-If they ask about movies, provide thoughtful insights. Be enthusiastic about cinema!`;
+    // Construct conversation context (last 6 messages max to save tokens)
+    const context = conversationHistory.slice(-6).map(msg => ({
+        role: msg.role,
+        content: msg.content
+    }));
 
-    const response = await callHuggingFace(prompt);
+    // Add current message if not already in history (it was added to history in sendMessage before calling this, but let's be safe)
+    // Actually sendMessage adds it to history array global BEFORE calling this. 
+    // So context includes the latest user message.
 
-    // Add AI response to UI
-    addMessageToUI(response, false);
+    const responseText = await callAI(context, systemPrompt, false);
 
-    // Add to conversation history
+    addMessageToUI(responseText, false);
+
     conversationHistory.push({
         role: 'assistant',
-        content: response
+        content: responseText
     });
-}
-
-// Call Hugging Face API
-// Call Hugging Face API (via Firebase Function Proxy)
-async function callHuggingFace(prompt) {
-    // Use the proxy URL (configured in firebase.json rewrites)
-    // If running locally with emulators, this might need adjustment, but for deployed app it's relative.
-    // We try to detect if we are on localhost and allow fallback or use relative path.
-    const url = '/api/ai';
-
-    try {
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                inputs: prompt,
-                parameters: {
-                    max_new_tokens: 400,
-                    temperature: 0.7,
-                    top_p: 0.9,
-                    return_full_text: false
-                }
-            })
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-
-            if (errorData.error && errorData.error.includes('loading')) {
-                throw new Error('AI model is warming up. Please try again in a few seconds.');
-            }
-
-            if (errorData.error && errorData.error.includes('rate limit')) {
-                throw new Error('Too many requests. Please wait a moment and try again.');
-            }
-
-            throw new Error(errorData.error || 'Failed to get AI response');
-        }
-
-        const data = await response.json();
-
-        if (Array.isArray(data) && data[0]?.generated_text) {
-            return data[0].generated_text.trim();
-        } else if (typeof data === 'string') {
-            return data.trim();
-        } else {
-            throw new Error('Unexpected response format from AI');
-        }
-    } catch (error) {
-        console.error('AI Proxy Error:', error);
-        throw error;
-    }
 }
 
 // Parse AI response (try to extract JSON if present)
@@ -363,7 +358,38 @@ function clearConversation() {
     }
 }
 
+// Modal functions
+function openAIModal() {
+    const modal = document.getElementById('aiModal');
+    if (modal) {
+        modal.style.display = 'block';
+        setTimeout(() => {
+            const input = document.getElementById('aiInput');
+            if (input) input.focus();
+        }, 100);
+    } else {
+        // Fallback if modal missing (e.g. on other pages) -> redirect
+        window.location.href = 'ai.html';
+    }
+}
+
+function closeAIModal() {
+    const modal = document.getElementById('aiModal');
+    if (modal) modal.style.display = 'none';
+}
+
+// Close modal if clicked outside
+window.addEventListener('click', (e) => {
+    const modal = document.getElementById('aiModal');
+    if (e.target === modal) {
+        modal.style.display = 'none';
+    }
+});
+
 // Expose functions to window
 window.usePrompt = usePrompt;
 window.sendMessage = sendMessage;
 window.clearConversation = clearConversation;
+window.openAIModal = openAIModal;
+window.closeAIModal = closeAIModal;
+window.callAI = callAI;

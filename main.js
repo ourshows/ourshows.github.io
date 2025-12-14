@@ -862,35 +862,58 @@ function closeAddToCollectionModal() {
 }
 
 // --- AI Chat ---
+// --- AI Chat ---
 async function askAI() {
-    const question = document.getElementById('aiQuestion').value.trim();
+    const questionInput = document.getElementById('aiQuestion');
+    const question = questionInput.value.trim();
     if (!question) return;
 
     const chatContainer = document.getElementById('aiChat');
 
-    // Add user message
+    // Add user message to UI
     const userMsg = document.createElement('div');
     userMsg.className = 'ai-message user';
-    userMsg.textContent = question;
+    userMsg.innerHTML = `<p>${question}</p>`; // Use p tag for consistency with CSS
     chatContainer.appendChild(userMsg);
 
-    document.getElementById('aiQuestion').value = '';
+    questionInput.value = '';
 
-    // Call Hugging Face API
-    const prompt = `You are a movie expert. Answer this question about "${currentMovieData.title || currentMovieData.name}": ${question}. Keep the answer concise and informative.`;
+    // Scroll to bottom
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+
+    if (!window.callAI) {
+        console.error("AI system not initialized");
+        const errorMsg = document.createElement('div');
+        errorMsg.className = 'ai-message ai';
+        errorMsg.innerHTML = '<p>AI system is currently unavailable.</p>';
+        chatContainer.appendChild(errorMsg);
+        return;
+    }
+
+    const movieTitle = currentMovieData.title || currentMovieData.name;
+    const movieYear = (currentMovieData.release_date || currentMovieData.first_air_date || '').split('-')[0];
+
+    // Construct Prompt
+    const systemPrompt = `You are a knowledgeable movie assistant focusing on "${movieTitle}" (${movieYear}). 
+    Answer the user's question specifically about this title. 
+    Keep your response concise (max 3 sentences). Be friendly and enthusiastic.`;
+
+    const messages = [{ role: 'user', content: question }];
 
     try {
-        const response = await callHuggingFace(prompt);
+        const response = await window.callAI(messages, systemPrompt, false);
+
         const aiMsg = document.createElement('div');
         aiMsg.className = 'ai-message ai';
-        aiMsg.textContent = response;
+        aiMsg.innerHTML = `<p>${response}</p>`;
         chatContainer.appendChild(aiMsg);
         chatContainer.scrollTop = chatContainer.scrollHeight;
+
     } catch (error) {
         console.error('AI Error:', error);
         const aiMsg = document.createElement('div');
         aiMsg.className = 'ai-message ai';
-        aiMsg.textContent = 'Sorry, I encountered an error. Please try again.';
+        aiMsg.innerHTML = '<p>Sorry, I encountered an error. Please try again.</p>';
         chatContainer.appendChild(aiMsg);
     }
 }

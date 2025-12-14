@@ -388,8 +388,120 @@
             </div>
         </div>
 
+        <!-- AI Modal -->
+        <div id="aiModal" class="modal" style="display: none; z-index: 2001;">
+            <div class="modal-content glass-panel ai-modal-content"
+                style="max-width: 800px; height: 80vh; display: flex; flex-direction: column;">
+                <span class="close-modal" onclick="closeAIModal()">&times;</span>
+                <div class="ai-header" style="margin-bottom: 1rem; text-align: center;">
+                    <h2
+                        style="font-size: 1.8rem; background: linear-gradient(135deg, var(--primary-color), var(--accent-color)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">
+                        <i class="fas fa-robot"></i> AI Assistant
+                    </h2>
+                </div>
+
+                <!-- Chat Container (Flex grow to fill space) -->
+                <div class="chat-container" id="chatContainer"
+                    style="flex: 1; overflow-y: auto; margin-bottom: 1rem; background: rgba(0,0,0,0.2); border-radius: 12px; padding: 1rem;">
+                    <div class="chat-message">
+                        <div class="message-avatar">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <div class="message-content">
+                            <p>👋 Hi! I'm your AI movie assistant. Ask me anything about movies!</p>
+                        </div>
+                    </div>
+                    <div class="typing-indicator" id="typingIndicator">
+                        <div class="message-avatar"><i class="fas fa-robot"></i></div>
+                        <div style="display: flex; gap: 5px; padding: 1rem;">
+                            <div class="typing-dot"></div>
+                            <div class="typing-dot"></div>
+                            <div class="typing-dot"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Prompts (Horizontal Scroll) -->
+                <div class="quick-prompts"
+                    style="overflow-x: auto; flex-wrap: nowrap; padding-bottom: 0.5rem; margin-bottom: 1rem;">
+                    <div class="prompt-chip" onclick="usePrompt('Recommend 5 trending movies')">🔥 Trending</div>
+                    <div class="prompt-chip" onclick="usePrompt('Best sci-fi movies of 2024')">👽 Sci-Fi 2024</div>
+                    <div class="prompt-chip" onclick="usePrompt('Mind-bending thrillers like Inception')">🧠 Thrillers
+                    </div>
+                    <div class="prompt-chip" onclick="usePrompt('Feel-good movies for a rainy day')">☔ Feel Good</div>
+                </div>
+
+                <!-- Input -->
+                <div class="input-container" style="margin-top: auto;">
+                    <input type="text" id="aiInput" class="ai-input" placeholder="Ask anything..." style="width: 100%;"
+                        onkeypress="if(event.key==='Enter') sendMessage()">
+                    <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+
+        <style>
+            /* Minimal styles to support the AI modal content if not fully covered by main css */
+            .ai-modal-content .chat-message {
+                display: flex;
+                gap: 1rem;
+                margin-bottom: 1rem;
+            }
+
+            .ai-modal-content .message-avatar {
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                background: var(--primary-color);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                flex-shrink: 0;
+            }
+
+            .ai-modal-content .message-content {
+                background: rgba(255, 255, 255, 0.05);
+                padding: 0.8rem;
+                border-radius: 12px;
+                max-width: 80%;
+            }
+
+            .ai-modal-content .chat-message.user {
+                flex-direction: row-reverse;
+            }
+
+            .ai-modal-content .chat-message.user .message-content {
+                background: var(--primary-color);
+            }
+
+            .ai-modal-content .typing-dot {
+                width: 6px;
+                height: 6px;
+                background: white;
+                border-radius: 50%;
+                animation: typingBounce 1s infinite;
+            }
+
+            @keyframes typingBounce {
+
+                0%,
+                100% {
+                    transform: translateY(0);
+                }
+
+                50% {
+                    transform: translateY(-5px);
+                }
+            }
+        </style>
+
         <script src="config.js"></script>
         <script type="module" src="main.js?v=fix2"></script>
+        <script type="module" src="ai.js"></script>
         <script src="auth.js"></script>
 </body>
 

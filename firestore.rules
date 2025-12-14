@@ -2,120 +2,153 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Helper functions
+    // =================================================================================
+    // HELPER FUNCTIONS
+    // =================================================================================
+    
+    // Check if the user is authenticated
     function isSignedIn() {
       return request.auth != null;
     }
     
+    // Check if the user is the owner of the document (assuming userId field or using document ID)
     function isOwner(userId) {
-      return request.auth.uid == userId;
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Check if the incoming data has the correct owner set
+    function isResourceOwner(field) {
+      return isSignedIn() && request.resource.data[field] == request.auth.uid;
     }
     
-    // Users collection - profiles, watchlists, watched history
+    // Check if the timestamp is reasonably current (within last minute and not in future)
+    function isNow() {
+      return request.resource.data.timestamp == request.time;
+    }
+
+    // =================================================================================
+    // COLLECTIONS
+    // =================================================================================
+    
+    // ---------------------------------------------------------------------------------
+    // USERS
+    // Public profiles, private settings handled by subcollections if needed
+    // ---------------------------------------------------------------------------------
     match /users/{userId} {
+      // Allow anyone to read profiles (needed for showing authors, etc.)
       allow read: if true;
       
-      allow create, update: if isSignedIn() && isOwner(userId);
-      allow delete: if isSignedIn() && isOwner(userId);
+      // Only the user themselves can create or update their profile
+      allow create, update: if isOwner(userId);
       
+      // Only the user can delete their account data
+      allow delete: if isOwner(userId);
+      
+      // Subcollections
       match /watchlist/{movieId} {
-        allow read: if true;
-        allow write: if isSignedIn() && isOwner(userId);
+        allow read: if true; // Or strictly isOwner(userId) if watchlist is private
+        allow write: if isOwner(userId);
       }
       
       match /watched/{movieId} {
         allow read: if true;
-        allow write: if isSignedIn() && isOwner(userId);
+        allow write: if isOwner(userId);
       }
       
       match /stats/{statId} {
         allow read: if true;
-        allow write: if isSignedIn() && isOwner(userId);
+        allow write: if isOwner(userId);
       }
-
+      
       // Custom Collections
       match /custom_collections/{collectionId} {
         allow read: if true;
-        allow write: if isSignedIn() && isOwner(userId);
+        allow write: if isOwner(userId);
         
         match /items/{itemId} {
           allow read: if true;
-          allow write: if isSignedIn() && isOwner(userId);
+          allow write: if isOwner(userId);
         }
       }
     }
     
-    // Clubs (New Feature)
+    // ---------------------------------------------------------------------------------
+    // CLUBS
+    // Social groups
+    // ---------------------------------------------------------------------------------
     match /clubs/{clubId} {
       allow read: if true;
       
-      // Allow creating clubs if authenticated
+      // Create: Must be signed in, set self as curator/owner
       allow create: if isSignedIn() && 
+                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'createdBy', 'createdAt', 'members']) &&
                       request.resource.data.createdBy == request.auth.uid &&
-                      request.resource.data.name != null;
+                      request.resource.data.name is string &&
+                      request.resource.data.name.size() > 0 && 
+                      request.resource.data.name.size() < 50;
+
+      // Update: Currently only allow the CREATOR to update (e.g. change name)
+      // NOTE: If you add "Join Club" functionality, you will need to allow updates to 'members' array 
+      // by others, OR strictly use a subcollection for members to allow scalable joining.
+      // For now, locked to owner for security.
+      allow update: if isSignedIn() && resource.data.createdBy == request.auth.uid;
       
-      // Allow updates (e.g. for members joining)
-      // Refined to ensure only signed-in users can update
-      allow update: if isSignedIn();
-      
-      // Only owner can delete
+      // Delete: Only owner
       allow delete: if isSignedIn() && resource.data.createdBy == request.auth.uid;
     }
 
-    // Posts/Social Feed
+    // ---------------------------------------------------------------------------------
+    // POSTS (Social Feed)
+    // ---------------------------------------------------------------------------------
     match /posts/{postId} {
       allow read: if true;
       
-      allow create: if isSignedIn() && 
-                      request.resource.data.userId == request.auth.uid &&
-                      request.resource.data.timestamp == request.time;
+      allow create: if isResourceOwner('userId') && isNow();
       
-      allow update, delete: if isSignedIn() && 
-                               resource.data.userId == request.auth.uid;
+      allow update: if isResourceOwner('userId'); // Only author can edit
+      allow delete: if resource.data.userId == request.auth.uid; // Only author can delete
       
       match /comments/{commentId} {
         allow read: if true;
-        
-        allow create: if isSignedIn() && 
-                        request.resource.data.userId == request.auth.uid &&
-                        request.resource.data.timestamp == request.time;
-        
-        allow update, delete: if isSignedIn() && 
-                                 resource.data.userId == request.auth.uid;
+        allow create: if isResourceOwner('userId') && isNow();
+        allow update, delete: if resource.data.userId == request.auth.uid;
       }
     }
     
-    // Chat messages (community chat)
+    // ---------------------------------------------------------------------------------
+    // MESSAGES (Chat)
+    // ---------------------------------------------------------------------------------
     match /messages/{messageId} {
       allow read: if true;
       
-      allow create: if isSignedIn() && 
-                      request.resource.data.userId == request.auth.uid &&
-                      request.resource.data.username != null &&
+      // Create: Must be signed in, claiming to be self, having text.
+      allow create: if isResourceOwner('userId') && 
+                      request.resource.data.text is string &&
+                      request.resource.data.text.size() > 0 &&
                       request.resource.data.timestamp == request.time;
       
-      allow delete: if isSignedIn() && 
-                      resource.data.userId == request.auth.uid;
-      
-      allow update: if false; 
+      // Messages are generally immutable in this app, but allow delete by author
+      allow delete: if resource.data.userId == request.auth.uid;
+      allow update: if false; // No editing messages
     }
     
-    // Movie/Series reviews
+    // ---------------------------------------------------------------------------------
+    // REVIEWS
+    // ---------------------------------------------------------------------------------
     match /reviews/{reviewId} {
       allow read: if true;
       
-      allow create: if isSignedIn() && 
-                      request.resource.data.userId == request.auth.uid &&
-                      request.resource.data.timestamp == request.time &&
-                      request.resource.data.rating >= 1 &&
-                      request.resource.data.rating <= 5 &&
-                      request.resource.data.movieId != null;
-      
-      allow update, delete: if isSignedIn() && 
-                               resource.data.userId == request.auth.uid;
+      allow create: if isResourceOwner('userId') &&
+                      request.resource.data.rating is number &&
+                      request.resource.data.rating >= 1 && 
+                      request.resource.data.rating <= 5;
+                      
+      allow update, delete: if resource.data.userId == request.auth.uid;
     }
     
-    // Deny all other access
+    // ---------------------------------------------------------------------------------
+    // DEFAULT DENY
+    // ---------------------------------------------------------------------------------
     match /{document=**} {
       allow read, write: if false;
     }
