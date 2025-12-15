@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discover - OurShow</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Discover Page Specific Styles */
+        .discover-container {
+            padding: 2rem 5%;
+            padding-top: 80px;
+            /* Space for navbar */
+        }
+
+        .filter-section {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            overflow-x: auto;
+            white-space: nowrap;
+            padding-bottom: 0.5rem;
+            scrollbar-width: none;
+            /* Hide scrollbar Firefox */
+        }
+
+        .filter-section::-webkit-scrollbar {
+            display: none;
+            /* Hide scrollbar Chrome/Safari */
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .filter-label {
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-right: 0.5rem;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .filter-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+
+        .filter-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--accent-color);
+        }
+
+        .filter-btn.active {
+            background: var(--accent-color);
+            color: #000;
+            border-color: var(--accent-color);
+            font-weight: 600;
+        }
+
+        #discoverGrid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 2rem;
+        }
+
+        .loading-sentinel {
+            width: 100%;
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 2rem;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .spinner {
+            width: 30px;
+            height: 30px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: var(--accent-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .filter-section {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1.5rem;
+            }
+
+            .filter-group {
+                width: 100%;
+                overflow-x: auto;
+                padding-bottom: 5px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Navbar Placeholder (Copied from index.html structure) -->
+    <nav class="navbar">
+        <div class="logo">OurShow</div>
+        <div class="nav-links">
+            <a href="index.html">Home</a>
+            <a href="discover.html" class="active">Discover</a>
+            <a href="search.html">Search</a>
+            <a href="ai.html">AI Chat</a>
+        </div>
+    </nav>
+
+    <div class="discover-container">
+        <h1 style="margin-bottom: 2rem;">Explore Content</h1>
+
+        <!-- Filter Sections -->
+        <div class="filter-section">
+            <div class="filter-group" id="typeFilters">
+                <span class="filter-label">Type:</span>
+                <button class="filter-btn active" data-filter="type" data-value="All">All</button>
+                <button class="filter-btn" data-filter="type" data-value="TV">TV</button>
+                <button class="filter-btn" data-filter="type" data-value="Movie">Movies</button>
+            </div>
+
+            <div class="filter-group" id="genreFilters">
+                <span class="filter-label">Genre:</span>
+                <button class="filter-btn active" data-filter="genre" data-value="All">All</button>
+                <button class="filter-btn" data-filter="genre" data-value="Action">Action</button>
+                <button class="filter-btn" data-filter="genre" data-value="Comedy">Comedy</button>
+                <button class="filter-btn" data-filter="genre" data-value="Drama">Drama</button>
+                <button class="filter-btn" data-filter="genre" data-value="Sci-Fi">Sci-Fi</button>
+                <button class="filter-btn" data-filter="genre" data-value="Thriller">Thriller</button>
+            </div>
+
+            <div class="filter-group" id="languageFilters">
+                <span class="filter-label">Language:</span>
+                <button class="filter-btn active" data-filter="language" data-value="All">All</button>
+                <button class="filter-btn" data-filter="language" data-value="Hindi">Hindi</button>
+                <button class="filter-btn" data-filter="language" data-value="English">English</button>
+                <button class="filter-btn" data-filter="language" data-value="Nepali">Nepali</button>
+                <button class="filter-btn" data-filter="language" data-value="Korean">Korean</button>
+                <button class="filter-btn" data-filter="language" data-value="Chinese">Chinese</button>
+            </div>
+
+            <div class="filter-group" id="yearFilters">
+                <span class="filter-label">Year:</span>
+                <button class="filter-btn active" data-filter="year" data-value="All">All</button>
+                <button class="filter-btn" data-filter="year" data-value="2025">2025</button>
+                <button class="filter-btn" data-filter="year" data-value="2024">2024</button>
+                <button class="filter-btn" data-filter="year" data-value="2023">2023</button>
+            </div>
+        </div>
+
+        <!-- Main Grid -->
+        <div id="discoverGrid">
+            <!-- Items appended here -->
+        </div>
+
+        <!-- Loading Sentinel -->
+        <div class="loading-sentinel" id="sentinel">
+            <div class="spinner"></div>
+        </div>
+    </div>
+
+    <script src="public-config.js"></script>
+    <script src="discover.js"></script>
+</body>
+
+</html>
