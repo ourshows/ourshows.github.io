@@ -3,7 +3,8 @@ window.PUBLIC_CONFIG = {
     GROQ_API_KEY: null, // Key is now secure on the backend proxy
     // Base URL for your Backend Proxy (Render)
     // This is safe to share because the proxy hides the actual keys.
-    API_BASE_URL: "https://ourshow-proxy.onrender.com",
+    // Cloudflare Worker URL (Fast & Secure)
+    API_BASE_URL: "https://ourshow-proxy.ourshow.workers.dev",
     TMDB_BASE_URL: "https://api.themoviedb.org/3",
     TMDB_IMAGE_BASE_URL: "https://image.tmdb.org/t/p/original",
     TMDB_IMAGE_SMALL_URL: "https://image.tmdb.org/t/p/w500",
