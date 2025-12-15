@@ -133,12 +133,13 @@ async function initApp() {
             TMDB_IMAGE_BASE_URL: "https://image.tmdb.org/t/p/original",
             TMDB_IMAGE_SMALL_URL: "https://image.tmdb.org/t/p/w500",
             TMDB_BASE_URL: "https://api.themoviedb.org/3",
-            // API Key is intentionally missing here; fetchTMDB will use the proxy
-            TMDB_API_KEY: null
+            // API Key for TMDB (Client-side safe)
+            TMDB_API_KEY: "798ae7de540b25e908c68ea2ca408347"
         };
     }
 
-    console.log('TMDB_API_KEY:', window.APP_CONFIG.TMDB_API_KEY ? 'Present' : 'Missing (Using Proxy)');
+    console.log('PUBLIC_CONFIG:', window.PUBLIC_CONFIG ? 'Loaded' : 'Not Loaded');
+    console.log('TMDB_API_KEY:', window.APP_CONFIG.TMDB_API_KEY ? 'Present' : 'Missing');
     console.log('TMDB_BASE_URL:', window.APP_CONFIG.TMDB_BASE_URL);
 
     // Initialize theme system FIRST

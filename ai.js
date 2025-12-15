@@ -174,7 +174,7 @@ async function callAI(messages, systemPrompt, jsonMode = false) {
 
     // 3. Production Proxy
     const url = (window.PUBLIC_CONFIG?.API_BASE_URL && !isLocal)
-        ? `${window.PUBLIC_CONFIG.API_BASE_URL}/aiProxy`
+        ? `${window.PUBLIC_CONFIG.API_BASE_URL}/api/ai`
         : "/api/ai";
 
     try {
