@@ -99,47 +99,104 @@ function isMovieRequest(message) {
     return keywords.some(keyword => lowerMessage.includes(keyword));
 }
 
-// Call AI API (Groq Direct - Client Side)
+// Call AI API (Via Proxy)
+// Call AI API (Via Proxy or Direct Callback)
 async function callAI(messages, systemPrompt, jsonMode = false) {
-    const apiKey = window.APP_CONFIG?.GROQ_API_KEY;
-    const url = "https://api.groq.com/openai/v1/chat/completions";
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
-    if (!apiKey) {
-        throw new Error("GROQ_API_KEY is not configured.");
-    }
+    // 1. Priority: Client-Side Direct Call (Public Config)
+    if (window.PUBLIC_CONFIG && window.PUBLIC_CONFIG.GROQ_API_KEY) {
+        const url = "https://api.groq.com/openai/v1/chat/completions";
 
-    try {
-        // Prepare full messages array
+        // Prepare messages
         let fullMessages = [];
-        if (systemPrompt) {
-            fullMessages.push({ role: "system", content: systemPrompt });
-        }
+        if (systemPrompt) fullMessages.push({ role: "system", content: systemPrompt });
         fullMessages = fullMessages.concat(messages);
 
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${window.PUBLIC_CONFIG.GROQ_API_KEY}`
+                },
+                body: JSON.stringify({
+                    messages: fullMessages,
+                    model: "llama-3.3-70b-versatile",
+                    temperature: 0.7,
+                    max_tokens: 1024,
+                    response_format: jsonMode ? { type: "json_object" } : { type: "text" }
+                })
+            });
+
+            if (!response.ok) throw new Error(`Groq Direct Error: ${response.status}`);
+            const data = await response.json();
+            return data.choices[0]?.message?.content || "";
+        } catch (e) {
+            console.error("Direct AI Error:", e);
+            throw e;
+        }
+    }
+
+    // 2. Fallback: Local Fallback for Groq (App Config)
+    if (isLocal && window.APP_CONFIG && window.APP_CONFIG.GROQ_API_KEY) {
+        const url = "https://api.groq.com/openai/v1/chat/completions";
+
+        // Prepare messages
+        let fullMessages = [];
+        if (systemPrompt) fullMessages.push({ role: "system", content: systemPrompt });
+        fullMessages = fullMessages.concat(messages);
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${window.APP_CONFIG.GROQ_API_KEY}`
+                },
+                body: JSON.stringify({
+                    messages: fullMessages,
+                    model: "llama-3.3-70b-versatile",
+                    temperature: 0.7,
+                    max_tokens: 1024,
+                    response_format: jsonMode ? { type: "json_object" } : { type: "text" }
+                })
+            });
+
+            if (!response.ok) throw new Error(`Groq Direct Error: ${response.status}`);
+            const data = await response.json();
+            return data.choices[0]?.message?.content || "";
+        } catch (e) {
+            console.error("Direct AI Error:", e);
+            throw e;
+        }
+    }
+
+    // 3. Production Proxy
+    const url = (window.PUBLIC_CONFIG?.API_BASE_URL && !isLocal)
+        ? `${window.PUBLIC_CONFIG.API_BASE_URL}/aiProxy`
+        : "/api/ai";
+
+    try {
         const response = await fetch(url, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${apiKey}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                messages: fullMessages,
-                model: "llama-3.3-70b-versatile",
-                temperature: 0.7,
-                max_tokens: 1024,
-                top_p: 1,
-                stream: false,
-                response_format: jsonMode ? { type: "json_object" } : { type: "text" }
+                messages: messages,
+                systemPrompt: systemPrompt,
+                jsonMode: jsonMode
             })
         });
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.error?.message || `AI Error: ${response.status}`);
+            throw new Error(errorData.error || `AI Proxy Error: ${response.status}`);
         }
 
         const data = await response.json();
-        return data.choices[0]?.message?.content || "";
+        return data.reply || "";
 
     } catch (error) {
         console.error('AI Request Error:', error);
@@ -248,7 +305,11 @@ async function displayMovieCards(recommendations) {
         let mediaType = 'movie';
 
         if (tmdbData) {
-            posterSrc = `${window.APP_CONFIG.TMDB_IMAGE_SMALL_URL}${tmdbData.poster_path}`;
+            const baseUrl = (window.PUBLIC_CONFIG && window.PUBLIC_CONFIG.TMDB_IMAGE_SMALL_URL)
+                ? window.PUBLIC_CONFIG.TMDB_IMAGE_SMALL_URL
+                : (window.APP_CONFIG ? window.APP_CONFIG.TMDB_IMAGE_SMALL_URL : 'https://image.tmdb.org/t/p/w500');
+
+            posterSrc = `${baseUrl}${tmdbData.poster_path}`;
             movieId = tmdbData.id;
             mediaType = tmdbData.media_type || 'movie';
         }
@@ -256,8 +317,7 @@ async function displayMovieCards(recommendations) {
         card.innerHTML = `
             <img src="${posterSrc}" alt="${rec.title}" onerror="this.src='https://via.placeholder.com/200x300?text=${encodeURIComponent(rec.title)}'">
             <div class="info">
-                <div class="title">${rec.title}</div>
-                <div class="reason">${rec.reason}</div>
+                <div class="title" title="${rec.title}">${rec.title}</div>
             </div>
         `;
 
@@ -268,23 +328,66 @@ async function displayMovieCards(recommendations) {
         movieGrid.appendChild(card);
     }
 
-    chatContainer.appendChild(movieGrid);
+    const typingIndicator = document.getElementById('typingIndicator');
+    chatContainer.insertBefore(movieGrid, typingIndicator);
     scrollToBottom();
 }
 
 // Search TMDB
 async function searchTMDB(query, year) {
-    if (!window.APP_CONFIG || !window.APP_CONFIG.TMDB_API_KEY) {
-        return null;
+    console.log(`[AI] Searching TMDB for: ${query} (${year})`);
+
+    // 1. Check Public Config
+    if (window.PUBLIC_CONFIG && window.PUBLIC_CONFIG.TMDB_KEY) {
+        console.log('[AI] Using Public Config Key');
+
+        const url = new URL(`${window.PUBLIC_CONFIG.TMDB_BASE_URL}/search/multi`);
+        url.searchParams.append('api_key', window.PUBLIC_CONFIG.TMDB_KEY);
+        url.searchParams.append('query', query);
+        if (year) url.searchParams.append('year', year);
+
+        try {
+            const res = await fetch(url);
+            if (!res.ok) return null;
+            const data = await res.json();
+            return data.results && data.results[0] ? data.results[0] : null;
+        } catch (e) { return null; }
     }
 
-    const url = new URL(`${window.APP_CONFIG.TMDB_BASE_URL}/search/multi`);
-    url.searchParams.append('api_key', window.APP_CONFIG.TMDB_API_KEY);
+    // 2. Check App Config (Local/Dev)
+    if (window.APP_CONFIG && window.APP_CONFIG.TMDB_API_KEY) {
+        console.log('[AI] Using APP_CONFIG Key');
+        const baseUrl = window.APP_CONFIG.TMDB_BASE_URL || "https://api.themoviedb.org/3";
+        const url = new URL(`${baseUrl}/search/multi`);
+        url.searchParams.append('api_key', window.APP_CONFIG.TMDB_API_KEY);
+        url.searchParams.append('query', query);
+        if (year) url.searchParams.append('year', year);
+
+        try {
+            const res = await fetch(url);
+            if (!res.ok) {
+                console.error('[AI] TMDB Fetch Failed (Local):', res.status);
+                return null;
+            }
+            const data = await res.json();
+            const result = data.results && data.results[0] ? data.results[0] : null;
+            console.log('[AI] Search Result (Local):', result ? result.title || result.name : 'None found');
+            return result;
+        } catch (e) {
+            console.error('[AI] TMDB Fetch Exception (Local):', e);
+            return null;
+        }
+    }
+
+    // Proxy fallback
+    const url = new URL('/api/tmdb', window.location.origin);
+    url.searchParams.append('endpoint', '/search/multi');
     url.searchParams.append('query', query);
     if (year) url.searchParams.append('year', year);
 
     try {
         const res = await fetch(url);
+        if (!res.ok) return null;
         const data = await res.json();
         return data.results && data.results[0] ? data.results[0] : null;
     } catch (error) {
@@ -347,19 +450,24 @@ function saveConversation() {
 }
 
 // Clear conversation
+// Clear conversation
 function clearConversation() {
-    if (confirm('Clear conversation history?')) {
-        conversationHistory = [];
-        localStorage.removeItem('aiConversation');
+    console.log('[AI] Clearing conversation...');
 
-        // Clear UI (keep welcome message)
-        const chatContainer = document.getElementById('chatContainer');
-        const messages = chatContainer.querySelectorAll('.chat-message:not(:first-child)');
-        messages.forEach(msg => msg.remove());
+    // Reset state
+    conversationHistory = [];
+    localStorage.removeItem('aiConversation');
 
-        const movieGrids = chatContainer.querySelectorAll('.movie-grid');
-        movieGrids.forEach(grid => grid.remove());
-    }
+    // Clear UI
+    const chatContainer = document.getElementById('chatContainer');
+    if (!chatContainer) return;
+
+    // Remove all chat messages except the first one (Welcome)
+    // And ensure we don't remove the typing indicator
+    const contentToRemove = chatContainer.querySelectorAll('.chat-message:not(:first-child), .movie-grid');
+    contentToRemove.forEach(el => el.remove());
+
+    console.log('[AI] Chat cleared.');
 }
 
 // Modal functions

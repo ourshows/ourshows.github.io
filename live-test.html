@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client-Side Connectivity Test</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 2rem;
+            background: #1a1a1a;
+            color: white;
+        }
+
+        .status {
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 8px;
+            background: #333;
+        }
+
+        .success {
+            border-left: 5px solid #4caf50;
+        }
+
+        .error {
+            border-left: 5px solid #f44336;
+        }
+
+        code {
+            background: black;
+            padding: 2px 5px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Client-Side API Connectivity Test</h1>
+    <p>Testing direct API keys from <code>public-config.js</code></p>
+
+    <div id="configStatus" class="status">Checking Config...</div>
+    <div id="tmdbStatus" class="status">Testing TMDB Direct...</div>
+    <div id="aiStatus" class="status">Testing Groq Direct...</div>
+
+    <script src="public-config.js"></script>
+    <script>
+        function log(id, msg, type = 'neutral') {
+            const el = document.getElementById(id);
+            el.innerHTML += `<br><span>${msg}</span>`;
+            if (type === 'success') { el.classList.remove('error'); el.classList.add('success'); }
+            if (type === 'error') { el.classList.remove('success'); el.classList.add('error'); }
+        }
+
+        async function runTests() {
+            // Check Config
+            if (window.PUBLIC_CONFIG && window.PUBLIC_CONFIG.TMDB_KEY) {
+                log('configStatus', `✅ Config Loaded. Keys extracted successfully.`, 'success');
+            } else {
+                log('configStatus', '❌ Public Config / Keys Missing!', 'error');
+                return;
+            }
+
+            // Test TMDB Direct
+            try {
+                const tmdbUrl = new URL(`${window.PUBLIC_CONFIG.TMDB_BASE_URL}/search/movie`);
+                tmdbUrl.searchParams.append('api_key', window.PUBLIC_CONFIG.TMDB_KEY);
+                tmdbUrl.searchParams.append('query', 'Inception');
+
+                log('tmdbStatus', `Fetching: ${tmdbUrl.toString().replace(window.PUBLIC_CONFIG.TMDB_KEY, '***KEY***')}...`);
+
+                const res = await fetch(tmdbUrl);
+                const data = await res.json();
+
+                if (data.results && data.results.length > 0) {
+                    log('tmdbStatus', `✅ TMDB Success! Found ${data.results.length} results. First: ${data.results[0].title}`, 'success');
+                } else {
+                    log('tmdbStatus', '⚠️ Response OK but no results.', 'error');
+                }
+            } catch (e) {
+                log('tmdbStatus', `❌ TMDB Failed: ${e.message}`, 'error');
+            }
+
+            // Test Groq AI Direct
+            try {
+                const aiUrl = window.PUBLIC_CONFIG.GROQ_API_URL;
+                log('aiStatus', `Posting to: ${aiUrl}...`);
+
+                const res = await fetch(aiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${window.PUBLIC_CONFIG.GROQ_KEY}`
+                    },
+                    body: JSON.stringify({
+                        messages: [{ role: "user", content: "Say hello" }],
+                        model: "llama-3.3-70b-versatile"
+                    })
+                });
+
+                if (!res.ok) {
+                    const txt = await res.text();
+                    throw new Error(`HTTP ${res.status}: ${txt}`);
+                }
+
+                const data = await res.json();
+                if (data.choices && data.choices[0]) {
+                    log('aiStatus', `✅ AI Success! Reply: "${data.choices[0].message.content}"`, 'success');
+                } else {
+                    log('aiStatus', '⚠️ No choice field in response.', 'error');
+                }
+            } catch (e) {
+                log('aiStatus', `❌ AI Failed: ${e.message}`, 'error');
+            }
+        }
+
+        runTests();
+    </script>
+</body>
+
+</html>

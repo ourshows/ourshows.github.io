@@ -52,9 +52,25 @@ async function loadWatchedItems(userId) {
 }
 
 async function fetchTMDBDetails(id, type) {
-    if (!window.APP_CONFIG) return null;
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
-    const url = `${window.APP_CONFIG.TMDB_BASE_URL}/${type}/${id}?api_key=${window.APP_CONFIG.TMDB_API_KEY}`;
+    if (isLocal && window.APP_CONFIG && window.APP_CONFIG.TMDB_API_KEY) {
+        const baseUrl = window.APP_CONFIG.TMDB_BASE_URL || "https://api.themoviedb.org/3";
+        const url = new URL(`${baseUrl}/${type}/${id}`);
+        url.searchParams.append('api_key', window.APP_CONFIG.TMDB_API_KEY);
+
+        try {
+            const res = await fetch(url);
+            if (!res.ok) return null;
+            return await res.json();
+        } catch (e) {
+            return null;
+        }
+    }
+
+    const url = new URL('/api/tmdb', window.location.origin);
+    url.searchParams.append('endpoint', `/${type}/${id}`);
+
     try {
         const res = await fetch(url);
         if (!res.ok) return null;

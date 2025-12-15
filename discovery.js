@@ -565,22 +565,36 @@ async function loadMore() {
 // ============================================
 // TMDB API
 // ============================================
-async function fetchTMDB(endpoint, params = {}) {
-    if (!window.APP_CONFIG) return null;
-
-    const url = new URL(`${window.APP_CONFIG.TMDB_BASE_URL}${endpoint}`);
-    url.searchParams.append('api_key', window.APP_CONFIG.TMDB_API_KEY);
+// Client-Side Direct Call (Preferred)
+if (window.PUBLIC_CONFIG && window.PUBLIC_CONFIG.TMDB_KEY) {
+    const baseUrl = window.PUBLIC_CONFIG.TMDB_BASE_URL || "https://api.themoviedb.org/3";
+    const url = new URL(`${baseUrl}${endpoint}`);
+    url.searchParams.append('api_key', window.PUBLIC_CONFIG.TMDB_KEY);
     Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
 
     try {
         const response = await fetch(url);
         if (!response.ok) throw new Error('Network response was not ok');
         return await response.json();
-    } catch (error) {
-        console.error("TMDB Fetch Error:", error);
+    } catch (e) {
+        console.error("Direct TMDB Error:", e);
         return null;
     }
 }
+
+const url = new URL('/api/tmdb', window.location.origin);
+url.searchParams.append('endpoint', endpoint);
+Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
+
+try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Network response was not ok');
+    return await response.json();
+} catch (error) {
+    console.error("TMDB Fetch Error:", error);
+    return null;
+}
+
 
 // ============================================
 // MODAL FUNCTIONS (Reused from main.js)

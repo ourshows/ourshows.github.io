@@ -65,5 +65,60 @@ exports.aiProxy = functions.https.onRequest(async (req, res) => {
     }
 });
 
+/**
+ * Proxy for TMDB API
+ * Expects: endpoint (query param) and other params
+ */
+exports.tmdbProxy = functions.https.onRequest(async (req, res) => {
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.set("Access-Control-Allow-Headers", "Content-Type");
+
+    if (req.method === "OPTIONS") {
+        res.status(204).send("");
+        return;
+    }
+
+    const TMDB_API_KEY = functions.config().tmdb?.key;
+    if (!TMDB_API_KEY) {
+        res.status(500).json({ error: "Server configuration error: TMDB API Key missing." });
+        return;
+    }
+
+    const endpoint = req.query.endpoint || req.body.endpoint;
+    if (!endpoint) {
+        res.status(400).json({ error: "Missing 'endpoint' parameter." });
+        return;
+    }
+
+    // Construct URL
+    const baseUrl = "https://api.themoviedb.org/3";
+    // Ensure endpoint starts with /
+    const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    const url = new URL(`${baseUrl}${cleanEndpoint}`);
+
+    url.searchParams.append('api_key', TMDB_API_KEY);
+
+    // Forward all other query parameters
+    const params = req.method === 'GET' ? req.query : req.body;
+    Object.keys(params).forEach(key => {
+        if (key !== 'endpoint') {
+            url.searchParams.append(key, params[key]);
+        }
+    });
+
+    try {
+        const response = await fetch(url.toString());
+        if (!response.ok) {
+            throw new Error(`TMDB API Error: ${response.status}`);
+        }
+        const data = await response.json();
+        res.status(200).json(data);
+    } catch (error) {
+        console.error("TMDB Proxy Error:", error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Keep legacy export name alias if needed, or we just update firebase.json rewrites
 exports.huggingFaceProxy = exports.aiProxy;

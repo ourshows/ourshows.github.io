@@ -72,7 +72,7 @@
 
 <body>
     <h1>🧪 API Test Suite</h1>
-    <p>This page tests your Hugging Face and TMDB API configurations.</p>
+    <p>This page tests your Groq AI and TMDB API configurations.</p>
 
     <!-- Config Check -->
     <div class="test-section">
@@ -81,10 +81,10 @@
         <div id="configResult" class="result"></div>
     </div>
 
-    <!-- Hugging Face Test -->
+    <!-- Groq AI Test -->
     <div class="test-section">
-        <h2>2. Hugging Face API Test</h2>
-        <button onclick="testHuggingFace()">Test Hugging Face</button>
+        <h2>2. Groq AI API Test</h2>
+        <button onclick="testGroq()">Test Groq AI</button>
         <div id="hfResult" class="result"></div>
     </div>
 
@@ -102,6 +102,7 @@
         <div id="integrationResult" class="result"></div>
     </div>
 
+    <script src="public-config.js"></script>
     <script src="config.js"></script>
     <script>
         function log(elementId, message, type = 'info') {
@@ -121,44 +122,24 @@
             log('configResult', 'Checking configuration...', 'loading');
 
             if (!window.APP_CONFIG) {
-                log('configResult', '❌ ERROR: APP_CONFIG not found!', 'error');
-                log('configResult', 'Make sure config.js is loaded and defines window.APP_CONFIG', 'error');
+                log('configResult', '⚠️ APP_CONFIG not found, but API keys are now server-side.', 'info');
                 return;
             }
 
-            log('configResult', '✅ APP_CONFIG found', 'success');
-
-            // Check Hugging Face API Key
-            if (window.APP_CONFIG.HUGGINGFACE_API_KEY &&
-                window.APP_CONFIG.HUGGINGFACE_API_KEY !== 'YOUR_HUGGINGFACE_API_KEY_HERE') {
-                log('configResult', `✅ Hugging Face API Key: ${window.APP_CONFIG.HUGGINGFACE_API_KEY.substring(0, 10)}...`, 'success');
-            } else {
-                log('configResult', '❌ Hugging Face API Key not configured', 'error');
-            }
-
-            // Check TMDB API Key
-            if (window.APP_CONFIG.TMDB_API_KEY &&
-                window.APP_CONFIG.TMDB_API_KEY !== 'YOUR_TMDB_API_KEY_HERE') {
-                log('configResult', `✅ TMDB API Key: ${window.APP_CONFIG.TMDB_API_KEY.substring(0, 10)}...`, 'success');
-            } else {
-                log('configResult', '❌ TMDB API Key not configured', 'error');
-            }
-
-            log('configResult', '\nFull Config:', 'info');
-            log('configResult', JSON.stringify(window.APP_CONFIG, null, 2), 'info');
+            log('configResult', '✅ APP_CONFIG found (Proxied Mode)', 'success');
+            log('configResult', 'API Keys should be configured in Firebase Functions.', 'info');
         }
 
-        // 2. Test Hugging Face API
-        async function testHuggingFace() {
+        // 2. Test Groq API
+        async function testGroq() {
             clearLog('hfResult');
-            log('hfResult', 'Testing Hugging Face API...', 'loading');
+            log('hfResult', 'Testing Groq API...', 'loading');
 
-            if (!window.APP_CONFIG || !window.APP_CONFIG.HUGGINGFACE_API_KEY) {
-                log('hfResult', '❌ API key not configured', 'error');
-                return;
+            let url = '/api/ai';
+            if (window.PUBLIC_CONFIG?.API_BASE_URL) {
+                url = `${window.PUBLIC_CONFIG.API_BASE_URL}/aiProxy`;
+                log('hfResult', '☁️ Using Public Cloud Proxy', 'info');
             }
-
-            const url = '/api/ai';
 
             log('hfResult', `URL: ${url}`, 'info');
             log('hfResult', 'Sending request...', 'loading');
@@ -170,12 +151,9 @@
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        inputs: 'Say hello in one sentence.',
-                        parameters: {
-                            max_new_tokens: 50,
-                            temperature: 0.7,
-                            return_full_text: false
-                        }
+                        messages: [
+                            { role: "user", content: "Say hello in one sentence." }
+                        ]
                     })
                 });
 
@@ -187,25 +165,14 @@
                 log('hfResult', JSON.stringify(data, null, 2), 'info');
 
                 if (response.ok) {
-                    if (Array.isArray(data) && data[0]?.generated_text) {
+                    if (data.reply) {
                         log('hfResult', '\n✅ SUCCESS! AI Response:', 'success');
-                        log('hfResult', data[0].generated_text, 'success');
+                        log('hfResult', data.reply, 'success');
                     } else {
                         log('hfResult', '\n⚠️ Unexpected response format', 'error');
                     }
                 } else {
-                    log('hfResult', '\n❌ API Error:', 'error');
-                    if (data.error) {
-                        log('hfResult', data.error, 'error');
-
-                        if (data.error.includes('loading')) {
-                            log('hfResult', '\n💡 Model is loading. Wait 20-30 seconds and try again.', 'loading');
-                        } else if (data.error.includes('rate limit')) {
-                            log('hfResult', '\n💡 Rate limit reached. Wait a minute and try again.', 'loading');
-                        } else if (data.error.includes('authorization')) {
-                            log('hfResult', '\n💡 Invalid API key. Check your Hugging Face token.', 'error');
-                        }
-                    }
+                    log('hfResult', '\n❌ API Error: ' + (data.error || 'Unknown error'), 'error');
                 }
 
             } catch (error) {
@@ -219,16 +186,28 @@
             clearLog('tmdbResult');
             log('tmdbResult', 'Testing TMDB API...', 'loading');
 
-            if (!window.APP_CONFIG || !window.APP_CONFIG.TMDB_API_KEY) {
-                log('tmdbResult', '❌ API key not configured', 'error');
-                return;
+            const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            let url;
+
+            if (isLocal && window.APP_CONFIG && window.APP_CONFIG.TMDB_API_KEY) {
+                log('tmdbResult', '🏠 Localhost detected: Using Direct API Key', 'info');
+                const baseUrl = window.APP_CONFIG.TMDB_BASE_URL || "https://api.themoviedb.org/3";
+                url = new URL(`${baseUrl}/search/movie`);
+                url.searchParams.append('api_key', window.APP_CONFIG.TMDB_API_KEY);
+                url.searchParams.append('query', 'Inception');
+            } else if (window.PUBLIC_CONFIG?.API_BASE_URL) {
+                log('tmdbResult', '☁️ Production Config Detected: Using Public Cloud Proxy', 'info');
+                url = new URL(`${window.PUBLIC_CONFIG.API_BASE_URL}/tmdbProxy`);
+                url.searchParams.append('endpoint', '/search/movie');
+                url.searchParams.append('query', 'Inception');
+            } else {
+                log('tmdbResult', '⚠️ No Config found, attempting relative proxy...', 'info');
+                url = new URL('/api/tmdb', window.location.origin);
+                url.searchParams.append('endpoint', '/search/movie');
+                url.searchParams.append('query', 'Inception');
             }
 
-            const apiKey = window.APP_CONFIG.TMDB_API_KEY;
-            const url = `${window.APP_CONFIG.TMDB_BASE_URL}/search/movie?api_key=${apiKey}&query=Inception`;
-
-            log('tmdbResult', `URL: ${url}`, 'info');
-            log('tmdbResult', 'Searching for "Inception"...', 'loading');
+            log('tmdbResult', `Request URL: ${url}`, 'info');
 
             try {
                 const response = await fetch(url);
@@ -247,7 +226,6 @@
                         log('tmdbResult', `Title: ${movie.title}`, 'info');
                         log('tmdbResult', `Year: ${movie.release_date?.substring(0, 4)}`, 'info');
                         log('tmdbResult', `Rating: ${movie.vote_average}/10`, 'info');
-                        log('tmdbResult', `Poster: ${window.APP_CONFIG.TMDB_IMAGE_SMALL_URL}${movie.poster_path}`, 'info');
                     }
                 } else {
                     log('tmdbResult', '\n❌ API Error:', 'error');
@@ -264,21 +242,14 @@
             clearLog('integrationResult');
             log('integrationResult', 'Testing full AI + TMDB integration...', 'loading');
 
-            if (!window.APP_CONFIG || !window.APP_CONFIG.HUGGINGFACE_API_KEY || !window.APP_CONFIG.TMDB_API_KEY) {
-                log('integrationResult', '❌ APIs not configured', 'error');
-                return;
+            if (!window.APP_CONFIG) {
+                log('integrationResult', '⚠️ Starting integration test...', 'info');
             }
 
             // Step 1: Get AI recommendation
             log('integrationResult', '\nStep 1: Asking AI for movie recommendations...', 'loading');
 
-            const prompt = `You are a movie expert. Recommend 3 action movies.
-Return ONLY this JSON format (no markdown):
-{
-  "recommendations": [
-    {"title": "Movie Title", "year": "2020", "reason": "Why it's good"}
-  ]
-}`;
+            const prompt = `You are a movie expert. Recommend 3 action movies. Return ONLY JSON.`;
 
             try {
                 const hfResponse = await fetch('/api/ai', {
@@ -287,23 +258,22 @@ Return ONLY this JSON format (no markdown):
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        inputs: prompt,
-                        parameters: {
-                            max_new_tokens: 300,
-                            temperature: 0.7,
-                            return_full_text: false
-                        }
+                        messages: [
+                            { role: "system", content: "You are a movie expert. Return ONLY JSON format: { \"recommendations\": [{\"title\": \"Movie Title\", \"year\": \"2020\", \"reason\": \"Why it's good\"}] }" },
+                            { role: "user", content: "Recommend 3 action movies." }
+                        ],
+                        jsonMode: true
                     })
                 });
 
                 if (!hfResponse.ok) {
                     const error = await hfResponse.json();
-                    log('integrationResult', `❌ Hugging Face Error: ${error.error}`, 'error');
+                    log('integrationResult', `❌ Groq Error: ${error.error || 'Unknown'}`, 'error');
                     return;
                 }
 
                 const hfData = await hfResponse.json();
-                const aiText = hfData[0]?.generated_text || '';
+                const aiText = hfData.reply || '';
 
                 log('integrationResult', '✅ AI Response received', 'success');
                 log('integrationResult', `Raw response: ${aiText.substring(0, 200)}...`, 'info');
@@ -332,7 +302,9 @@ Return ONLY this JSON format (no markdown):
                 log('integrationResult', '\nStep 3: Searching TMDB for movies...', 'loading');
 
                 for (const rec of recommendations) {
-                    const tmdbUrl = `${window.APP_CONFIG.TMDB_BASE_URL}/search/movie?api_key=${window.APP_CONFIG.TMDB_API_KEY}&query=${encodeURIComponent(rec.title)}`;
+                    const tmdbUrl = new URL('/api/tmdb', window.location.origin);
+                    tmdbUrl.searchParams.append('endpoint', '/search/movie');
+                    tmdbUrl.searchParams.append('query', rec.title);
 
                     try {
                         const tmdbResponse = await fetch(tmdbUrl);

@@ -54,32 +54,49 @@ if (document.readyState === 'loading') {
 
 // --- API Helper ---
 async function fetchTMDB(endpoint, params = {}) {
-    console.log(`Fetching TMDB: ${endpoint}`, params);
-    if (!window.APP_CONFIG) {
-        console.error("APP_CONFIG not loaded");
-        return null;
+    // 1. Priority: Client-Side Direct Call (Public Config)
+    if (window.PUBLIC_CONFIG && window.PUBLIC_CONFIG.TMDB_KEY) {
+        const baseUrl = window.PUBLIC_CONFIG.TMDB_BASE_URL || "https://api.themoviedb.org/3";
+        const url = new URL(`${baseUrl}${endpoint}`);
+        url.searchParams.append('api_key', window.PUBLIC_CONFIG.TMDB_KEY);
+        url.searchParams.append('language', 'en-US');
+        url.searchParams.append('include_adult', 'false');
+        Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
+
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`TMDB API Error: ${response.status}`);
+            return await response.json();
+        } catch (error) {
+            console.error('Direct TMDB Fetch Error:', error);
+            return null;
+        }
     }
 
-    const url = new URL(`${window.APP_CONFIG.TMDB_BASE_URL}${endpoint}`);
-    url.searchParams.append('api_key', window.APP_CONFIG.TMDB_API_KEY);
+    // 2. Fallback: Dev/Local Direct Call (App Config)
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    if (isLocal && window.APP_CONFIG && window.APP_CONFIG.TMDB_API_KEY) {
+        const baseUrl = window.APP_CONFIG.TMDB_BASE_URL || "https://api.themoviedb.org/3";
+        const url = new URL(`${baseUrl}${endpoint}`);
+        url.searchParams.append('api_key', window.APP_CONFIG.TMDB_API_KEY);
+        url.searchParams.append('language', 'en-US');
+        url.searchParams.append('include_adult', 'false');
+        Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
 
-    // Add default params
-    url.searchParams.append('language', 'en-US');
-    url.searchParams.append('include_adult', 'false');
+        try {
+            const response = await fetch(url);
+            if (response.ok) return await response.json();
+        } catch (e) { console.error(e); }
+    }
 
-    // Add custom params
-    Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
-
+    // 3. Fallback: Proxy
     try {
+        const url = new URL('/api/tmdb', window.location.origin);
+        url.searchParams.append('endpoint', endpoint);
+        Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
         const response = await fetch(url);
-        if (!response.ok) throw new Error(`API Error: ${response.status}`);
-        const data = await response.json();
-        console.log(`TMDB Success: ${endpoint}`, data);
-        return data;
-    } catch (error) {
-        console.error('Fetch error:', error);
-        return null;
-    }
+        return await response.json();
+    } catch (e) { return null; }
 }
 
 async function renderCustomList(containerId, listConfig, mediaType) {
@@ -108,13 +125,20 @@ async function initApp() {
     console.log('=== INIT APP STARTED ===');
     console.log('APP_CONFIG:', window.APP_CONFIG);
 
+    // Default Configuration for Production (when config.js is missing/gitignored)
     if (!window.APP_CONFIG) {
-        console.error("Config not found!");
-        showError("Configuration Missing", "Please ensure config.js is loaded and contains valid API keys.");
-        return;
+        console.warn("Config not found, using default production configuration.");
+        window.APP_CONFIG = {
+            // These public URLs are safe to expose
+            TMDB_IMAGE_BASE_URL: "https://image.tmdb.org/t/p/original",
+            TMDB_IMAGE_SMALL_URL: "https://image.tmdb.org/t/p/w500",
+            TMDB_BASE_URL: "https://api.themoviedb.org/3",
+            // API Key is intentionally missing here; fetchTMDB will use the proxy
+            TMDB_API_KEY: null
+        };
     }
 
-    console.log('TMDB_API_KEY:', window.APP_CONFIG.TMDB_API_KEY ? 'Present' : 'Missing');
+    console.log('TMDB_API_KEY:', window.APP_CONFIG.TMDB_API_KEY ? 'Present' : 'Missing (Using Proxy)');
     console.log('TMDB_BASE_URL:', window.APP_CONFIG.TMDB_BASE_URL);
 
     // Initialize theme system FIRST
@@ -238,6 +262,35 @@ function addMoreLinks() {
     });
 }
 
+// Switch Tabs in Modal
+window.switchTab = function (tabName) {
+    const tabs = ['overview', 'cast', 'reviews', 'similar', 'ai', 'seasons', 'franchise'];
+
+    // Hide all tabs
+    tabs.forEach(t => {
+        const content = document.getElementById(`tab-${t}`);
+        if (content) content.classList.remove('active');
+    });
+
+    // Remove active class from all buttons
+    const buttons = document.querySelectorAll('.tab-btn');
+    buttons.forEach(btn => btn.classList.remove('active'));
+
+    // Show selected tab
+    const selectedContent = document.getElementById(`tab-${tabName}`);
+    if (selectedContent) selectedContent.classList.add('active');
+
+    // Highlight selected button
+    // Note: This assumes the button onclick passes the tabName explicitly. 
+    // We can find the button by its onclick attribute or ID if we assigned one consistently.
+    // For now, let's try to match by text or onclick.
+    // Simpler: Just rely on the user clicking the button to handle the visual state? 
+    // No, we need to update the button state programmatically.
+    // Let's find button by onclick="switchTab('tabName')"
+    const activeBtn = document.querySelector(`button[onclick="switchTab('${tabName}')"]`);
+    if (activeBtn) activeBtn.classList.add('active');
+}
+
 // --- UI Setup ---
 function setupNavbar() {
     const navbar = document.getElementById('navbar');
@@ -299,6 +352,16 @@ function setupSearch() {
         debounceTimer = setTimeout(() => {
             performSearch(query);
         }, 500);
+    });
+
+    // Handle Enter Key
+    input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            const query = input.value.trim();
+            if (query) {
+                window.location.href = `search.html?q=${encodeURIComponent(query)}`;
+            }
+        }
     });
 
     document.addEventListener('click', (e) => {
@@ -491,24 +554,61 @@ async function performSearch(query) {
 
     if (data && data.results.length > 0) {
         resultsContainer.classList.add('active');
-        data.results.slice(0, 5).forEach(item => {
+
+        // Take top 6 results
+        const items = data.results.slice(0, 6);
+
+        items.forEach(item => {
             if (!item.poster_path && !item.profile_path) return;
 
             const div = document.createElement('div');
-            div.className = 'search-item';
+            div.className = 'suggestion-item'; // Use new class
+
+            // Highlight matching text logic
+            const title = item.title || item.name;
+            const regex = new RegExp(`(${query})`, 'gi');
+            const highlightedTitle = title.replace(regex, '<b>$1</b>');
+
+            const year = (item.release_date || item.first_air_date || 'TBA').split('-')[0];
+            const type = item.media_type === 'tv' ? 'TV Series' : 'Movie';
+            const icon = type === 'Movie' ? 'fa-film' : 'fa-tv';
+
             div.innerHTML = `
-                <img src="${window.APP_CONFIG.TMDB_IMAGE_SMALL_URL}${item.poster_path || item.profile_path}" alt="${item.title || item.name}">
-                <div>
-                    <div style="font-weight: 600;">${item.title || item.name}</div>
-                    <div style="font-size: 0.8rem; color: var(--text-secondary);">${item.media_type ? item.media_type.toUpperCase() : ''}</div>
+                <img class="suggestion-poster" 
+                     src="${window.APP_CONFIG.TMDB_IMAGE_SMALL_URL}${item.poster_path || item.profile_path}" 
+                     alt="${title}">
+                <div class="suggestion-info">
+                    <div class="suggestion-title">${highlightedTitle}</div>
+                    <div class="suggestion-meta">
+                        <span>${year}</span>
+                        <i class="fas fa-circle" style="font-size: 4px; margin: 0 4px;"></i>
+                        <i class="fas ${icon}"></i>
+                        <span>${type}</span>
+                    </div>
                 </div>
+                <i class="fas fa-chevron-right" style="color: var(--text-secondary); opacity: 0.5;"></i>
             `;
+
             div.onclick = () => {
                 openMovieModal(item.id, item.media_type);
                 resultsContainer.classList.remove('active');
+                document.getElementById('searchInput').value = ''; // Clear input
             };
             resultsContainer.appendChild(div);
         });
+
+        // "See all" link if too many results
+        if (data.results.length > 6) {
+            const seeAll = document.createElement('div');
+            seeAll.className = 'suggestion-item';
+            seeAll.style.justifyContent = 'center';
+            seeAll.style.color = 'var(--primary-color)';
+            seeAll.style.fontWeight = '600';
+            seeAll.innerHTML = `See all results for "${query}"`;
+            seeAll.onclick = () => window.location.href = `search.html?q=${encodeURIComponent(query)}`;
+            resultsContainer.appendChild(seeAll);
+        }
+
     } else {
         resultsContainer.classList.remove('active');
     }
@@ -578,6 +678,53 @@ async function openMovieModal(id, type = 'movie') {
 
     // Load genres
     loadGenres(details.genres);
+
+    // Reset and Hide new tabs
+    document.getElementById('tabBtnSeasons').style.display = 'none';
+    document.getElementById('tabBtnFranchise').style.display = 'none';
+    document.getElementById('modalSeasons').innerHTML = '';
+    document.getElementById('modalFranchise').innerHTML = '';
+
+    // Handle Seasons (TV)
+    if (type === 'tv' && details.seasons) {
+        document.getElementById('tabBtnSeasons').style.display = 'block';
+        const seasonContent = details.seasons.filter(s => s.season_number > 0).map(s => `
+            <div class="season-card glass-panel" style="display: flex; gap: 1rem; padding: 1rem;">
+                <img src="${s.poster_path ? 'https://image.tmdb.org/t/p/w200' + s.poster_path : 'https://via.placeholder.com/100x150'}" 
+                     style="width: 100px; height: 150px; object-fit: cover; border-radius: 8px;">
+                <div class="season-info">
+                    <h3>${s.name}</h3>
+                    <p>${s.air_date ? s.air_date.substring(0, 4) : 'TBA'} | ${s.episode_count} Episodes</p>
+                    <p style="font-size: 0.9rem; color: #ccc; margin-top: 0.5rem;">${s.overview || 'No overview available.'}</p>
+                </div>
+            </div>
+        `).join('');
+        document.getElementById('modalSeasons').innerHTML = seasonContent;
+    }
+
+    // Handle Franchise (Movies)
+    if (type === 'movie' && details.belongs_to_collection) {
+        try {
+            const collectionId = details.belongs_to_collection.id;
+            const collectionData = await fetchTMDB(`/collection/${collectionId}`);
+            if (collectionData && collectionData.parts && collectionData.parts.length > 0) {
+                document.getElementById('tabBtnFranchise').style.display = 'block';
+                // Sort parts by release date
+                const sortedParts = collectionData.parts.sort((a, b) => new Date(a.release_date) - new Date(b.release_date));
+
+                const franchiseContent = sortedParts.map(movie => `
+                    <div class="movie-card" onclick="openMovieModal(${movie.id}, 'movie')" style="cursor: pointer; position: relative;">
+                         <img src="${movie.poster_path ? 'https://image.tmdb.org/t/p/w200' + movie.poster_path : 'https://via.placeholder.com/150x225'}" 
+                              alt="${movie.title}" 
+                              style="width: 100%; border-radius: 8px; transition: transform 0.3s;">
+                         <div style="margin-top: 5px; font-size: 0.9rem;">${movie.title} (${movie.release_date ? movie.release_date.split('-')[0] : 'TBA'})</div>
+                         ${movie.id === id ? '<span style="position: absolute; top: 10px; right: 10px; background: var(--primary-color); padding: 2px 6px; border-radius: 4px; font-size: 0.7rem;">Current</span>' : ''}
+                    </div>
+                 `).join('');
+                document.getElementById('modalFranchise').innerHTML = franchiseContent;
+            }
+        } catch (e) { console.error("Error fetching collection:", e); }
+    }
 
     // Load cast
     loadCast(details.credits);
@@ -1095,24 +1242,4 @@ window.toggleTheme = function () {
     }
 };
 
-console.log('Exposed to window:', {
-    fetchTMDB: typeof window.fetchTMDB,
-    renderCustomList: typeof window.renderCustomList,
-    toggleTheme: typeof window.toggleTheme
-});
 
-// Expose Collection Functions
-window.openMovieModal = openMovieModal;
-window.watchHeroMovie = watchHeroMovie;
-window.addToWatchLater = addToWatchLater;
-window.openAddToCollectionModal = openAddToCollectionModal;
-window.closeAddToCollectionModal = closeAddToCollectionModal;
-window.addToCollectionConfirm = addToCollectionConfirm;
-window.createNewCollection = createNewCollection;
-window.handleCreateCollection = handleCreateCollection;
-window.closeCreateCollectionModal = closeCreateCollectionModal;
-// Note: Some might be in collection.js, but if main.js defines them, we expose them.
-// If collection.js defines them, it should handle its own exposure (which it does).
-
-// Initialize App
-document.addEventListener('DOMContentLoaded', initApp);

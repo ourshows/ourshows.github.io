@@ -15,6 +15,10 @@
       {
         "source": "/api/ai",
         "function": "huggingFaceProxy"
+      },
+      {
+        "source": "/api/tmdb",
+        "function": "tmdbProxy"
       }
     ]
   },

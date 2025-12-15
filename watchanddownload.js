@@ -39,14 +39,21 @@ function setupDownloadButtons() {
 }
 
 async function loadDetails(id, type) {
-    if (!window.APP_CONFIG) return;
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    let url;
 
-    // Fetch Details
-    const detailsUrl = new URL(`${window.APP_CONFIG.TMDB_BASE_URL}/${type}/${id}`);
-    detailsUrl.searchParams.append('api_key', window.APP_CONFIG.TMDB_API_KEY);
+    if (window.PUBLIC_CONFIG && window.PUBLIC_CONFIG.TMDB_KEY) {
+        const baseUrl = window.PUBLIC_CONFIG.TMDB_BASE_URL || "https://api.themoviedb.org/3";
+        url = new URL(`${baseUrl}/${type}/${id}`);
+        url.searchParams.append('api_key', window.PUBLIC_CONFIG.TMDB_KEY);
+    } else {
+        url = new URL('/api/tmdb', window.location.origin);
+        url.searchParams.append('endpoint', `/${type}/${id}`);
+    }
 
     try {
-        const res = await fetch(detailsUrl);
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Network response was not ok');
         const data = await res.json();
         renderDetails(data);
 
@@ -58,43 +65,22 @@ async function loadDetails(id, type) {
     }
 }
 
-function renderDetails(data) {
-    const backdrop = document.getElementById('backdrop');
-    const poster = document.getElementById('poster');
-    const title = document.getElementById('title');
-    const tagline = document.getElementById('tagline');
-    const overview = document.getElementById('overview');
-    const rating = document.getElementById('rating');
-    const date = document.getElementById('releaseDate');
-    const runtime = document.getElementById('runtime');
-
-    if (data.backdrop_path) {
-        backdrop.style.backgroundImage = `url(${window.APP_CONFIG.TMDB_IMAGE_BASE_URL}${data.backdrop_path})`;
-    }
-
-    if (data.poster_path) {
-        poster.src = `${window.APP_CONFIG.TMDB_IMAGE_SMALL_URL}${data.poster_path}`;
-    }
-
-    title.textContent = data.title || data.name;
-    tagline.textContent = data.tagline || '';
-    overview.textContent = data.overview;
-    rating.textContent = data.vote_average ? data.vote_average.toFixed(1) : 'N/A';
-
-    const releaseDate = data.release_date || data.first_air_date;
-    date.textContent = releaseDate ? releaseDate.split('-')[0] : '';
-
-    if (data.runtime || data.episode_run_time) {
-        const time = data.runtime || (data.episode_run_time ? data.episode_run_time[0] : 0);
-        runtime.textContent = `${time} min`;
-    } else {
-        runtime.style.display = 'none';
-    }
-}
+// ... renderDetails ...
 
 async function loadProviders(id, type) {
-    const url = new URL(`${window.APP_CONFIG.TMDB_BASE_URL}/${type}/${id}/watch/providers`);
-    url.searchParams.append('api_key', window.APP_CONFIG.TMDB_API_KEY);
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    let url;
+
+    if (window.PUBLIC_CONFIG && window.PUBLIC_CONFIG.TMDB_KEY) {
+        const baseUrl = window.PUBLIC_CONFIG.TMDB_BASE_URL || "https://api.themoviedb.org/3";
+        url = new URL(`${baseUrl}/${type}/${id}/watch/providers`);
+        url.searchParams.append('api_key', window.PUBLIC_CONFIG.TMDB_KEY);
+    } else {
+        url = new URL('/api/tmdb', window.location.origin);
+        url.searchParams.append('endpoint', `/${type}/${id}/watch/providers`);
+    }
+
+    // Providers doesn't need extra params usually, but if so add here
 
     try {
         const res = await fetch(url);

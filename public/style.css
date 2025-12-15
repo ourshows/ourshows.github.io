@@ -735,24 +735,111 @@ a {
     position: absolute;
     top: 100%;
     left: 0;
-    width: 100%;
+    width: 600px;
+    /* Standard wide dropdown */
+    max-width: 90vw;
     margin-top: 0.5rem;
-    max-height: 300px;
+    max-height: 400px;
     overflow-y: auto;
-    z-index: 100;
-    text-align: left;
-    background: var(--bg-dark);
+    z-index: 1001;
+    background: rgba(15, 23, 42, 0.95);
+    /* Dark background */
     border: 1px solid var(--glass-border);
-    border-radius: 0 0 12px 12px;
+    border-radius: 12px;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
 }
 
 .suggestion-item {
-    padding: 0.75rem 1.5rem;
-    cursor: pointer;
-    border-bottom: 1px solid var(--glass-border);
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    padding: 12px 16px;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    transition: background 0.2s ease;
+    gap: 12px;
+}
+
+.suggestion-item:last-child {
+    border-bottom: none;
+}
+
+.suggestion-item:hover,
+.suggestion-item.selected {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.suggestion-poster {
+    width: 45px;
+    height: 67px;
+    border-radius: 4px;
+    object-fit: cover;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    /* Inner glow effect */
+}
+
+.suggestion-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.suggestion-title {
+    font-size: 15px;
+    /* 14-16px range */
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+    line-height: 1.2;
+}
+
+.suggestion-title b {
+    color: var(--primary-color);
+    font-weight: 700;
+}
+
+.suggestion-meta {
+    font-size: 13px;
+    /* 12-13px range */
+    color: #aaaaaa;
+    /* Muted */
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.suggestion-meta i {
+    font-size: 0.7em;
+    opacity: 0.7;
+}
+
+/* Mobile responsive for suggestions */
+@media (max-width: 768px) {
+    .suggestions-dropdown {
+        position: fixed;
+        top: 70px;
+        /* Below navbar */
+        left: 0;
+        width: 100%;
+        max-width: 100%;
+        height: calc(100vh - 70px);
+        border-radius: 0;
+        border: none;
+        background: var(--bg-dark);
+    }
+
+    .suggestion-item {
+        padding: 16px;
+        /* Larger touch target */
+    }
+
+    .suggestion-poster {
+        width: 40px;
+        height: 60px;
+    }
 }
 
 .suggestion-item:hover {
@@ -799,6 +886,79 @@ a {
     opacity: 0.4;
     transform: rotate(-15deg) scale(1.1);
 }
+
+/* Search Suggestions */
+.search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+    border-radius: 0 0 12px 12px;
+    max-height: 400px;
+    overflow-y: auto;
+    z-index: 1000;
+    display: none;
+    /* Hidden by default */
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+}
+
+.search-results.active {
+    display: block;
+}
+
+.search-result-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.8rem 1rem;
+    cursor: pointer;
+    transition: background 0.2s;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.search-result-item:last-child {
+    border-bottom: none;
+}
+
+.search-result-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.search-result-poster {
+    width: 40px;
+    /* Force small width */
+    height: 60px;
+    object-fit: cover;
+    border-radius: 4px;
+    flex-shrink: 0;
+    background: #000;
+}
+
+.search-result-info {
+    flex: 1;
+    min-width: 0;
+    /* Enable text truncation */
+}
+
+.search-result-info h4 {
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.search-result-info p {
+    margin: 0.2rem 0 0;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
 
 .poster-track {
     display: flex;

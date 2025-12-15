@@ -1,19 +1,31 @@
-import { auth, db, addDoc, setDoc, doc, serverTimestamp, collection } from './firebase-config.js';
+import { auth, db, addDoc, setDoc, doc, serverTimestamp, collection, onAuthStateChanged } from './firebase-wrapper.js';
 
 let currentPage = 1;
 let currentCategory = '';
 let isLoading = false;
+let hasMore = true;
 let currentMovieId = null;
 let currentMovieData = null;
 let userRating = null;
 let currentUser = auth.currentUser;
 
 // Listen for auth state
-auth.onAuthStateChanged(user => {
+onAuthStateChanged(auth, user => {
     currentUser = user;
 });
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Default Configuration Fallback (if config.js is missing or fails)
+    if (!window.APP_CONFIG) {
+        console.warn("Config not found in view_all, using default configuration.");
+        window.APP_CONFIG = {
+            TMDB_IMAGE_BASE_URL: "https://image.tmdb.org/t/p/original",
+            TMDB_IMAGE_SMALL_URL: "https://image.tmdb.org/t/p/w500",
+            TMDB_BASE_URL: "https://api.themoviedb.org/3",
+            TMDB_API_KEY: null // Will use proxy
+        };
+    }
+
     const urlParams = new URLSearchParams(window.location.search);
     currentCategory = urlParams.get('category');
 
@@ -22,14 +34,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     updateTitle(currentCategory);
+
+    // Initial Load
     loadContent(currentCategory, currentPage);
 
-    document.getElementById('loadMoreBtn').addEventListener('click', () => {
-        if (!isLoading) {
+    // Setup Intersection Observer for Infinite Scroll
+    const sentinel = document.getElementById('loadingSentinel');
+    const observer = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && !isLoading && hasMore) {
             currentPage++;
             loadContent(currentCategory, currentPage);
         }
-    });
+    }, { rootMargin: '200px' });
+
+    if (sentinel) observer.observe(sentinel);
 });
 
 // Expose functions to window for onclick handlers in HTML
@@ -41,6 +59,7 @@ window.markAsWatched = markAsWatched;
 window.addToWatchLater = addToWatchLater;
 window.watchNow = watchNow;
 window.askAI = askAI;
+window.openMovieModal = openMovieModal; // Ensure this is exposed
 
 function updateTitle(category) {
     const titles = {
@@ -50,56 +69,109 @@ function updateTitle(category) {
         'upcoming': 'Coming Soon',
         'now_playing': 'Now in Theaters',
         'nepali': 'Nepali Hits 🇳🇵',
-        'hindi': 'Bollywood & Hindi 🇮🇳'
+        'hindi': 'Bollywood & Hindi 🇮🇳',
+        // Add other categories...
     };
-    document.getElementById('pageTitle').textContent = titles[category] || 'Movies';
+    document.getElementById('pageTitle').textContent = titles[category] || category.replace(/_/g, ' ').toUpperCase();
 }
 
 async function loadContent(category, page) {
+    if (isLoading || !hasMore) return;
     isLoading = true;
-    const btn = document.getElementById('loadMoreBtn');
-    btn.textContent = 'Loading...';
 
-    let endpoint = '';
-    let params = { page: page };
+    const sentinel = document.getElementById('loadingSentinel');
+    if (sentinel) sentinel.style.opacity = '1';
 
-    switch (category) {
-        case 'trending': endpoint = '/trending/movie/week'; break;
-        case 'popular': endpoint = '/movie/popular'; break;
-        case 'top_rated': endpoint = '/movie/top_rated'; break;
-        case 'upcoming': endpoint = '/movie/upcoming'; break;
-        case 'now_playing': endpoint = '/movie/now_playing'; break;
-        case 'nepali':
-            endpoint = '/discover/movie';
-            params.with_original_language = 'ne';
-            params.sort_by = 'popularity.desc';
-            break;
-        case 'hindi':
-            endpoint = '/discover/movie';
-            params.with_original_language = 'hi';
-            params.sort_by = 'popularity.desc';
-            params.region = 'IN';
-            break;
-    }
+    try {
+        let endpoint = '';
+        let params = { page: page };
 
-    const data = await fetchTMDB(endpoint, params);
-
-    if (data && data.results) {
-        renderGrid(data.results);
-        if (page >= data.total_pages) {
-            btn.style.display = 'none';
+        switch (category) {
+            case 'trending': endpoint = '/trending/movie/week'; break;
+            case 'popular': endpoint = '/movie/popular'; break;
+            case 'top_rated': endpoint = '/movie/top_rated'; break;
+            case 'upcoming': endpoint = '/movie/upcoming'; break;
+            case 'now_playing': endpoint = '/movie/now_playing'; break;
+            case 'nepali':
+                endpoint = '/discover/movie';
+                params.with_original_language = 'ne';
+                params.sort_by = 'popularity.desc';
+                break;
+            case 'hindi':
+                endpoint = '/discover/movie';
+                params.with_original_language = 'hi';
+                params.sort_by = 'popularity.desc';
+                params.region = 'IN';
+                break;
+            default:
+                // Handle custom lists or generic discovery
+                endpoint = '/discover/movie';
+                params.sort_by = 'popularity.desc';
         }
-    }
 
-    isLoading = false;
-    btn.textContent = 'Load More';
+        const data = await fetchTMDB(endpoint, params);
+
+        if (data && data.results && data.results.length > 0) {
+            renderGrid(data.results);
+            if (page >= data.total_pages) {
+                hasMore = false;
+                if (sentinel) sentinel.style.display = 'none'; // Hide if no more pages
+            }
+        } else {
+            hasMore = false;
+            if (sentinel) sentinel.style.display = 'none';
+        }
+    } catch (error) {
+        console.error("Error loading content:", error);
+        // Optional: show error message to user
+    } finally {
+        isLoading = false;
+        if (sentinel && hasMore) sentinel.style.opacity = '0'; // Hide spinner when idle
+    }
 }
 
 async function fetchTMDB(endpoint, params = {}) {
-    if (!window.APP_CONFIG) return null;
+    // 1. Priority: Client-Side Direct Call (Public Config) - Matches main.js
+    if (window.PUBLIC_CONFIG && window.PUBLIC_CONFIG.TMDB_KEY) {
+        const baseUrl = window.PUBLIC_CONFIG.TMDB_BASE_URL || "https://api.themoviedb.org/3";
+        const url = new URL(`${baseUrl}${endpoint}`);
+        url.searchParams.append('api_key', window.PUBLIC_CONFIG.TMDB_KEY);
+        url.searchParams.append('language', 'en-US');
+        url.searchParams.append('include_adult', 'false');
+        Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
 
-    const url = new URL(`${window.APP_CONFIG.TMDB_BASE_URL}${endpoint}`);
-    url.searchParams.append('api_key', window.APP_CONFIG.TMDB_API_KEY);
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`TMDB API Error: ${response.status}`);
+            return await response.json();
+        } catch (error) {
+            console.error('Direct TMDB Fetch Error:', error);
+            return null;
+        }
+    }
+
+    // 2. Fallback: Dev/Local Direct Call (App Config)
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+    if (isLocal && window.APP_CONFIG && window.APP_CONFIG.TMDB_API_KEY) {
+        const baseUrl = window.APP_CONFIG.TMDB_BASE_URL || "https://api.themoviedb.org/3";
+        const url = new URL(`${baseUrl}${endpoint}`);
+        url.searchParams.append('api_key', window.APP_CONFIG.TMDB_API_KEY);
+        Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
+
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Network response was not ok');
+            return await response.json();
+        } catch (e) {
+            console.error("Direct TMDB Error:", e);
+            return null;
+        }
+    }
+
+    // 3. Fallback: Proxy
+    const url = new URL('/api/tmdb', window.location.origin);
+    url.searchParams.append('endpoint', endpoint);
     Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
 
     try {
@@ -119,16 +191,37 @@ function renderGrid(items) {
         if (!item.poster_path) return;
 
         const card = document.createElement('div');
-        card.className = 'media-card';
+        card.className = 'media-card'; // Uses global styles
+
+        // Ensure card looks premium
+        const title = item.title || item.name;
+        const rating = item.vote_average ? item.vote_average.toFixed(1) : 'N/A';
+        const year = (item.release_date || item.first_air_date || '').split('-')[0];
+        const mediaType = item.media_type || 'movie';
+
         card.innerHTML = `
-            <img class="media-poster" src="${window.APP_CONFIG.TMDB_IMAGE_SMALL_URL}${item.poster_path}" loading="lazy" alt="${item.title || item.name}">
+            <div class="media-poster-container">
+                <img class="media-poster" src="${window.APP_CONFIG.TMDB_IMAGE_SMALL_URL}${item.poster_path}" loading="lazy" alt="${title}">
+                <div class="card-rating-badge">★ ${rating}</div>
+                 <div class="card-overlay">
+                    <button class="card-download-btn" onclick="event.stopPropagation(); window.location.href='watchanddownload.html?id=${item.id}&type=${mediaType}'">
+                        <i class="fas fa-play"></i> Watch
+                    </button>
+                    <button class="card-download-btn" style="margin-top: 0.5rem;" onclick="event.stopPropagation(); openMovieModal('${item.id}', '${mediaType}')">
+                        <i class="fas fa-info-circle"></i> Details
+                    </button>
+                </div>
+            </div>
             <div class="media-info">
-                <div class="media-title">${item.title || item.name}</div>
-                <div class="media-year">${(item.release_date || item.first_air_date || '').split('-')[0]}</div>
+                <div class="media-title" title="${title}">${title}</div>
+                <div class="media-year" style="display:flex; justify-content:space-between;">
+                    <span>${year}</span>
+                    <span>${mediaType === 'tv' ? 'TV' : 'Movie'}</span>
+                </div>
             </div>
         `;
 
-        card.onclick = () => openMovieModal(item.id, item.media_type || 'movie');
+        card.onclick = () => openMovieModal(item.id, mediaType);
         container.appendChild(card);
     });
 }

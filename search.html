@@ -31,27 +31,130 @@
         .results-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 2rem;
+            gap: 2rem 1.5rem;
             padding-bottom: 4rem;
+            align-items: start;
+            /* Prevents stretching stretching heights weirdly */
+        }
+
+        .media-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: transform 0.3s;
+            cursor: pointer;
+            border: 1px solid var(--glass-border);
+            display: block;
+            /* Reset flex */
+        }
+
+        .media-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border-color: var(--primary-color);
+        }
+
+        .media-poster-container {
+            position: relative;
+            overflow: hidden;
+            border-radius: 12px;
+            aspect-ratio: 2/3;
+        }
+
+        .media-poster {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s;
+        }
+
+        .media-card:hover .media-poster {
+            transform: scale(1.1);
+        }
+
+        .card-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+            backdrop-filter: blur(2px);
+        }
+
+        .media-card:hover .card-overlay {
+            opacity: 1;
+        }
+
+        .card-rating-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #ffd700;
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            backdrop-filter: blur(4px);
+            font-weight: 600;
+        }
+
+        .card-download-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: transform 0.2s;
+        }
+
+        .card-download-btn:hover {
+            transform: scale(1.05);
+            background: white;
+            color: var(--primary-color);
+        }
+
+        .media-info {
+            padding: 1rem;
+        }
+
+        .media-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.3rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--text-primary);
+            text-align: left;
+            /* Reset alignment */
+            padding: 0;
+        }
+
+        .media-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
         }
 
         /* Mobile responsive adjustments */
-        @media (max-width: 768px) {
-            .results-grid {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 1rem;
-            }
-        }
-
         @media (max-width: 480px) {
             .results-grid {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 0.8rem;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 0.5rem;
             }
 
-            .media-card {
-                height: 250px;
-                /* Smaller cards on mobile */
+            .media-title {
+                font-size: 0.8rem;
             }
         }
     </style>
@@ -97,7 +200,19 @@
     <div class="container">
         <div class="search-header">
             <h1 class="search-title">Results for "<span class="search-query" id="queryDisplay">...</span>"</h1>
-            <p id="resultsCount">Searching...</p>
+            <p id="resultsCount" style="margin-bottom: 1rem;">Searching...</p>
+
+            <!-- Enhanced Filters -->
+            <div class="search-filters"
+                style="display: flex; gap: 0.8rem; justify-content: center; margin-top: 1.5rem; flex-wrap: wrap;">
+                <button class="glass-button filter-chip active" onclick="filterResults('all')"><i
+                        class="fas fa-layer-group"></i> All</button>
+                <button class="glass-button filter-chip" onclick="filterResults('movie')"><i class="fas fa-film"></i>
+                    Movies</button>
+                <button class="glass-button filter-chip" onclick="filterResults('tv')"><i class="fas fa-tv"></i> TV
+                    Shows</button>
+            </div>
+
         </div>
 
         <div id="loading" style="text-align: center; margin-top: 4rem;">
@@ -115,32 +230,157 @@
         </div>
     </div>
 
-    <!-- Modal for details -->
-    <div id="movieModal" class="modal">
+    <!-- Movie Details Modal -->
+    <div id="movieModal" class="modal" style="display: none;">
         <div class="modal-content glass-panel">
             <span class="close-modal" onclick="closeModal()">&times;</span>
             <div class="modal-body">
-                <img id="modalPoster" src="" alt="Movie Poster" class="modal-poster">
+                <div class="modal-poster-container">
+                    <img id="modalPoster" src="" alt="Movie Poster" class="modal-poster">
+                </div>
                 <div class="modal-info">
-                    <h2 id="modalTitle" class="modal-title"></h2>
-                    <div class="modal-meta">
-                        <span id="modalRating" class="rating-badge"></span>
-                        <span id="modalYear"></span>
+                    <!-- Modal Header -->
+                    <h2 id="modalTitle" style="margin-bottom: 1rem;">Movie Title</h2>
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
+                        <span style="color: #ffd700;">★ <span id="modalRating">N/A</span></span>
+                        <span id="modalYear">Year</span>
+                        <span id="modalRuntime">Runtime</span>
                     </div>
-                    <p id="modalOverview" class="modal-overview"></p>
-                    <div class="modal-actions">
-                        <button class="glass-button primary" id="modalWatchBtn">
-                            <i class="fas fa-play"></i> Watch Now
-                        </button>
+
+                    <!-- Tab Navigation -->
+                    <div class="modal-tabs"
+                        style="display: flex; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 0.5rem;">
+                        <button class="tab-btn active" onclick="switchTab('overview')">Overview</button>
+                        <button class="tab-btn" onclick="switchTab('cast')">Cast & Crew</button>
+                        <button class="tab-btn" onclick="switchTab('reviews')">Reviews</button>
+                        <button class="tab-btn" onclick="switchTab('similar')">Similar</button>
+
+                        <button class="tab-btn" id="tabBtnSeasons" onclick="switchTab('seasons')"
+                            style="display: none;">Seasons</button>
+                        <button class="tab-btn" id="tabBtnFranchise" onclick="switchTab('franchise')"
+                            style="display: none;">Franchise</button>
+                        <button class="tab-btn" onclick="switchTab('ai')">Ask AI</button>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <button class="glass-button primary" onclick="watchNow()"><i class="fas fa-play"></i> Watch
+                        Now</button>
+                    <button class="glass-button" onclick="addToWatchLater()"><i class="fas fa-plus"></i> My
+                        List</button>
+                    <button class="glass-button" onclick="openAddToCollectionModal()"><i class="fas fa-folder-plus"></i>
+                        Collection</button>
+                    <button class="glass-button" onclick="markAsWatched()"><i class="fas fa-check"></i> Mark
+                        Watched</button>
+                    <!-- Overview Tab -->
+                    <div id="tab-overview" class="tab-content active">
+                        <p id="modalOverview" class="modal-overview">Overview text...</p>
+                        <div id="modalGenres" style="margin-top: 1rem;"></div>
+                        <div id="modalTrailer" style="margin-top: 2rem;"></div>
+                    </div>
+
+                    <!-- Cast Tab -->
+                    <div id="tab-cast" class="tab-content">
+                        <div class="cast-grid" id="modalCast"></div>
+                    </div>
+
+                    <!-- Reviews Tab -->
+                    <div id="tab-reviews" class="tab-content">
+                        <div id="modalReviews"></div>
+                        <div class="add-review-section"
+                            style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--glass-border);">
+                            <h3>Add Your Review</h3>
+                            <div class="rating-select"
+                                style="margin: 1rem 0; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                                <button class="rating-btn" onclick="rateMovie(1)" data-rating="1">Bad 🔴</button>
+                                <button class="rating-btn" onclick="rateMovie(2)" data-rating="2">One Time Watch
+                                    🟠</button>
+                                <button class="rating-btn" onclick="rateMovie(3)" data-rating="3">Good 🟡</button>
+                                <button class="rating-btn" onclick="rateMovie(4)" data-rating="4">Go For It 🟢</button>
+                                <button class="rating-btn" onclick="rateMovie(5)" data-rating="5">Perfection 🌟</button>
+                            </div>
+                            <textarea id="reviewText" class="glass-input" rows="3"
+                                placeholder="Write your review..."></textarea>
+                            <button class="glass-button" onclick="submitReview()" style="margin-top: 1rem;">Submit
+                                Review</button>
+                        </div>
+                    </div>
+
+                    <!-- Similar Tab -->
+                    <div id="tab-similar" class="tab-content">
+                        <h3>Similar Movies</h3>
+                        <div class="similar-grid" id="modalSimilar"></div>
+                    </div>
+
+                    <!-- Seasons Tab -->
+                    <div id="tab-seasons" class="tab-content">
+                        <h3>Seasons & Episodes</h3>
+                        <div class="seasons-grid" id="modalSeasons"
+                            style="display: flex; flex-direction: column; gap: 1rem;"></div>
+                    </div>
+
+                    <!-- Franchise Tab (Sequels/Prequels) -->
+                    <div id="tab-franchise" class="tab-content">
+                        <h3>Franchise & Spinoffs</h3>
+                        <div class="similar-grid" id="modalFranchise"></div>
+                    </div>
+
+                    <!-- AI Tab -->
+                    <div id="tab-ai" class="tab-content">
+                        <h3>Ask AI</h3>
+                        <div class="ai-chat-container" id="aiChat"
+                            style="min-height: 300px; max-height: 400px; overflow-y: auto; margin-bottom: 1rem; padding: 1rem; background: rgba(0, 0, 0, 0.2); border-radius: 12px;">
+                            <div class="ai-message ai">
+                                <p>Hi! I'm your AI movie assistant. Ask me anything about this movie!</p>
+                            </div>
+                        </div>
+
+                        <!-- Quick Prompts -->
+                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem;">
+                            <button class="glass-button" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;"
+                                onclick="document.getElementById('aiQuestion').value='How is the movie?'; askAI();">How
+                                is the movie?</button>
+                            <button class="glass-button" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;"
+                                onclick="document.getElementById('aiQuestion').value='What is the plot?'; askAI();">What
+                                is the plot?</button>
+                            <button class="glass-button" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;"
+                                onclick="document.getElementById('aiQuestion').value='Who are the main actors?'; askAI();">Main
+                                actors?</button>
+                            <button class="glass-button" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;"
+                                onclick="document.getElementById('aiQuestion').value='Is it worth watching?'; askAI();">Worth
+                                watching?</button>
+                        </div>
+
+                        <div class="ai-input-group" style="display: flex; gap: 1rem;">
+                            <input type="text" id="aiQuestion" class="glass-input" placeholder="Ask about this movie..."
+                                style="flex: 1; padding: 0.75rem; background: rgba(255, 255, 255, 0.1); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-primary);">
+                            <button class="glass-button" onclick="askAI()">Send</button>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
+
+    <div id="addToCollectionModal" class="modal" style="display: none; z-index: 2000;">
+        <div class="modal-content glass-panel" style="max-width: 400px;">
+            <span class="close-modal" onclick="closeAddToCollectionModal()">&times;</span>
+            <div class="modal-body">
+                <h3 style="margin-bottom: 1rem;">Add to Collection</h3>
+                <div id="userCollectionsList"
+                    style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 300px; overflow-y: auto;">
+                    <!-- Collections injected here -->
+                    <div style="text-align: center; color: var(--text-secondary);">Loading...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="public-config.js"></script>
     <script src="config.js"></script>
     <script src="firebase-config.js" type="module"></script>
     <script src="auth.js"></script>
+    <script src="ai.js" type="module"></script>
     <script src="search.js" type="module"></script>
 
     <script>
@@ -163,12 +403,6 @@
             mobileBtn.addEventListener('click', () => {
                 navRight.classList.toggle('active');
             });
-        }
-
-        // Modal Logic (Global handlers for HTML attributes)
-        window.closeModal = function () {
-            document.getElementById('movieModal').style.display = 'none';
-            document.body.style.overflow = 'auto';
         }
     </script>
 </body>
