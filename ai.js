@@ -172,8 +172,8 @@ async function callAI(messages, systemPrompt, jsonMode = false) {
         }
     }
 
-    // 3. Production Proxy
-    const url = (window.PUBLIC_CONFIG?.API_BASE_URL && !isLocal)
+    // 3. Cloudflare Proxy (Works for Prod & Local)
+    const url = (window.PUBLIC_CONFIG?.API_BASE_URL)
         ? `${window.PUBLIC_CONFIG.API_BASE_URL}/api/ai`
         : "/api/ai";
 
