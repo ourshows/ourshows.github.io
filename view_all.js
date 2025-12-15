@@ -22,7 +22,8 @@ document.addEventListener('DOMContentLoaded', () => {
             TMDB_IMAGE_BASE_URL: "https://image.tmdb.org/t/p/original",
             TMDB_IMAGE_SMALL_URL: "https://image.tmdb.org/t/p/w500",
             TMDB_BASE_URL: "https://api.themoviedb.org/3",
-            TMDB_API_KEY: null // Will use proxy
+            // API Key for TMDB (Client-side safe)
+            TMDB_API_KEY: "798ae7de540b25e908c68ea2ca408347"
         };
     }
 
