@@ -81,7 +81,7 @@ service cloud.firestore {
       
       // Create: Must be signed in, set self as curator/owner
       allow create: if isSignedIn() && 
-                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'createdBy', 'createdAt', 'members']) &&
+                      request.resource.data.keys().hasOnly(['name', 'createdBy', 'createdAt', 'members']) &&
                       request.resource.data.createdBy == request.auth.uid &&
                       request.resource.data.name is string &&
                       request.resource.data.name.size() > 0 && 
