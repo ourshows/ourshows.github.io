@@ -156,6 +156,13 @@ async function initApp() {
     setupNavbar();
     setupSearch();
 
+    // Check if we are on the homepage (or a page with content scrollers)
+    if (!document.getElementById('trendingScroller')) {
+        console.log('Not on homepage, skipping content load.');
+        if (window.ourShowLoader) window.ourShowLoader.hide();
+        return;
+    }
+
     try {
         console.log('Loading hero content...');
         await loadHeroContent();

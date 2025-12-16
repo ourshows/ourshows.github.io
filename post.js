@@ -1,5 +1,5 @@
 // Social Dashboard & Chat Logic (Tabbed Version)
-import { auth, db, onAuthStateChanged, collection, addDoc, query, orderBy, limit, getDocs, serverTimestamp, where, onSnapshot } from './firebase-config.js';
+import { auth, db, onAuthStateChanged, collection, addDoc, query, orderBy, limit, getDocs, serverTimestamp, where, onSnapshot } from './firebase-wrapper.js';
 
 let currentUser = null;
 let currentChatUser = null;
@@ -31,19 +31,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.key === 'Enter') searchUsers();
     });
 });
-
-window.switchTab = function (tabId) {
-    // 1. Update Tabs
-    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    document.getElementById(`tab-${tabId}`)?.classList.add('active');
-
-    // 2. Update Sections
-    document.querySelectorAll('.content-section').forEach(sec => sec.classList.remove('active'));
-    document.getElementById(`section-${tabId}`)?.classList.add('active');
-
-    // 3. Optional: Mobile scroll to top
-    window.scrollTo(0, 0);
-};
 
 function updateProfileUI(user) {
     if (user) {
@@ -177,33 +164,54 @@ window.searchUsers = async function () {
 
     resultsContainer.innerHTML = '<div style="text-align: center; padding: 1rem;">Searching...</div>';
 
-    // Mock User Search (replace with real Firestore query if indexed)
-    const mockUsers = [
-        { id: 'mock_1', name: 'Alice Smith', handle: '@alice' },
-        { id: 'mock_2', name: 'Bob Jones', handle: '@bob' },
-        { id: 'mock_3', name: 'Charlie Day', handle: '@charlie' },
-        { id: 'mock_4', name: 'David Lee', handle: '@david' }
-    ];
+    try {
+        // Query users collection
+        // Note: Firestore doesn't support partial string match easily without 3rd party like Algolia.
+        // We will fetch all users for now (prototype) or use a simple prefix match if username field exists.
+        // For efficiency in a real app, this should be a bounded query or use a dedicated search field.
 
-    const filtered = mockUsers.filter(u => u.name.toLowerCase().includes(queryText));
+        // Optimally: where('chatUsername', '>=', queryText), where('chatUsername', '<=', queryText + '\uf8ff')
+        // But names might be mixed case. For now, let's just get the users and filter client side for smooth "demo" feel 
+        // regarding case-insensitivity, assuming small user base.
 
-    if (filtered.length === 0) {
-        resultsContainer.innerHTML = '<div style="text-align: center; padding: 1rem; color: var(--text-secondary);">No users found.</div>';
-    } else {
-        resultsContainer.innerHTML = filtered.map(user => `
-            <div class="glass-panel" style="padding: 1rem; display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
-                <div class="avatar" style="width: 40px; height: 40px; font-size: 0.8rem; background: var(--glass-border);">
-                    ${user.name.charAt(0)}
+        const q = query(collection(db, 'users'), limit(50));
+        const snapshot = await getDocs(q);
+
+        const users = [];
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            if (doc.id === currentUser?.uid) return; // Exclude self
+
+            // Match against chatUsername or email
+            const name = data.chatUsername || 'Unknown';
+            const email = data.email || '';
+
+            if (name.toLowerCase().includes(queryText) || email.toLowerCase().includes(queryText)) {
+                users.push({ id: doc.id, name: name, handle: email.split('@')[0] });
+            }
+        });
+
+        if (users.length === 0) {
+            resultsContainer.innerHTML = '<div style="text-align: center; padding: 1rem; color: var(--text-secondary);">No users found.</div>';
+        } else {
+            resultsContainer.innerHTML = users.map(user => `
+                <div class="glass-panel" style="padding: 1rem; display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
+                    <div class="avatar" style="width: 40px; height: 40px; font-size: 0.8rem; background: var(--glass-border); display: flex; align-items: center; justify-content: center;">
+                        ${user.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; font-size: 0.9rem;">${user.name}</div>
+                        <div style="font-size: 0.8rem; color: var(--text-secondary);">@${user.handle}</div>
+                    </div>
+                    <button class="glass-button" onclick="startChat('${user.id}', '${user.name}')" style="padding: 0.4rem 0.8rem; font-size: 0.9rem;">
+                        <i class="fas fa-comment-dots"></i> Message
+                    </button>
                 </div>
-                <div style="flex: 1;">
-                    <div style="font-weight: 600; font-size: 0.9rem;">${user.name}</div>
-                    <div style="font-size: 0.8rem; color: var(--text-secondary);">${user.handle}</div>
-                </div>
-                <button class="glass-button" onclick="startChat('${user.id}', '${user.name}')" style="padding: 0.4rem 0.8rem; font-size: 0.9rem;">
-                    <i class="fas fa-comment-dots"></i> Message
-                </button>
-            </div>
-        `).join('');
+            `).join('');
+        }
+    } catch (e) {
+        console.error("Search error:", e);
+        resultsContainer.innerHTML = '<div style="text-align: center; color: red;">Search failed.</div>';
     }
 };
 
@@ -222,7 +230,11 @@ window.startChat = function (userId, userName) {
     document.getElementById('chatHeaderName').textContent = userName;
 
     // Switch to Chat Tab automatically
-    switchTab('chat');
+    if (window.switchSocialTab) {
+        window.switchSocialTab('chat');
+    } else {
+        console.error("switchSocialTab not found");
+    }
 
     subscribeToChat();
 };

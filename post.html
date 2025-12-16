@@ -178,13 +178,14 @@
 
     <!-- Navigation Tabs -->
     <div class="social-nav">
-        <button class="tab-btn active" onclick="switchTab('feed')" id="tab-feed"><i class="fas fa-stream"></i>
+        <button class="tab-btn active" onclick="switchSocialTab('feed')" id="tab-feed"><i class="fas fa-stream"></i>
             Feed</button>
-        <button class="tab-btn" onclick="switchTab('connect')" id="tab-connect"><i class="fas fa-user-plus"></i> Add
+        <button class="tab-btn" onclick="switchSocialTab('connect')" id="tab-connect"><i class="fas fa-user-plus"></i>
+            Add
             Friends</button>
-        <button class="tab-btn" onclick="switchTab('chat')" id="tab-chat"><i class="fas fa-comments"></i>
+        <button class="tab-btn" onclick="switchSocialTab('chat')" id="tab-chat"><i class="fas fa-comments"></i>
             Messages</button>
-        <button class="tab-btn" onclick="switchTab('profile')" id="tab-profile"><i class="fas fa-user"></i> My
+        <button class="tab-btn" onclick="switchSocialTab('profile')" id="tab-profile"><i class="fas fa-user"></i> My
             Profile</button>
     </div>
 
@@ -240,22 +241,9 @@
         <h3 style="margin: 3rem 0 1.5rem;">My Friends</h3>
         <div class="glass-panel" style="padding: 1rem;">
             <div id="myFriendsList">
-                <div class="user-list-item"
-                    style="display: flex; align-items: center; gap: 1rem; padding: 1rem; border-bottom: 1px solid var(--glass-border);">
-                    <div
-                        style="width: 40px; height: 40px; background: var(--glass-border); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                        A</div>
-                    <div style="flex: 1; font-weight: 500;">Alice Smith</div>
-                    <button class="glass-button" onclick="startChat('mock_1', 'Alice')"><i
-                            class="fas fa-comment-dots"></i> Message</button>
-                </div>
-                <div class="user-list-item" style="display: flex; align-items: center; gap: 1rem; padding: 1rem;">
-                    <div
-                        style="width: 40px; height: 40px; background: var(--glass-border); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                        B</div>
-                    <div style="flex: 1; font-weight: 500;">Bob Jones</div>
-                    <button class="glass-button" onclick="startChat('mock_2', 'Bob')"><i
-                            class="fas fa-comment-dots"></i> Message</button>
+                <div style="padding: 2rem; text-align: center; color: var(--text-secondary); opacity: 0.7;">
+                    <i class="fas fa-user-plus" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                    <p>Search for users above to start chatting!</p>
                 </div>
             </div>
         </div>
@@ -272,7 +260,7 @@
             <p style="color: var(--text-secondary); max-width: 400px; margin: 1rem auto 2rem;">Select a friend from the
                 <strong>Add Friends</strong> tab or search specifically to start a conversation.
             </p>
-            <button class="glass-button" onclick="switchTab('connect')">Find People</button>
+            <button class="glass-button" onclick="switchSocialTab('connect')">Find People</button>
         </div>
 
         <!-- Active Chat Window -->
@@ -337,22 +325,22 @@
     </section>
 
     <div class="mobile-tabs">
-        <button class="mobile-tab-btn" onclick="switchTab('connect')" id="btnConnect"><i
+        <button class="mobile-tab-btn" onclick="switchSocialTab('connect')" id="btnConnect"><i
                 class="fas fa-user-friends"></i></button>
-        <button class="mobile-tab-btn active" onclick="switchTab('feed')" id="btnFeed"><i
+        <button class="mobile-tab-btn active" onclick="switchSocialTab('feed')" id="btnFeed"><i
                 class="fas fa-stream"></i></button>
-        <button class="mobile-tab-btn" onclick="switchTab('chat')" id="btnChat"><i
+        <button class="mobile-tab-btn" onclick="switchSocialTab('chat')" id="btnChat"><i
                 class="fas fa-comment-alt"></i></button>
     </div>
 
     <script src="config.js"></script>
     <!-- Main Logic -->
     <script type="module" src="post.js"></script>
-    <script src="main.js"></script>
+    <script type="module" src="main.js"></script>
 
     <script>
         // Tab Switching Logic (Inline for reliability)
-        window.switchTab = function (tabId) {
+        window.switchSocialTab = function (tabId) {
             console.log('Switching to tab:', tabId);
 
             // 1. Update Top Tabs (Desktop)
