@@ -218,12 +218,13 @@
     </div>
 
     <!-- Scripts -->
-    <script src="config.js"></script>
+    <script src="public-config.js"></script>
 
     <!-- Firebase SDK -->
     <script type="module">
         // Import pre-initialized auth objects from our config module
-        import { auth, googleProvider, signInWithPopup, signInWithEmailAndPassword } from "./firebase-config.js";
+        // Imported wrappers which now point to real config
+        import { auth, provider, signInWithPopup, signInWithEmailAndPassword } from "./firebase-wrapper.js";
 
         // --- Google Login ---
         document.getElementById('googleLoginBtn').addEventListener('click', async () => {
@@ -233,7 +234,7 @@
             }
             try {
                 // Use the exported googleProvider instance
-                const result = await signInWithPopup(auth, googleProvider);
+                const result = await signInWithPopup(auth, provider);
                 saveUser(result.user);
             } catch (error) {
                 console.error(error);
@@ -295,46 +296,58 @@
                 const trendingPosters = (trendingData.results || []).filter(m => m.poster_path).map(m => m.poster_path);
                 const cultPosters = (cultData.results || []).filter(m => m.poster_path).map(m => m.poster_path);
 
-                if (trendingPosters.length || cultPosters.length) {
-                    // Fallback if one list is empty, use the other
+                // Combine and shuffle for uniqueness
+                let combined = [...trendingPosters, ...cultPosters];
+                combined = combined.sort(() => Math.random() - 0.5);
+
+                // Remove duplicates
+                combined = [...new Set(combined)];
+
+                if (combined.length > 20) {
+                    // Split into 4 unique columns
+                    const chunkSize = Math.floor(combined.length / 4);
+                    const col1 = combined.slice(0, chunkSize);
+                    const col2 = combined.slice(chunkSize, chunkSize * 2);
+                    const col3 = combined.slice(chunkSize * 2, chunkSize * 3);
+                    const col4 = combined.slice(chunkSize * 3);
+
+                    createTrack(col1, 50, 'up');
+                    createTrack(col2, 70, 'down');
+                    createTrack(col3, 55, 'up');
+                    createTrack(col4, 65, 'down');
+                } else {
+                    // Fallback if not enough unique data
                     const list1 = trendingPosters.length ? trendingPosters : cultPosters;
-                    const list2 = cultPosters.length ? cultPosters : trendingPosters;
-                    createMixedTracks(list1, list2);
+                    createTrack(list1, 50, 'up');
+                    createTrack(list1, 60, 'down');
+                    createTrack(list1, 55, 'up');
+                    createTrack(list1, 65, 'down');
                 }
             } catch (e) {
                 console.error("Animation load failed", e);
             }
         }
 
-        function createMixedTracks(trending, cult) {
+        function createTrack(images, speed, dir) {
             const container = document.getElementById('waterfallContainer');
-            // We want 4 tracks for the split view
-            const tracksConfig = [
-                { source: trending, speed: 50, dir: 'up' },    // Left: Trending
-                { source: cult, speed: 70, dir: 'down' },      // Middle-Left: Cult (Top Rated)
-                { source: trending, speed: 55, dir: 'up' },    // Middle-Right: Trending
-                { source: cult, speed: 65, dir: 'down' },      // Right: Cult
-            ];
+            const track = document.createElement('div');
+            track.className = `poster-track scrolling-${dir}`;
+            track.style.animationDuration = `${speed}s`;
 
-            tracksConfig.forEach(config => {
-                const track = document.createElement('div');
-                track.className = `poster-track scrolling-${config.dir}`;
-                track.style.animationDuration = `${config.speed}s`;
+            // Loop twice for smooth scroll
+            const loopImages = [...images, ...images];
 
-                // Duplicate images to create infinite loop illusion
-                // Mix 15 images
-                const images = [...config.source, ...config.source].slice(0, 15);
-
-                images.forEach(path => {
-                    const img = document.createElement('img');
-                    img.src = `${window.APP_CONFIG.TMDB_IMAGE_SMALL_URL}${path}`;
-                    img.className = 'track-poster';
-                    img.loading = 'lazy';
-                    track.appendChild(img);
-                });
-
-                container.appendChild(track);
+            loopImages.forEach(path => {
+                const img = document.createElement('img');
+                // Use public config or fallback directly
+                const baseUrl = window.APP_CONFIG?.TMDB_IMAGE_SMALL_URL || "https://image.tmdb.org/t/p/w500";
+                img.src = `${baseUrl}${path}`;
+                img.className = 'track-poster';
+                img.loading = 'lazy';
+                track.appendChild(img);
             });
+
+            container.appendChild(track);
         }
 
         initWaterfall();

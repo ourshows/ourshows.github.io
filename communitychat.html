@@ -352,6 +352,33 @@
         </div>
     </div>
 
+    <!-- Username Setup Modal -->
+    <div id="usernameModal" class="modal" style="display: none; z-index: 3000;">
+        <div class="modal-content glass-panel" style="max-width: 450px; text-align: center;">
+            <h2 style="margin-bottom: 1rem;">Set Your Chat Identity</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.95rem;">
+                Choose a display name for the community. This can be different from your login name and allows you to
+                chat anonymously.
+            </p>
+            <div style="margin-bottom: 1.5rem;">
+                <input type="text" id="chatUsernameInput" class="glass-input" placeholder="e.g. MovieBuff99"
+                    maxlength="20" style="text-align: center; font-size: 1.1rem; padding: 1rem;">
+            </div>
+            <button class="glass-button primary" id="saveUsernameBtn" style="width: 100%; padding: 1rem;">Join
+                Chat</button>
+        </div>
+    </div>
+
+    <!-- Edit Message Modal -->
+    <div id="editMessageModal" class="modal" style="display: none;">
+        <div class="modal-content glass-panel" style="max-width: 400px;">
+            <span class="close-modal" id="closeEditModal">&times;</span>
+            <h3 style="margin-bottom: 1rem;">Edit Message</h3>
+            <textarea id="editMessageInput" class="glass-input" rows="4" style="margin-bottom: 1rem;"></textarea>
+            <button class="glass-button primary" id="confirmEditBtn" style="width: 100%;">Save Changes</button>
+        </div>
+    </div>
+
     <script src="config.js"></script>
     <script type="module" src="communitychat.js"></script>
 </body>

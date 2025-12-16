@@ -1,25 +1,73 @@
+
 // Community Chat with Firebase Integration & Clubs
-import { auth, db, onAuthStateChanged, collection, addDoc, query, orderBy, limit, getDocs, serverTimestamp, where, onSnapshot } from './firebase-config.js';
+import { auth, db, onAuthStateChanged, collection, addDoc, doc, updateDoc, deleteDoc, getDoc, setDoc, query, orderBy, limit, getDocs, serverTimestamp, where, onSnapshot } from './firebase-wrapper.js';
 
 let isSpoilerMode = false;
 let currentUser = null;
+let chatUsername = null; // Display name for chat
 let currentChannel = 'global'; // 'global' or 'club_{clubId}'
 let currentClubName = 'Global Chat';
 let unsubscribeMessages = null;
 let unsubscribeClubs = null;
 
 // Listen for auth state
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
     currentUser = user;
     if (user) {
+        // Enforce Username Check
+        await checkChatUsername(user.uid);
         subscribeToClubs();
         subscribeToMessages();
     } else {
-        // Even if not logged in, we can try to load clubs and messages (read-only)
-        subscribeToClubs();
-        subscribeToMessages();
+        // Enforce Login
+        window.location.href = 'login.html';
     }
 });
+
+async function checkChatUsername(uid) {
+    try {
+        const userDocRef = doc(db, 'users', uid);
+        const userDoc = await getDoc(userDocRef);
+
+        if (userDoc.exists() && userDoc.data().chatUsername) {
+            chatUsername = userDoc.data().chatUsername;
+        } else {
+            // Show Modal to set username
+            document.getElementById('usernameModal').style.display = 'block';
+        }
+    } catch (e) {
+        console.error("Error checking username:", e);
+        // Fallback or retry logic could go here
+    }
+}
+
+async function saveChatUsername() {
+    const input = document.getElementById('chatUsernameInput');
+    const name = input.value.trim();
+
+    if (!name) {
+        alert("Please enter a username.");
+        return;
+    }
+
+    if (name.length < 3) {
+        alert("Username must be at least 3 characters.");
+        return;
+    }
+
+    try {
+        await setDoc(doc(db, 'users', currentUser.uid), {
+            chatUsername: name
+        }, { merge: true });
+
+        chatUsername = name;
+        document.getElementById('usernameModal').style.display = 'none';
+        alert("Welcome, " + name + "!");
+    } catch (e) {
+        console.error("Error saving username:", e);
+        alert("Failed to save username.");
+    }
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     const input = document.getElementById('msgInput');
@@ -29,12 +77,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const sidebarOverlay = document.getElementById('sidebarOverlay');
     const sidebar = document.getElementById('sidebar');
 
+    // UI & Modal Elements
+    const saveUsernameBtn = document.getElementById('saveUsernameBtn');
+    if (saveUsernameBtn) saveUsernameBtn.addEventListener('click', saveChatUsername);
+
     // Club Modal Elements
     const createClubTrigger = document.getElementById('createClubBtnTrigger');
     const createClubModal = document.getElementById('createClubModal');
     const closeClubModal = document.getElementById('closeClubModal');
     const confirmCreateClubBtn = document.getElementById('confirmCreateClubBtn');
     const globalChatBtn = document.getElementById('globalChatBtn');
+
+    // Edit Modal Elements
+    const editModal = document.getElementById('editMessageModal');
+    const closeEditModal = document.getElementById('closeEditModal');
+    const confirmEditBtn = document.getElementById('confirmEditBtn');
+
+    if (closeEditModal) closeEditModal.onclick = () => editModal.style.display = 'none';
+    if (confirmEditBtn) confirmEditBtn.onclick = confirmEditMessage;
+    window.onclick = (event) => {
+        if (event.target == editModal) editModal.style.display = 'none';
+        if (event.target == createClubModal) createClubModal.style.display = 'none';
+    }
+
 
     // Toggle Sidebar
     function toggleSidebar() {
@@ -57,10 +122,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (createClubTrigger) {
         createClubTrigger.addEventListener('click', (e) => {
             e.stopPropagation(); // Prevent bubbling
-            if (!currentUser) {
-                alert("Please log in to create a club.");
-                return;
-            }
             createClubModal.style.display = 'block';
         });
     }
@@ -70,12 +131,6 @@ document.addEventListener('DOMContentLoaded', () => {
             createClubModal.style.display = 'none';
         });
     }
-
-    window.addEventListener('click', (e) => {
-        if (e.target === createClubModal) {
-            createClubModal.style.display = 'none';
-        }
-    });
 
     if (confirmCreateClubBtn) {
         confirmCreateClubBtn.addEventListener('click', createNewClub);
@@ -121,7 +176,6 @@ async function createNewClub() {
 
         document.getElementById('createClubModal').style.display = 'none';
         nameInput.value = '';
-        // No need to refresh list, subscription will handle it
     } catch (error) {
         console.error("Error creating club:", error);
         alert("Failed to create club. Check permissions.");
@@ -157,7 +211,6 @@ function subscribeToClubs() {
         });
     }, (error) => {
         console.error("Error loading clubs:", error);
-        clubsContainer.innerHTML = '<div style="color:red; padding:1rem;">Error loading clubs</div>';
     });
 }
 
@@ -174,13 +227,8 @@ function switchChannel(channelId, channelName) {
         else globalBtn.classList.remove('active');
     }
 
-    // Update dynamically created list items
     const items = document.querySelectorAll('#clubsListContainer .channel-item');
     items.forEach(item => {
-        // This is a bit tricky since we rebuild list on snapshot, but clicking on it means it exists.
-        // For simplicity, we just toggle based on text content matching or re-rendering handles it if we store ID data.
-        // Simpler: Just allow the re-render or manual toggle.
-        // Let's manually toggle for immediate feedback
         if (item.textContent.includes(channelName)) item.classList.add('active');
         else item.classList.remove('active');
     });
@@ -239,18 +287,84 @@ function displayMessage(data) {
         ? `<span class="spoiler-content" onclick="this.classList.toggle('revealed')">${escapeHtml(data.text)}</span> <i class="fas fa-exclamation-triangle" style="font-size:0.7rem; color:#ef4444; margin-left:5px;"></i>`
         : escapeHtml(data.text);
 
+    // Add (Edited) label if edited
+    const editedLabel = data.edited ? `<span style="font-size:0.6rem; opacity:0.6; margin-left:5px;">(edited)</span>` : '';
+
     const timeStr = data.timestamp ? new Date(data.timestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '...';
+
+    // Action buttons for self messages
+    let actionsHtml = '';
+    if (isSelf) {
+        actionsHtml = `
+            <div class="message-actions" style="margin-top:0.5rem; display:flex; gap:0.5rem; justify-content:flex-end; opacity:0.8;">
+                <button class="icon-btn-small" onclick="document.dispatchEvent(new CustomEvent('editMessage', { detail: { id: '${data.id}', text: '${escapeHtml(data.text).replace(/'/g, "\\'")}' } }))" title="Edit">
+                    <i class="fas fa-edit" style="font-size:0.8rem;"></i>
+                </button>
+                <button class="icon-btn-small" onclick="document.dispatchEvent(new CustomEvent('deleteMessage', { detail: { id: '${data.id}' } }))" title="Unsend">
+                    <i class="fas fa-trash" style="font-size:0.8rem;"></i>
+                </button>
+            </div>
+        `;
+    }
 
     msgDiv.innerHTML = `
         <div class="message-meta">
-            <span style="font-weight:600; color: ${isSelf ? '#fff' : 'var(--primary-color)'}">${escapeHtml(data.username || 'Anon')}</span> 
-            <span>${timeStr}</span>
+            <span style="font-weight:600; color: ${isSelf ? '#fff' : 'var(--primary-color)'}">${escapeHtml(data.username)}</span> 
+            <span>${timeStr} ${editedLabel}</span>
         </div>
         ${contentHtml}
+        ${actionsHtml}
     `;
 
     container.appendChild(msgDiv);
 }
+
+// Global Event Listeners for actions (since inline onclick can't access module functions easily)
+document.addEventListener('editMessage', (e) => {
+    openEditModal(e.detail.id, e.detail.text);
+});
+
+document.addEventListener('deleteMessage', (e) => {
+    if (confirm("Unsend this message?")) {
+        deleteMessage(e.detail.id);
+    }
+});
+
+let editingMessageId = null;
+
+function openEditModal(id, text) {
+    editingMessageId = id;
+    const input = document.getElementById('editMessageInput');
+    input.value = text; // Decode html if needed, but assuming simple text for now
+    document.getElementById('editMessageModal').style.display = 'block';
+}
+
+async function confirmEditMessage() {
+    const text = document.getElementById('editMessageInput').value.trim();
+    if (!text) return;
+
+    try {
+        await updateDoc(doc(db, 'messages', editingMessageId), {
+            text: text,
+            edited: true
+        });
+        document.getElementById('editMessageModal').style.display = 'none';
+        editingMessageId = null;
+    } catch (e) {
+        console.error("Edit error:", e);
+        alert("Failed to edit message.");
+    }
+}
+
+async function deleteMessage(id) {
+    try {
+        await deleteDoc(doc(db, 'messages', id));
+    } catch (e) {
+        console.error("Delete error:", e);
+        alert("Failed to delete message.");
+    }
+}
+
 
 function scrollToBottom() {
     const container = document.getElementById('messagesList');
@@ -272,19 +386,27 @@ async function sendMessage() {
     const text = input.value.trim();
     if (!text) return;
 
-    if (!currentUser) {
-        alert("Please log in to chat.");
-        return;
+    if (!currentUser || !chatUsername) {
+        // Retry username check if missing for some reason
+        if (currentUser) {
+            await checkChatUsername(currentUser.uid);
+            if (!chatUsername) return; // Still no username
+        } else {
+            alert("Please log in.");
+            window.location.href = 'login.html';
+            return;
+        }
     }
 
     try {
         await addDoc(collection(db, 'messages'), {
             userId: currentUser.uid,
-            username: currentUser.displayName || currentUser.email.split('@')[0],
+            username: chatUsername, // Use the custom username
             text: text,
             isSpoiler: isSpoilerMode,
             timestamp: serverTimestamp(),
-            channel: currentChannel
+            channel: currentChannel,
+            edited: false
         });
 
         input.value = '';
@@ -292,6 +414,6 @@ async function sendMessage() {
 
     } catch (error) {
         console.error("Send error:", error);
-        alert("Start a conversation!");
+        alert("Failed to send. Try again.");
     }
 }

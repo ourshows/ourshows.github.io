@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+
+<body>
+    <div id="key-container">Waiting...</div>
+    <script type="module">
+        import * as Config from './public/firebase-config.js';
+
+        // Try to find the key in the exported objects or inspect the source if possible
+        // But since we can't inspect source easily, we hope 'app.options' has it.
+
+        try {
+            if (Config.app && Config.app.options) {
+                document.getElementById('key-container').innerText = Config.app.options.apiKey;
+            } else if (Config.auth && Config.auth.config) {
+                document.getElementById('key-container').innerText = Config.auth.config.apiKey;
+            } else {
+                // Fallback: try to fetch the file text itself
+                fetch('public/firebase-config.js')
+                    .then(res => res.text())
+                    .then(text => {
+                        const match = text.match(/apiKey:\s*"([^"]+)"/);
+                        if (match) document.getElementById('key-container').innerText = match[1];
+                        else document.getElementById('key-container').innerText = "Regex failed on file content";
+                    });
+            }
+        } catch (e) {
+            document.getElementById('key-container').innerText = "Error: " + e.message;
+        }
+    </script>
+</body>
+
+</html>

@@ -7,61 +7,67 @@
     <title>Discover - OurShow</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="public/style.css">
+    <link rel="stylesheet" href="themes.css">
     <style>
-        /* Discover Page Specific Styles */
+        /* Updated Discover Layout - Stacked Filters */
         .discover-container {
             padding: 2rem 5%;
-            padding-top: 80px;
-            /* Space for navbar */
+            padding-top: 100px;
+            /* More space for fixed navbar */
         }
 
-        .filter-section {
+        .filter-stack {
             display: flex;
-            gap: 1rem;
-            margin-bottom: 2rem;
-            overflow-x: auto;
-            white-space: nowrap;
-            padding-bottom: 0.5rem;
-            scrollbar-width: none;
-            /* Hide scrollbar Firefox */
+            flex-direction: column;
+            gap: 1.5rem;
+            margin-bottom: 3rem;
         }
 
-        .filter-section::-webkit-scrollbar {
-            display: none;
-            /* Hide scrollbar Chrome/Safari */
-        }
-
-        .filter-group {
+        .filter-row {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 1rem;
+            flex-wrap: wrap;
+            /* Allow buttons to wrap on small screens */
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            /* Subtle separator */
         }
 
         .filter-label {
-            font-weight: 600;
-            color: var(--text-secondary);
-            margin-right: 0.5rem;
-            font-size: 0.9rem;
+            min-width: 80px;
+            /* Fixed width for alignment */
+            font-weight: 700;
+            color: var(--accent-color);
+            /* Highlight label */
+            font-size: 0.95rem;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 1px;
+        }
+
+        .filter-options {
+            display: flex;
+            gap: 0.8rem;
+            flex-wrap: wrap;
         }
 
         .filter-btn {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: var(--text-primary);
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: var(--text-secondary);
+            padding: 0.4rem 1.2rem;
+            border-radius: 6px;
+            /* slightly squarer for lists */
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
             font-size: 0.9rem;
-            white-space: nowrap;
         }
 
         .filter-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: var(--accent-color);
+            border-color: var(--text-primary);
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.05);
         }
 
         .filter-btn.active {
@@ -69,12 +75,27 @@
             color: #000;
             border-color: var(--accent-color);
             font-weight: 600;
+            box-shadow: 0 0 10px rgba(229, 9, 20, 0.4);
         }
 
         #discoverGrid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
             gap: 2rem;
+        }
+
+        /* Mobile tweaks */
+        @media (max-width: 768px) {
+            .filter-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+
+            .filter-label {
+                margin-bottom: 0.2rem;
+                opacity: 0.7;
+            }
         }
 
         .loading-sentinel {
@@ -102,21 +123,6 @@
                 transform: rotate(360deg);
             }
         }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .filter-section {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 1.5rem;
-            }
-
-            .filter-group {
-                width: 100%;
-                overflow-x: auto;
-                padding-bottom: 5px;
-            }
-        }
     </style>
 </head>
 
@@ -136,42 +142,56 @@
     <div class="discover-container">
         <h1 style="margin-bottom: 2rem;">Explore Content</h1>
 
-        <!-- Filter Sections -->
-        <div class="filter-section">
-            <div class="filter-group" id="typeFilters">
-                <span class="filter-label">Type:</span>
-                <button class="filter-btn active" data-filter="type" data-value="All">All</button>
-                <button class="filter-btn" data-filter="type" data-value="TV">TV</button>
-                <button class="filter-btn" data-filter="type" data-value="Movie">Movies</button>
+        <!-- Filter Stack (Vertical Layout) -->
+        <div class="filter-stack">
+
+            <!-- 1. Genre -->
+            <div class="filter-row">
+                <span class="filter-label">Genre</span>
+                <div class="filter-options">
+                    <button class="filter-btn active" data-filter="genre" data-value="All">All</button>
+                    <button class="filter-btn" data-filter="genre" data-value="Action">Action</button>
+                    <button class="filter-btn" data-filter="genre" data-value="Comedy">Comedy</button>
+                    <button class="filter-btn" data-filter="genre" data-value="Drama">Drama</button>
+                    <button class="filter-btn" data-filter="genre" data-value="Sci-Fi">Sci-Fi</button>
+                    <button class="filter-btn" data-filter="genre" data-value="Thriller">Thriller</button>
+                </div>
             </div>
 
-            <div class="filter-group" id="genreFilters">
-                <span class="filter-label">Genre:</span>
-                <button class="filter-btn active" data-filter="genre" data-value="All">All</button>
-                <button class="filter-btn" data-filter="genre" data-value="Action">Action</button>
-                <button class="filter-btn" data-filter="genre" data-value="Comedy">Comedy</button>
-                <button class="filter-btn" data-filter="genre" data-value="Drama">Drama</button>
-                <button class="filter-btn" data-filter="genre" data-value="Sci-Fi">Sci-Fi</button>
-                <button class="filter-btn" data-filter="genre" data-value="Thriller">Thriller</button>
+            <!-- 2. Language -->
+            <div class="filter-row">
+                <span class="filter-label">Language</span>
+                <div class="filter-options">
+                    <button class="filter-btn active" data-filter="language" data-value="All">All</button>
+                    <button class="filter-btn" data-filter="language" data-value="Hindi">Hindi</button>
+                    <button class="filter-btn" data-filter="language" data-value="English">English</button>
+                    <button class="filter-btn" data-filter="language" data-value="Nepali">Nepali</button>
+                    <button class="filter-btn" data-filter="language" data-value="Korean">Korean</button>
+                    <button class="filter-btn" data-filter="language" data-value="Chinese">Chinese</button>
+                </div>
             </div>
 
-            <div class="filter-group" id="languageFilters">
-                <span class="filter-label">Language:</span>
-                <button class="filter-btn active" data-filter="language" data-value="All">All</button>
-                <button class="filter-btn" data-filter="language" data-value="Hindi">Hindi</button>
-                <button class="filter-btn" data-filter="language" data-value="English">English</button>
-                <button class="filter-btn" data-filter="language" data-value="Nepali">Nepali</button>
-                <button class="filter-btn" data-filter="language" data-value="Korean">Korean</button>
-                <button class="filter-btn" data-filter="language" data-value="Chinese">Chinese</button>
+            <!-- 3. Year -->
+            <div class="filter-row">
+                <span class="filter-label">Year</span>
+                <div class="filter-options">
+                    <button class="filter-btn active" data-filter="year" data-value="All">All</button>
+                    <button class="filter-btn" data-filter="year" data-value="2025">2025</button>
+                    <button class="filter-btn" data-filter="year" data-value="2024">2024</button>
+                    <button class="filter-btn" data-filter="year" data-value="2023">2023</button>
+                </div>
             </div>
 
-            <div class="filter-group" id="yearFilters">
-                <span class="filter-label">Year:</span>
-                <button class="filter-btn active" data-filter="year" data-value="All">All</button>
-                <button class="filter-btn" data-filter="year" data-value="2025">2025</button>
-                <button class="filter-btn" data-filter="year" data-value="2024">2024</button>
-                <button class="filter-btn" data-filter="year" data-value="2023">2023</button>
+            <!-- 4. Type (Bottom) -->
+            <div class="filter-row">
+                <span class="filter-label">Type</span>
+                <div class="filter-options">
+                    <button class="filter-btn active" data-filter="type" data-value="All">All</button>
+                    <button class="filter-btn" data-filter="type" data-value="TV">TV Shows</button>
+                    <button class="filter-btn" data-filter="type" data-value="Movie">Movies</button>
+                </div>
             </div>
+
         </div>
 
         <!-- Main Grid -->
@@ -185,8 +205,99 @@
         </div>
     </div>
 
-    <script src="public-config.js"></script>
-    <script src="discover.js"></script>
+    <!-- Movie Details Modal -->
+    <div id="movieModal" class="modal" style="display: none;">
+        <div class="modal-content glass-panel">
+            <span class="close-modal" onclick="closeModal()">&times;</span>
+            <div class="modal-body">
+                <div class="modal-poster-container">
+                    <img id="modalPoster" src="" alt="Movie Poster" class="modal-poster">
+                </div>
+                <div class="modal-info">
+                    <!-- Modal Header -->
+                    <h2 id="modalTitle" style="margin-bottom: 1rem;">Movie Title</h2>
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
+                        <span style="color: #ffd700;">★ <span id="modalRating">N/A</span></span>
+                        <span id="modalYear">Year</span>
+                        <span id="modalRuntime">Runtime</span>
+                    </div>
+
+                    <!-- Tab Navigation -->
+                    <div class="modal-tabs"
+                        style="display: flex; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 0.5rem;">
+                        <button class="tab-btn active" onclick="switchTab('overview')">Overview</button>
+                        <button class="tab-btn" onclick="switchTab('cast')">Cast & Crew</button>
+                        <button class="tab-btn" onclick="switchTab('reviews')">Reviews</button>
+                        <button class="tab-btn" onclick="switchTab('similar')">Similar</button>
+                        <button class="tab-btn" onclick="switchTab('ai')">Ask AI</button>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <button class="glass-button primary" onclick="watchNow()"><i class="fas fa-play"></i> Watch
+                        Now</button>
+                    <button class="glass-button" onclick="addToWatchLater()"><i class="fas fa-plus"></i> My
+                        List</button>
+                    <button class="glass-button" onclick="markAsWatched()"><i class="fas fa-check"></i> Mark
+                        Watched</button>
+                    <!-- Overview Tab -->
+                    <div id="tab-overview" class="tab-content active">
+                        <p id="modalOverview" class="modal-overview">Overview text...</p>
+                        <div id="modalGenres" style="margin-top: 1rem;"></div>
+                        <div id="modalTrailer" style="margin-top: 2rem;"></div>
+                    </div>
+
+                    <!-- Cast Tab -->
+                    <div id="tab-cast" class="tab-content">
+                        <div class="cast-grid" id="modalCast"></div>
+                    </div>
+
+                    <!-- Reviews Tab -->
+                    <div id="tab-reviews" class="tab-content">
+                        <div id="modalReviews"></div>
+                        <div class="add-review-section"
+                            style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--glass-border);">
+                            <h3>Add Your Review</h3>
+                            <div class="rating-select"
+                                style="margin: 1rem 0; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                                <button class="rating-btn" onclick="rateMovie(1)" data-rating="1">Bad 🔴</button>
+                                <button class="rating-btn" onclick="rateMovie(2)" data-rating="2">One Time Watch
+                                    🟠</button>
+                                <button class="rating-btn" onclick="rateMovie(3)" data-rating="3">Good 🟡</button>
+                                <button class="rating-btn" onclick="rateMovie(4)" data-rating="4">Go For It 🟢</button>
+                                <button class="rating-btn" onclick="rateMovie(5)" data-rating="5">Perfection 🌟</button>
+                            </div>
+                            <textarea id="reviewText" class="glass-input" rows="3"
+                                placeholder="Write your review..."></textarea>
+                            <button class="glass-button" onclick="submitReview()" style="margin-top: 1rem;">Submit
+                                Review</button>
+                        </div>
+                    </div>
+
+                    <!-- Similar Tab -->
+                    <div id="tab-similar" class="tab-content">
+                        <h3>Similar Movies</h3>
+                        <div class="similar-grid" id="modalSimilar"></div>
+                    </div>
+
+                    <!-- AI Tab -->
+                    <div id="tab-ai" class="tab-content">
+                        <h3>Ask AI</h3>
+                        <div class="ai-chat-container" id="aiChat"
+                            style="min-height: 300px; max-height: 400px; overflow-y: auto; margin-bottom: 1rem; padding: 1rem; background: rgba(0, 0, 0, 0.2); border-radius: 12px;">
+                        </div>
+                        <div class="ai-input-group" style="display: flex; gap: 1rem;">
+                            <input type="text" id="aiQuestion" class="glass-input" placeholder="Ask about this movie..."
+                                style="flex: 1; padding: 0.75rem; background: rgba(255, 255, 255, 0.1); border: 1px solid var(--glass-border); border-radius: 8px; color: var(--text-primary);">
+                            <button class="glass-button" onclick="askAI()">Send</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <link rel="stylesheet" href="public/modal.css">
+
+        <script src="public-config.js"></script>
+        <script type="module" src="discover.js"></script>
 </body>
 
 </html>
