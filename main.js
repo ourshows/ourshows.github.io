@@ -150,10 +150,11 @@ async function initApp() {
     }
 
     // CRITICAL FIX: Ensure PUBLIC_CONFIG is set if APP_CONFIG exists (for Live deployment with config.js)
-    if (!window.PUBLIC_CONFIG && window.APP_CONFIG && window.APP_CONFIG.TMDB_API_KEY) {
+    if (!window.PUBLIC_CONFIG && window.APP_CONFIG && (window.APP_CONFIG.TMDB_API_KEY || window.APP_CONFIG.GROQ_API_KEY)) {
         window.PUBLIC_CONFIG = {
             TMDB_KEY: window.APP_CONFIG.TMDB_API_KEY,
-            TMDB_BASE_URL: window.APP_CONFIG.TMDB_BASE_URL || "https://api.themoviedb.org/3"
+            TMDB_BASE_URL: window.APP_CONFIG.TMDB_BASE_URL || "https://api.themoviedb.org/3",
+            GROQ_API_KEY: window.APP_CONFIG.GROQ_API_KEY
         };
         console.log('Promoted APP_CONFIG to PUBLIC_CONFIG for Live execution.');
     }
