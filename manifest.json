@@ -1,0 +1,21 @@
+{
+    "name": "OurShow",
+    "short_name": "OurShow",
+    "start_url": "./index.html",
+    "display": "standalone",
+    "background_color": "#0f172a",
+    "theme_color": "#e50914",
+    "description": "Watch, Track, and Discover Movies & TV Shows",
+    "icons": [
+        {
+            "src": "public/logo.jpg",
+            "sizes": "192x192",
+            "type": "image/jpeg"
+        },
+        {
+            "src": "public/logo.jpg",
+            "sizes": "512x512",
+            "type": "image/jpeg"
+        }
+    ]
+}
