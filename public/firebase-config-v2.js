@@ -6,35 +6,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, setDoc, doc, updateDoc, deleteDoc, getDoc, getDocs, serverTimestamp, query, where, orderBy, limit, onSnapshot, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// ... (Rest of file unchanged until exports) ...
-
-export {
-    app,
-    auth,
-    db,
-    provider,
-    signInWithPopup,
-    signInWithEmailAndPassword,
-    signOut,
-    onAuthStateChanged,
-    collection,
-    addDoc,
-    setDoc,
-    doc,
-    updateDoc,
-    deleteDoc,
-    getDoc,
-    getDocs,
-    serverTimestamp,
-    query,
-    where,
-    orderBy,
-    limit,
-    onSnapshot,
-    arrayUnion,
-    arrayRemove
-};
-
 // Firebase configuration
 // Using the Project ID found earlier. 
 // ApiKey is a placeholder based on what was recovered.
@@ -75,5 +46,7 @@ export {
     where,
     orderBy,
     limit,
-    onSnapshot
+    onSnapshot,
+    arrayUnion,
+    arrayRemove
 };

@@ -447,3 +447,5 @@ window.submitComment = async function (postId) {
         alert('Failed to comment.');
     }
 };
+
+window.submitPost = submitPost;
