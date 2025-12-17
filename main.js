@@ -55,10 +55,12 @@ if (document.readyState === 'loading') {
 // --- API Helper ---
 async function fetchTMDB(endpoint, params = {}) {
     // 1. Priority: Client-Side Direct Call (Public Config)
-    if (window.PUBLIC_CONFIG && window.PUBLIC_CONFIG.TMDB_KEY) {
+    // 1. Priority: Client-Side Direct Call (Public Config)
+    if (window.PUBLIC_CONFIG && (window.PUBLIC_CONFIG.TMDB_KEY || window.PUBLIC_CONFIG.TMDB_API_KEY)) {
+        const apiKey = window.PUBLIC_CONFIG.TMDB_KEY || window.PUBLIC_CONFIG.TMDB_API_KEY;
         const baseUrl = window.PUBLIC_CONFIG.TMDB_BASE_URL || "https://api.themoviedb.org/3";
         const url = new URL(`${baseUrl}${endpoint}`);
-        url.searchParams.append('api_key', window.PUBLIC_CONFIG.TMDB_KEY);
+        url.searchParams.append('api_key', apiKey);
         url.searchParams.append('language', 'en-US');
         url.searchParams.append('include_adult', 'false');
         Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
