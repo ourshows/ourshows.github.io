@@ -1,5 +1,5 @@
 // Social Dashboard & Chat Logic (Tabbed Version)
-import { auth, db, onAuthStateChanged, collection, addDoc, setDoc, doc, query, orderBy, limit, getDocs, serverTimestamp, where, onSnapshot } from './firebase-wrapper.js';
+import { auth, db, onAuthStateChanged, collection, addDoc, setDoc, doc, query, orderBy, limit, getDocs, serverTimestamp, where, onSnapshot, arrayUnion, arrayRemove, updateDoc } from './firebase-wrapper.js';
 
 let currentUser = null;
 let currentChatUser = null;
@@ -64,9 +64,7 @@ function updateProfileUI(user) {
 async function loadPosts() {
     try {
         const q = query(collection(db, 'posts'), orderBy('timestamp', 'desc'), limit(20));
-
         const querySnapshot = await getDocs(q);
-
         const container = document.getElementById('feedContainer');
         container.innerHTML = '';
 
@@ -76,8 +74,7 @@ async function loadPosts() {
         }
 
         querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            displayPost(data);
+            displayPost(doc.id, doc.data());
         });
     } catch (error) {
         console.error('Error loading posts:', error);
@@ -85,28 +82,55 @@ async function loadPosts() {
     }
 }
 
-function displayPost(data) {
+function displayPost(id, data) {
     const container = document.getElementById('feedContainer');
     const postDiv = document.createElement('div');
     postDiv.className = 'post-card';
+    postDiv.id = `post-${id}`;
 
     const timeStr = data.timestamp ? new Date(data.timestamp.seconds * 1000).toLocaleString() : 'Just now';
+    const likes = data.likes || [];
+    const isLiked = currentUser && likes.includes(currentUser.uid);
+    const likeCount = likes.length;
+    const commentCount = data.comments ? data.comments.length : 0; // Simple count if array, or use subcollection count later
 
     postDiv.innerHTML = `
         <div class="post-header">
-            <div class="avatar" style="background: var(--glass-border);">
-                <i class="fas fa-user"></i>
+            <div class="avatar" style="background: var(--glass-border); cursor: pointer;" onclick="startChat('${data.userId}', '${data.username}')" title="Chat with ${data.username}">
+                ${data.username.charAt(0).toUpperCase()}
             </div>
             <div>
-                <div style="font-weight: 600;">${data.username || 'Anonymous'}</div>
+                <div style="font-weight: 600; cursor: pointer; color: var(--text-primary);" onclick="startChat('${data.userId}', '${data.username}')" title="Add Friend / Chat">
+                    ${data.username} <i class="fas fa-user-plus" style="font-size: 0.7em; color: var(--primary-color); margin-left: 5px;"></i>
+                </div>
                 <div style="font-size: 0.8rem; color: var(--text-secondary);">${timeStr}</div>
             </div>
         </div>
         <p style="line-height: 1.6; margin-bottom: 1rem;">${escapeHtml(data.content)}</p>
         
-        <div style="margin-top: 1rem; display: flex; gap: 1rem; color: var(--text-secondary); font-size: 0.9rem;">
-            <span style="cursor: pointer;"><i class="far fa-heart"></i> Like</span>
-            <span style="cursor: pointer;"><i class="far fa-comment"></i> Comment</span>
+        <div style="margin-top: 1rem; display: flex; gap: 1.5rem; color: var(--text-secondary); font-size: 0.9rem; border-top: 1px solid var(--glass-border); padding-top: 0.8rem;">
+            <span style="cursor: pointer; display: flex; align-items: center; gap: 5px; color: ${isLiked ? '#e74c3c' : 'inherit'};" onclick="window.toggleLike('${id}')">
+                <i class="${isLiked ? 'fas' : 'far'} fa-heart"></i> ${likeCount || 'Like'}
+            </span>
+            <span style="cursor: pointer; display: flex; align-items: center; gap: 5px;" onclick="window.toggleComments('${id}')">
+                <i class="far fa-comment"></i> Comment
+            </span>
+        </div>
+
+        <!-- Comment Section -->
+        <div id="comments-${id}" style="display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--glass-border);">
+            <div id="comments-list-${id}" style="margin-bottom: 1rem; font-size: 0.9rem;">
+                <!-- Comments injected here -->
+                ${(data.comments || []).map(c => `
+                    <div style="margin-bottom: 0.5rem;">
+                        <strong style="color: var(--primary-color);">${escapeHtml(c.username)}:</strong> ${escapeHtml(c.text)}
+                    </div>
+                `).join('')}
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+                <input type="text" id="comment-input-${id}" class="glass-input" placeholder="Write a comment..." style="padding: 0.5rem;">
+                <button class="glass-button" style="padding: 0.5rem 1rem;" onclick="window.submitComment('${id}')"><i class="fas fa-paper-plane"></i></button>
+            </div>
         </div>
     `;
 
@@ -125,37 +149,23 @@ async function submitPost() {
             userId: currentUser.uid,
             username: currentUser.displayName || currentUser.email.split('@')[0],
             content: content,
-            timestamp: serverTimestamp()
+            timestamp: serverTimestamp(),
+            likes: [],
+            comments: []
         };
 
-        await addDoc(collection(db, 'posts'), postData);
-
+        const docRef = await addDoc(collection(db, 'posts'), postData);
         textarea.value = '';
 
         // Optimistic render
+        displayPost(docRef.id, { ...postData, timestamp: { seconds: Date.now() / 1000 } });
+
+        // Move new post to top (displayPost appends, so we need to move it)
         const container = document.getElementById('feedContainer');
-        const postDiv = document.createElement('div');
-        postDiv.className = 'post-card';
-        const timeStr = 'Just now';
-
-        postDiv.innerHTML = `
-            <div class="post-header">
-                <div class="avatar" style="background: var(--glass-border);"><i class="fas fa-user"></i></div>
-                <div>
-                    <div style="font-weight: 600;">${postData.username}</div>
-                    <div style="font-size: 0.8rem; color: var(--text-secondary);">${timeStr}</div>
-                </div>
-            </div>
-            <p style="line-height: 1.6; margin-bottom: 1rem;">${escapeHtml(content)}</p>
-            <div style="margin-top: 1rem; display: flex; gap: 1rem; color: var(--text-secondary); font-size: 0.9rem;">
-                <span><i class="far fa-heart"></i> Like</span>
-                <span><i class="far fa-comment"></i> Comment</span>
-            </div>
-        `;
-
-        container.insertBefore(postDiv, container.firstChild);
-
-        // Ensure feed tab is active? (It probably is if they clicked post)
+        const newPost = document.getElementById(`post-${docRef.id}`);
+        if (newPost && container.firstChild) {
+            container.insertBefore(newPost, container.firstChild);
+        }
 
     } catch (error) {
         console.error('Error adding post:', error);
@@ -193,20 +203,24 @@ window.searchUsers = async function () {
         const users = [];
         snapshot.forEach(doc => {
             const data = doc.data();
-            if (doc.id === currentUser?.uid) return; // Exclude self
+            // Allow searching self for testing, but mark it
 
             // Robust search: Check displayName, username, chatUsername, and email
             const name = data.displayName || data.chatUsername || 'Unknown';
             const email = data.email || '';
             const username = data.username || '';
 
-            // Check if any field contains the query
             if (
                 name.toLowerCase().includes(queryText) ||
                 email.toLowerCase().includes(queryText) ||
                 username.toLowerCase().includes(queryText)
             ) {
-                users.push({ id: doc.id, name: name, handle: email.split('@')[0] });
+                users.push({
+                    id: doc.id,
+                    name: name,
+                    handle: email.split('@')[0],
+                    isSelf: doc.id === currentUser?.uid
+                });
             }
         });
 
@@ -219,12 +233,17 @@ window.searchUsers = async function () {
                         ${user.name.charAt(0).toUpperCase()}
                     </div>
                     <div style="flex: 1;">
-                        <div style="font-weight: 600; font-size: 0.9rem;">${user.name}</div>
+                        <div style="font-weight: 600; font-size: 0.9rem;">
+                            ${user.name} 
+                            ${user.isSelf ? '<span style="color: var(--primary-color); font-size: 0.8em; margin-left: 5px;">(You)</span>' : ''}
+                        </div>
                         <div style="font-size: 0.8rem; color: var(--text-secondary);">@${user.handle}</div>
                     </div>
+                    ${!user.isSelf ? `
                     <button class="glass-button" onclick="startChat('${user.id}', '${user.name}')" style="padding: 0.4rem 0.8rem; font-size: 0.9rem;">
-                        <i class="fas fa-comment-dots"></i> Message
+                        <i class="fas fa-user-plus"></i> Add Friend
                     </button>
+                    ` : ''}
                 </div>
             `).join('');
         }
@@ -336,4 +355,95 @@ function escapeHtml(text) {
         .replace(/'/g, "&#039;");
 }
 
-window.submitPost = submitPost;
+
+window.toggleLike = async function (postId) {
+    if (!currentUser) return alert('Please log in.');
+
+    try {
+        const postDiv = document.getElementById(`post-${postId}`);
+        // Simple client-side toggle visual before server sync
+        // Note: Real-time listener (if used) would update this, but we are fetching on load.
+        // For production, we should set up a listener for the feed or individual post.
+
+        // We'll just trigger the backend update. A full refresh would show new state.
+        // But for UX, let's look at getting the current state if possible or just naive toggle from UI?
+        // Let's do a transactional style logic if we want to be safe, but simple arrayUnion is idempotent.
+
+        // We need to know if currently liked to choose Union or Remove.
+        // Since we don't have the data object readily available (without parsing DOM or storing state),
+        // we will fetch the doc momentarily or assume from button class.
+
+        const likeBtnIcon = postDiv.querySelector('.fa-heart');
+        const isLiked = likeBtnIcon.classList.contains('fas');
+
+        const postRef = doc(db, 'posts', postId);
+
+        if (isLiked) {
+            // Un-like
+            likeBtnIcon.classList.remove('fas');
+            likeBtnIcon.classList.add('far');
+            likeBtnIcon.style.color = '';
+            await updateDoc(postRef, {
+                likes: arrayRemove(currentUser.uid)
+            });
+        } else {
+            // Like
+            likeBtnIcon.classList.remove('far');
+            likeBtnIcon.classList.add('fas');
+            likeBtnIcon.style.color = '#e74c3c';
+            await updateDoc(postRef, {
+                likes: arrayUnion(currentUser.uid)
+            });
+        }
+        // Ideally update count text too
+    } catch (e) {
+        console.error("Like error:", e);
+    }
+};
+
+window.toggleComments = function (postId) {
+    const section = document.getElementById(`comments-${postId}`);
+    if (section) {
+        section.style.display = section.style.display === 'none' ? 'block' : 'none';
+
+        // Focus input if opening
+        if (section.style.display === 'block') {
+            const input = document.getElementById(`comment-input-${postId}`);
+            if (input) input.focus();
+        }
+    }
+};
+
+window.submitComment = async function (postId) {
+    if (!currentUser) return alert('Please log in.');
+
+    const input = document.getElementById(`comment-input-${postId}`);
+    const text = input.value.trim();
+    if (!text) return;
+
+    try {
+        const commentData = {
+            userId: currentUser.uid,
+            username: currentUser.displayName || currentUser.email.split('@')[0],
+            text: text,
+            timestamp: Date.now()
+        };
+
+        // Add to 'comments' array in the post document
+        await updateDoc(doc(db, 'posts', postId), {
+            comments: arrayUnion(commentData)
+        });
+
+        // Optimistic append
+        const list = document.getElementById(`comments-list-${postId}`);
+        const div = document.createElement('div');
+        div.style.marginBottom = '0.5rem';
+        div.innerHTML = `<strong style="color: var(--primary-color);">${escapeHtml(commentData.username)}:</strong> ${escapeHtml(text)}`;
+        list.appendChild(div);
+
+        input.value = '';
+    } catch (e) {
+        console.error("Comment error:", e);
+        alert('Failed to comment.');
+    }
+};

@@ -27,3 +27,5 @@ export const where = FirebaseConfig.where;
 export const orderBy = FirebaseConfig.orderBy;
 export const limit = FirebaseConfig.limit;
 export const onSnapshot = FirebaseConfig.onSnapshot;
+export const arrayUnion = FirebaseConfig.arrayUnion;
+export const arrayRemove = FirebaseConfig.arrayRemove;
