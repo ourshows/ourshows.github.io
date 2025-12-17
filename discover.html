@@ -240,6 +240,8 @@
             <div class="modal-body">
                 <div class="modal-poster-container">
                     <img id="modalPoster" src="" alt="Movie Poster" class="modal-poster">
+                    <!-- Verdict Meter (PC Only) -->
+                    <div id="pcVerdictMeter" class="verdict-meter-container pc-only"></div>
                 </div>
                 <div class="modal-info">
                     <!-- Modal Header -->
@@ -272,6 +274,9 @@
                         <p id="modalOverview" class="modal-overview">Overview text...</p>
                         <div id="modalGenres" style="margin-top: 1rem;"></div>
                         <div id="modalTrailer" style="margin-top: 2rem;"></div>
+                        <!-- Verdict Meter (Mobile Only) -->
+                        <div id="mobileVerdictMeter" class="verdict-meter-container mobile-only"
+                            style="margin-top: 2rem;"></div>
                     </div>
 
                     <!-- Cast Tab -->
@@ -287,12 +292,14 @@
                             <h3>Add Your Review</h3>
                             <div class="rating-select"
                                 style="margin: 1rem 0; display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                                <button class="rating-btn" onclick="rateMovie(1)" data-rating="1">Bad 🔴</button>
-                                <button class="rating-btn" onclick="rateMovie(2)" data-rating="2">One Time Watch
-                                    🟠</button>
-                                <button class="rating-btn" onclick="rateMovie(3)" data-rating="3">Good 🟡</button>
-                                <button class="rating-btn" onclick="rateMovie(4)" data-rating="4">Go For It 🟢</button>
-                                <button class="rating-btn" onclick="rateMovie(5)" data-rating="5">Perfection 🌟</button>
+                                <button class="rating-btn" onclick="rateMovie('Pass')" data-rating="Pass">Pass
+                                    🔴</button>
+                                <button class="rating-btn" onclick="rateMovie('One time watch')"
+                                    data-rating="One time watch">One time watch 🟠</button>
+                                <button class="rating-btn" onclick="rateMovie('Go for it')" data-rating="Go for it">Go
+                                    for it 🟢</button>
+                                <button class="rating-btn" onclick="rateMovie('Perfection')"
+                                    data-rating="Perfection">Perfection 🌟</button>
                             </div>
                             <textarea id="reviewText" class="glass-input" rows="3"
                                 placeholder="Write your review..."></textarea>

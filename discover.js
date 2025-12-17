@@ -1,5 +1,5 @@
 
-import { auth, db, addDoc, setDoc, doc, serverTimestamp, collection, onAuthStateChanged } from './firebase-wrapper.js';
+import { auth, db, addDoc, setDoc, doc, serverTimestamp, collection, onAuthStateChanged, getDocs, query, where, orderBy } from './firebase-wrapper.js';
 
 // 1. Configuration & State
 const appState = {
@@ -269,11 +269,83 @@ async function openMovieModal(id, type = 'movie') {
     loadTrailer(details.videos);
     loadGenres(details.genres);
     loadCast(details.credits);
-    loadReviews(details.reviews);
+    // Load Reviews (Async)
+    loadReviews(details.reviews, id);
     loadSimilar(details.similar);
 
     // Switch to Overview tab by default
+    // Load Similar
+    loadSimilar(details.similar);
+
+    // INJECT VERDICT BADGE AND GAUGE
+    const verdict = calculateVerdict(details);
+
+    // Update Badge (Header)
+    const ratingEl = document.getElementById('modalRating');
+    const existingBadge = ratingEl.parentNode.querySelector('.verdict-badge');
+    if (existingBadge) existingBadge.remove();
+    const badge = document.createElement('span');
+    badge.className = `verdict-badge ${verdict.class}`;
+    badge.textContent = verdict.text;
+    ratingEl.parentNode.appendChild(badge);
+
+    // Render Gauge
+    renderVerdictMeter(details, verdict);
+
+    // Switch to Overview tab by default
     switchTab('overview');
+}
+
+// --- VERDICT SYSTEMS ---
+
+function calculateVerdict(details) {
+    const rating = details.vote_average || 0;
+    const votes = details.vote_count || 0;
+    const popularity = details.popularity || 0;
+
+    // "Perfection": High rating + High engagement
+    if (rating >= 8.0 && (votes >= 500 || popularity >= 100)) {
+        return { text: "Perfection", class: "verdict-perfection" };
+    }
+    // "Go for it": Good rating
+    if (rating >= 6.8) {
+        return { text: "Go for it", class: "verdict-go" };
+    }
+    // "One time watch": Average
+    if (rating >= 5.0) {
+        return { text: "One time watch", class: "verdict-once" };
+    }
+    // "Pass": Low rating
+    return { text: "Pass", class: "verdict-pass" };
+}
+
+function getVerdictColor(text) {
+    if (text === 'Perfection') return '#ffd700';
+    if (text === 'Go for it') return '#22c55e';
+    if (text === 'One time watch') return '#f59e0b';
+    return '#ef4444'; // Pass
+}
+
+function renderVerdictMeter(details, verdict) {
+    const containers = [
+        document.getElementById('pcVerdictMeter'),
+        document.getElementById('mobileVerdictMeter')
+    ];
+
+    const rating = details.vote_average || 0;
+    const rotation = (rating / 10) * 180 - 90;
+
+    const html = `
+        <div class="verdict-gauge">
+            <div class="gauge-needle" style="transform: translateX(-50%) rotate(${rotation}deg)"></div>
+        </div>
+        <div class="verdict-label" style="color: ${getVerdictColor(verdict.text)}">${verdict.text}</div>
+        <div class="verdict-subtext">${rating.toFixed(1)}/10 based on TMDB</div>
+    `;
+
+    containers.forEach(container => {
+        if (container) container.innerHTML = html;
+    });
 }
 
 function closeModal() {
@@ -348,23 +420,119 @@ function loadCast(credits) {
     `).join('');
 }
 
-function loadReviews(reviews) {
+// --- Review Helpers ---
+function getVerdictFromRating(rating) {
+    if (!rating) return { text: 'N/A', class: '' };
+    if (rating >= 8.0) return { text: 'Perfection', class: 'verdict-perfection' };
+    if (rating >= 6.8) return { text: 'Go for it', class: 'verdict-go' };
+    if (rating >= 5.0) return { text: 'One time watch', class: 'verdict-once' };
+    return { text: 'Pass', class: 'verdict-pass' };
+}
+
+async function loadReviews(tmdbReviews, movieId) {
     const container = document.getElementById('modalReviews');
-    if (!reviews || !reviews.results || reviews.results.length === 0) {
+    container.innerHTML = '<p style="text-align:center;">Loading reviews...</p>';
+
+    // 1. Fetch Firebase Reviews
+    let firebaseReviews = [];
+    try {
+        if (!movieId) throw new Error('No Movie ID');
+        const q = query(
+            collection(db, 'reviews'),
+            where('movieId', '==', String(movieId)),
+            orderBy('timestamp', 'desc')
+        );
+        const snapshot = await getDocs(q);
+        firebaseReviews = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            source: 'ourshow'
+        }));
+    } catch (e) { console.error(e); }
+
+    // 2. Process TMDB Reviews
+    const tmdbResults = (tmdbReviews && tmdbReviews.results) ? tmdbReviews.results.map(r => ({
+        id: r.id,
+        author: r.author,
+        content: r.content,
+        rating: r.author_details.rating,
+        avatar_path: r.author_details.avatar_path,
+        source: 'tmdb',
+        timestamp: new Date(r.created_at || 0)
+    })) : [];
+
+    // 3. Merge
+    const combined = [...firebaseReviews, ...tmdbResults];
+
+    if (combined.length === 0) {
         container.innerHTML = '<p>No reviews yet.</p>';
         return;
     }
-    container.innerHTML = reviews.results.slice(0, 3).map(review => `
-        <div class="review-card" style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                <strong>${review.author}</strong>
-                <span style="color: #ffd700;">\u2605 ${review.author_details.rating || 'N/A'}</span>
+
+    container.innerHTML = combined.slice(0, 10).map(review => {
+        // Data Mapping (similar to main.js)
+        const author = review.source === 'ourshow' ? review.username : review.author;
+        const rating = review.source === 'ourshow' ? review.rating : review.rating;
+        const content = review.source === 'ourshow' ? review.review : review.content;
+
+        // Verdict Logic
+        let verdictHTML = '';
+        if (rating) {
+            let v = { text: 'N/A', class: '' };
+            const numRating = parseFloat(rating);
+            if (!isNaN(numRating) && typeof rating !== 'string') {
+                v = getVerdictFromRating(numRating);
+            } else if (typeof rating === 'string') {
+                if (rating === 'Perfection') v = { text: 'Perfection', class: 'verdict-perfection' };
+                else if (rating === 'Go for it') v = { text: 'Go for it', class: 'verdict-go' };
+                else if (rating === 'One time watch' || rating === 'One Time Watch') v = { text: 'One time watch', class: 'verdict-once' };
+                else if (rating === 'Pass') v = { text: 'Pass', class: 'verdict-pass' };
+                else if (!isNaN(numRating)) v = getVerdictFromRating(numRating);
+            }
+            if (v.text !== 'N/A') {
+                verdictHTML = `<span class="review-verdict-badge ${v.class}" style="font-size: 0.7rem; padding: 2px 6px;">${v.text}</span>`;
+            }
+        }
+
+        const maxChars = 200;
+        const isLong = content.length > maxChars;
+        const shortContent = isLong ? content.substring(0, maxChars) + '...' : content;
+        const reviewId = `review-disc-${review.id || Math.random()}`;
+
+        return `
+        <div class="review-card" id="${reviewId}" style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; ${review.source === 'ourshow' ? 'border-left: 3px solid var(--primary-color);' : ''}">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; align-items: center;">
+                <strong>${author}</strong>
+                ${verdictHTML}
             </div>
-            <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.5;">
-                ${review.content.substring(0, 200)}${review.content.length > 200 ? '...' : ''}
-            </p>
+            <div class="review-content" style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.5;">
+                <span class="content-short">${shortContent}</span>
+                ${isLong ? `<span class="content-full" style="display:none;">${content}</span>
+                            <span class="read-more-btn" onclick="toggleReview('${reviewId}')">Read More</span>` : ''}
+            </div>
         </div>
-    `).join('');
+    `}).join('');
+}
+
+// Global Toggle (if not already on window from main.js, but safe to redefine or check)
+if (!window.toggleReview) {
+    window.toggleReview = function (id) {
+        const card = document.getElementById(id);
+        if (!card) return;
+        const short = card.querySelector('.content-short');
+        const full = card.querySelector('.content-full');
+        const btn = card.querySelector('.read-more-btn');
+
+        if (full.style.display === 'none') {
+            full.style.display = 'inline';
+            short.style.display = 'none';
+            btn.textContent = 'Read Less';
+        } else {
+            full.style.display = 'none';
+            short.style.display = 'inline';
+            btn.textContent = 'Read More';
+        }
+    };
 }
 
 function loadSimilar(similar) {
@@ -432,6 +600,7 @@ async function submitReview() {
         document.getElementById('reviewText').value = '';
         userRating = null;
         document.querySelectorAll('.rating-btn').forEach(btn => btn.classList.remove('selected'));
+        await loadReviews(currentMovieData.reviews, currentMovieId);
     } catch (e) {
         console.error("Review Error:", e);
         alert('Failed to submit review.');

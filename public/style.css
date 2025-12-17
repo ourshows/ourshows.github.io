@@ -1502,3 +1502,223 @@ a {
         font-size: 0.9rem;
     }
 }
+
+
+
+/* Verdict Badge (Restored & Bold) */
+.verdict-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    /* Increased size */
+    font-weight: 900;
+    /* Extra Bold */
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-left: 1rem;
+    vertical-align: middle;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+    /* Text shadow for pop */
+}
+
+.verdict-perfection {
+    background: linear-gradient(135deg, #ffd700 0%, #b8860b 100%);
+    color: #000;
+    border-color: #ffd700;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+    animation: pulseGold 2s infinite;
+    text-shadow: none;
+    /* Black text doesn't need white shadow */
+}
+
+.verdict-go {
+    background: linear-gradient(135deg, #22c55e 0%, #15803d 100%);
+    color: white;
+    border-color: #4ade80;
+}
+
+.verdict-once {
+    background: linear-gradient(135deg, #f59e0b 0%, #b45309 100%);
+    color: white;
+    border-color: #fbbf24;
+}
+
+.verdict-pass {
+    background: linear-gradient(135deg, #ef4444 0%, #991b1b 100%);
+    color: white;
+    border-color: #f87171;
+}
+
+@keyframes pulseGold {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+    }
+
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 0 25px rgba(255, 215, 0, 0.7);
+    }
+
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+    }
+}
+
+/* Verdict Gauge System */
+.verdict-meter-container {
+    width: 100%;
+    margin-top: 1.5rem;
+    padding: 1.5rem;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.verdict-gauge {
+    width: 200px;
+    height: 100px;
+    /* Half circle height */
+    background: conic-gradient(from 180deg at 50% 100%,
+            #ef4444 0deg 45deg,
+            /* Pass */
+            #f59e0b 45deg 90deg,
+            /* One Time Watch */
+            #22c55e 90deg 135deg,
+            /* Go For It */
+            #ffd700 135deg 180deg
+            /* Perfection */
+        );
+    border-radius: 100px 100px 0 0;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Inner cutout to make it an arc */
+.verdict-gauge::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 140px;
+    height: 70px;
+    background: #1e293b;
+    /* Match modal/card bg */
+    border-radius: 70px 70px 0 0;
+}
+
+.gauge-needle {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 4px;
+    height: 90px;
+    background: white;
+    transform-origin: bottom center;
+    transform: translateX(-50%) rotate(0deg);
+    /* 0deg = left (start) */
+    z-index: 10;
+    border-radius: 4px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    transition: transform 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.gauge-needle::after {
+    content: '';
+    position: absolute;
+    bottom: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 12px;
+    height: 12px;
+    background: white;
+    border-radius: 50%;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+.verdict-label {
+    margin-top: 0.5rem;
+    font-size: 1.4rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    text-shadow: 0 4px 12px rgba(0, 0, 0, 0.8);
+    z-index: 5;
+}
+
+.verdict-subtext {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-top: 0.25rem;
+}
+
+/* Responsive Visibility */
+.pc-only {
+    display: flex;
+}
+
+.mobile-only {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .pc-only {
+        display: none !important;
+    }
+
+    .mobile-only {
+        display: flex !important;
+    }
+
+    .verdict-gauge {
+        width: 100%;
+        max-width: 260px;
+        height: 130px;
+        border-radius: 130px 130px 0 0;
+    }
+
+    .verdict-gauge::after {
+        width: 70%;
+        height: 70%;
+        border-radius: 200px 200px 0 0;
+    }
+
+    .gauge-needle {
+        height: 120px;
+    }
+}
+
+/* --- Review System Refinements --- */
+.read-more-btn {
+    color: var(--primary-color);
+    cursor: pointer;
+    font-weight: 600;
+    margin-left: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.read-more-btn:hover {
+    text-decoration: underline;
+}
+
+.review-verdict-badge {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-left: auto;
+    /* Push to right */
+    display: inline-block;
+}

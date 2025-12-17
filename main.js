@@ -783,11 +783,78 @@ async function openMovieModal(id, type = 'movie') {
     // Load cast
     loadCast(details.credits);
 
-    // Load reviews
-    loadReviews(details.reviews);
+    // Load reviews (Now async and needs ID)
+    await loadReviews(details.reviews, id);
 
     // Load similar
     loadSimilar(details.similar);
+
+    // INJECT VERDICT BADGE
+    const verdict = calculateVerdict(details);
+
+    // Update Badge (Keep the header badge for quick reference)
+    const ratingEl = document.getElementById('modalRating');
+    const existingBadge = ratingEl.parentNode.querySelector('.verdict-badge');
+    if (existingBadge) existingBadge.remove();
+    const badge = document.createElement('span');
+    badge.className = `verdict-badge ${verdict.class}`;
+    badge.textContent = verdict.text;
+    ratingEl.parentNode.appendChild(badge);
+
+    // Render Gauge Meter (PC & Mobile)
+    renderVerdictMeter(details, verdict);
+}
+
+function renderVerdictMeter(details, verdict) {
+    const containers = [
+        document.getElementById('pcVerdictMeter'),
+        document.getElementById('mobileVerdictMeter')
+    ];
+
+    // Calculate Needle Rotation (-90deg to 90deg)
+    // Map rating 0-10 to -90 to 90
+    const rating = details.vote_average || 0;
+    const rotation = (rating / 10) * 180 - 90;
+
+    const html = `
+        <div class="verdict-gauge">
+            <div class="gauge-needle" style="transform: translateX(-50%) rotate(${rotation}deg)"></div>
+        </div>
+        <div class="verdict-label" style="color: ${getVerdictColor(verdict.text)}">${verdict.text}</div>
+        <div class="verdict-subtext">${rating.toFixed(1)}/10 based on TMDB</div>
+    `;
+
+    containers.forEach(container => {
+        if (container) container.innerHTML = html;
+    });
+}
+
+function getVerdictColor(text) {
+    if (text === 'Perfection') return '#ffd700';
+    if (text === 'Go for it') return '#22c55e';
+    if (text === 'One time watch') return '#f59e0b';
+    return '#ef4444'; // Pass
+}
+
+function calculateVerdict(details) {
+    const rating = details.vote_average || 0;
+    const votes = details.vote_count || 0;
+    const popularity = details.popularity || 0;
+
+    // "Perfection": High rating + High engagement (avoid niche obscure formatting)
+    if (rating >= 8.0 && (votes >= 500 || popularity >= 100)) {
+        return { text: "Perfection", class: "verdict-perfection" };
+    }
+    // "Go for it": Good rating
+    if (rating >= 6.8) {
+        return { text: "Go for it", class: "verdict-go" };
+    }
+    // "One time watch": Average
+    if (rating >= 5.0) {
+        return { text: "One time watch", class: "verdict-once" };
+    }
+    // "Pass": Low rating
+    return { text: "Pass", class: "verdict-pass" };
 }
 
 function closeModal() {
@@ -870,25 +937,147 @@ function loadCast(credits) {
     `).join('');
 }
 
-function loadReviews(reviews) {
+// --- Review Helpers ---
+function getVerdictFromRating(rating) {
+    if (!rating) return { text: 'N/A', class: '' };
+    if (rating >= 8.0) return { text: 'Perfection', class: 'verdict-perfection' };
+    if (rating >= 6.8) return { text: 'Go for it', class: 'verdict-go' };
+    if (rating >= 5.0) return { text: 'One time watch', class: 'verdict-once' };
+    return { text: 'Pass', class: 'verdict-pass' };
+}
+
+async function loadReviews(tmdbReviews, movieId) {
     const reviewsContainer = document.getElementById('modalReviews');
-    if (!reviews || !reviews.results || reviews.results.length === 0) {
+    reviewsContainer.innerHTML = '<p style="text-align:center;">Loading reviews...</p>';
+
+    // 1. Fetch Firebase Reviews
+    let firebaseReviews = [];
+    try {
+        if (!movieId) throw new Error('No Movie ID');
+        // Need to make sure movieId is string for consistency if stored as string
+        const q = query(
+            collection(db, 'reviews'),
+            where('movieId', '==', String(movieId)), // Compare as string
+            orderBy('timestamp', 'desc')
+        );
+        const snapshot = await getDocs(q);
+        firebaseReviews = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            source: 'ourshow'
+        }));
+    } catch (e) {
+        console.error("Error fetching firebase reviews:", e);
+        // Fallback: don't crash, just show TMDB
+    }
+
+    // 2. Process TMDB Reviews
+    const tmdbResults = (tmdbReviews && tmdbReviews.results) ? tmdbReviews.results.map(r => ({
+        id: r.id,
+        author: r.author,
+        content: r.content,
+        rating: r.author_details.rating,
+        avatar_path: r.author_details.avatar_path,
+        source: 'tmdb',
+        timestamp: new Date(r.created_at || 0) // rough sort
+    })) : [];
+
+    // 3. Merge & Display (Firebase first)
+    const combined = [...firebaseReviews, ...tmdbResults];
+
+    if (combined.length === 0) {
         reviewsContainer.innerHTML = '<p>No reviews yet. Be the first to review!</p>';
         return;
     }
 
-    reviewsContainer.innerHTML = reviews.results.slice(0, 5).map(review => `
-        <div class="review-card">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                <strong>${review.author}</strong>
-                <span style="color: #ffd700;">★ ${review.author_details.rating || 'N/A'}</span>
+    reviewsContainer.innerHTML = combined.slice(0, 10).map(review => {
+        // Handle Data Differences
+        const author = review.source === 'ourshow' ? review.username : review.author;
+        const rating = review.source === 'ourshow' ? review.rating : review.rating; // Standardized name
+        const content = review.source === 'ourshow' ? review.review : review.content;
+
+        // Convert Rating to Verdict
+        let verdictHTML = '';
+        if (rating) {
+            // Check if rating is numeric string "5" or number 5 or verdict string "Perfection"
+            // Our helper expects numeric for TMDB logic, but our new system stores Strings.
+            // Let's adapt getVerdictFromRating or handle it here.
+
+            let v = { text: 'N/A', class: '' };
+            const numRating = parseFloat(rating);
+
+            if (!isNaN(numRating) && typeof rating !== 'string') {
+                // Numeric (TMDB or old local)
+                v = getVerdictFromRating(numRating);
+            } else if (typeof rating === 'string') {
+                // Text Verdict (New local)
+                // Map string to class
+                if (rating === 'Perfection') v = { text: 'Perfection', class: 'verdict-perfection' };
+                else if (rating === 'Go for it') v = { text: 'Go for it', class: 'verdict-go' };
+                else if (rating === 'One time watch' || rating === 'One Time Watch') v = { text: 'One time watch', class: 'verdict-once' }; // handle case diff
+                else if (rating === 'Pass') v = { text: 'Pass', class: 'verdict-pass' };
+                else {
+                    // unexpected string or number-as-string
+                    if (!isNaN(numRating)) v = getVerdictFromRating(numRating);
+                }
+            }
+
+            if (v.text !== 'N/A') {
+                verdictHTML = `<span class="review-verdict-badge ${v.class}" style="font-size: 0.7rem; padding: 2px 6px;">${v.text}</span>`;
+            }
+        }
+
+        const avatarPath = review.avatar_path;
+        let avatarUrl = 'https://secure.gravatar.com/avatar/ad516503a11cd5ca435acc9bb6523536?s=128';
+        if (review.source === 'tmdb' && avatarPath) {
+            if (avatarPath.startsWith('/https')) avatarUrl = avatarPath.substring(1);
+            else avatarUrl = `${window.APP_CONFIG.TMDB_IMAGE_SMALL_URL}${avatarPath}`;
+        }
+
+        // Expandable Content
+        const maxChars = 300;
+        const isLong = content.length > maxChars;
+        const shortContent = isLong ? content.substring(0, maxChars) + '...' : content;
+        const reviewId = `review-${review.id || Math.random()}`; // Use real ID if avail
+
+        return `
+        <div class="review-card" id="${reviewId}" style="${review.source === 'ourshow' ? 'border-left: 3px solid var(--primary-color);' : ''}">
+            <div class="review-header">
+                <div class="review-author">
+                    <div class="review-avatar">
+                        <img src="${avatarUrl}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;" onerror="this.src='https://via.placeholder.com/40'">
+                    </div>
+                    <span>${author}</span>
+                </div>
+                ${verdictHTML}
             </div>
-            <p style="color: var(--text-secondary); line-height: 1.6;">
-                ${review.content.substring(0, 300)}${review.content.length > 300 ? '...' : ''}
-            </p>
+            <div class="review-content">
+                <span class="content-short">${shortContent}</span>
+                ${isLong ? `<span class="content-full" style="display:none;">${content}</span>
+                            <span class="read-more-btn" onclick="toggleReview('${reviewId}')">Read More</span>` : ''}
+            </div>
         </div>
-    `).join('');
+    `}).join('');
 }
+
+// Global Toggle Function
+window.toggleReview = function (id) {
+    const card = document.getElementById(id);
+    if (!card) return;
+    const short = card.querySelector('.content-short');
+    const full = card.querySelector('.content-full');
+    const btn = card.querySelector('.read-more-btn');
+
+    if (full.style.display === 'none') {
+        full.style.display = 'inline';
+        short.style.display = 'none';
+        btn.textContent = 'Read Less';
+    } else {
+        full.style.display = 'none';
+        short.style.display = 'inline';
+        btn.textContent = 'Read More';
+    }
+};
 
 function loadSimilar(similar) {
     const similarContainer = document.getElementById('modalSimilar');
@@ -940,6 +1129,9 @@ async function submitReview() {
         document.getElementById('reviewText').value = '';
         userRating = null;
         document.querySelectorAll('.rating-btn').forEach(btn => btn.classList.remove('selected'));
+
+        // Refresh reviews
+        await loadReviews(currentMovieData.reviews, currentMovieId);
     } catch (error) {
         console.error('Error submitting review:', error);
         alert('Failed to submit review. Please try again.');
