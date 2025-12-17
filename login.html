@@ -9,6 +9,8 @@
     <link rel="stylesheet" href="themes.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Load Global Config -->
+    <script src="public-config.js"></script>
     <style>
         /* Split Layout Styles */
         body.login-body {
@@ -18,6 +20,8 @@
             background: #000;
             height: 100vh;
             display: flex;
+            font-family: 'Outfit', sans-serif;
+            color: white;
         }
 
         /* Left Side: Login Form */
@@ -41,6 +45,7 @@
             /* Remove glass panel background to blend */
             box-shadow: none !important;
             border: none !important;
+            text-align: center;
         }
 
         /* Right Side: Waterfall Animation */
@@ -180,145 +185,281 @@
             }
         }
 
-        /* Custom Input Styles override */
-        /* ... */
+        /* Helper Classes from Public Login */
+        .social-btn {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: white;
+            color: #333;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-bottom: 1.5rem;
+            font-family: inherit;
+        }
+
+        .social-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 1.5rem 0;
+            color: var(--text-secondary, #aaa);
+            font-size: 0.9rem;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .divider span {
+            padding: 0 10px;
+        }
+
+        /* Input Styles */
+        .glass-input {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: white;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .glass-input:focus {
+            border-color: var(--primary-color, #e50914);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .glass-button {
+            padding: 1rem;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1rem;
+        }
+
+        .glass-button:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+
+<body class="login-body">
+
+    <!-- Left Pane: Login Form -->
+    <div class="login-pane">
+        <div class="login-box">
+            <h1 class="logo" style="font-size: 3rem; margin-bottom: 0.5rem; color: var(--primary-color, #e50914);">
+                OurShow</h1>
+            <p style="color: var(--text-secondary, #aaa); margin-bottom: 2.5rem;">Welcome back, movie buff!</p>
+
+            <button class="social-btn" onclick="handleGoogleLogin()">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20" alt="Google">
+                Continue with Google
+            </button>
+
+            <div class="divider"><span>OR</span></div>
+
+            <form onsubmit="handleEmailLogin(event)">
+                <div style="margin-bottom: 1rem;">
+                    <input type="email" class="glass-input" placeholder="Email Address" required>
+                </div>
+                <div style="margin-bottom: 1.5rem;">
+                    <input type="password" class="glass-input" placeholder="Password" required>
+                </div>
+                <button type="submit" class="glass-button"
+                    style="width: 100%; background: var(--primary-color, #e50914); border: none;">
+                    Log In
+                </button>
+            </form>
+
+            <p style="margin-top: 2rem; font-size: 0.9rem; color: var(--text-secondary, #aaa);">
+                Don't have an account? <a href="#"
+                    style="color: var(--primary-color, #e50914); text-decoration: none;">Sign up</a>
+            </p>
+            <p style="margin-top: 1rem; font-size: 0.9rem;">
+                <a href="index.html" style="color: var(--text-secondary, #aaa); text-decoration: none;">Continue as
+                    Guest</a>
+            </p>
+        </div>
+    </div>
+
+    <!-- Right Pane: Waterfall Animation -->
+    <div class="visual-pane">
+        <div id="waterfallContainer" class="waterfall-container">
+            <!-- Populated by JS -->
+        </div>
+    </div>
+
+    <!-- Firebase SDK & Logic -->
+    <script type="module">
+        import { auth, googleProvider, signInWithPopup, signInWithEmailAndPassword } from './firebase-wrapper.js';
+
+        // --- Authentication Logic ---
+        window.handleGoogleLogin = async () => {
+            try {
+                const result = await signInWithPopup(auth, googleProvider);
+                const user = result.user;
+                console.log("User signed in:", user);
+                window.location.href = 'index.html';
+            } catch (error) {
+                console.error("Error signing in with Google:", error);
+                alert("Login failed: " + error.message);
+            }
+        };
+
+        window.handleEmailLogin = async (e) => {
+            e.preventDefault();
+            const email = e.target.querySelector('input[type="email"]').value;
+            const password = e.target.querySelector('input[type="password"]').value;
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                window.location.href = 'index.html';
+            } catch (error) {
+                console.error("Error signing in with Email:", error);
+                alert("Login failed: " + error.message);
+            }
+        };
 
         // --- Waterfall Animation Logic ---
         async function initWaterfall() {
             // Robust Config Retrieval
-            const config=window.PUBLIC_CONFIG || window.APP_CONFIG;
-            if ( !config) return console.warn("No config found for waterfall");
+            const config = window.PUBLIC_CONFIG || window.APP_CONFIG || {
+                TMDB_BASE_URL: "https://api.themoviedb.org/3",
+                TMDB_IMAGE_SMALL_URL: "https://image.tmdb.org/t/p/w500",
+                // Fallback key if config missing - better to have this from a secure source usually
+                // but since it's client side, we rely on the window config.
+                // We'll try to find any exposed key or fetch popular without key if possible (unlikely for TMDB)
+            };
 
-            const apiKey=config.TMDB_KEY || config.TMDB_API_KEY;
-            const baseUrl=config.TMDB_BASE_URL || "https://api.themoviedb.org/3";
-            const imgBase=config.TMDB_IMAGE_SMALL_URL || "https://image.tmdb.org/t/p/w500";
+            // Attempt to get key from global if available (often set in index.html or config.js)
+            // If we are strictly in login.html, we might not have the global config loaded yet if we didn't include config.js
+            // Let's assume we need to import or fetch it.
+            // However, the original code looked for window.PUBLIC_CONFIG.
+            // Let's add a quick fetch for config if missing
 
-            if ( !apiKey) return console.warn("No API key for waterfall");
+            let apiKey = config.TMDB_KEY || config.TMDB_API_KEY;
 
-            const trendingUrl=`$ {
-                baseUrl
+            // Try importing config if window var is missing
+            if (!apiKey) {
+                try {
+                    const module = await import('./public/firebase-config-v2.js');
+                    // This file usually has firebase keys, not TMDB.
+                    // TMDB key is usually in config.js or injected.
+                    // Let's check public-config.js
+                    const pubConfig = await import('./public/public-config.js');
+                    if (pubConfig.default) apiKey = pubConfig.default.TMDB_KEY;
+                } catch (e) {
+                    console.warn("Could not load backup config", e);
+                }
             }
 
-            /trending/all/week?api_key=$ {
-                apiKey
+            // Hard fallback for demo purposes if absolutely nothing is found (Optional)
+            // But better to warn.
+            if (!apiKey) {
+                console.warn("No API Key found for waterfall animation.");
+                // We could potentially leave it blank or show static images.
+                return;
             }
 
-            `;
+            const baseUrl = config.TMDB_BASE_URL || "https://api.themoviedb.org/3";
+            const imgBase = config.TMDB_IMAGE_SMALL_URL || "https://image.tmdb.org/t/p/w500";
 
-            const cultUrl=`$ {
-                baseUrl
-            }
-
-            /movie/top_rated?api_key=$ {
-                apiKey
-            }
-
-            &page=1`; // Proxy for Cult Classics
+            const trendingUrl = `${baseUrl}/trending/all/week?api_key=${apiKey}`;
+            const cultUrl = `${baseUrl}/movie/top_rated?api_key=${apiKey}&page=1`;
 
             try {
-                // Fetch both sources in parallel
-                // Use Promise.allSettled to avoid failing everything if one fails
-                const results=await Promise.allSettled([ fetch(trendingUrl),
-                    fetch(cultUrl)]);
+                const results = await Promise.allSettled([
+                    fetch(trendingUrl),
+                    fetch(cultUrl)
+                ]);
 
-                // Helper to get json from settled promise
-                const getData=async (res)=> {
-                    if (res.status==='fulfilled' && res.value.ok) {
+                const getData = async (res) => {
+                    if (res.status === 'fulfilled' && res.value.ok) {
                         return await res.value.json();
                     }
+                    return { results: [] };
+                };
 
-                    return {
-                        results: []
-                    }
+                const trendingData = await getData(results[0]);
+                const cultData = await getData(results[1]);
 
-                    ;
-                }
+                const trendingPosters = (trendingData.results || []).filter(m => m.poster_path).map(m => m.poster_path);
+                const cultPosters = (cultData.results || []).filter(m => m.poster_path).map(m => m.poster_path);
 
-                ;
-
-                const trendingData=await getData(results[0]);
-                const cultData=await getData(results[1]);
-
-                const trendingPosters=(trendingData.results || []).filter(m=> m.poster_path).map(m=> m.poster_path);
-                const cultPosters=(cultData.results || []).filter(m=> m.poster_path).map(m=> m.poster_path);
-
-                // Combine and shuffle for uniqueness
-                let combined=[...trendingPosters,
-                ...cultPosters];
-                combined=combined.sort(()=> Math.random() - 0.5);
-
-                // Remove duplicates
-                combined=[...new Set(combined)];
+                let combined = [...trendingPosters, ...cultPosters];
+                combined = combined.sort(() => Math.random() - 0.5);
+                combined = [...new Set(combined)];
 
                 if (combined.length > 20) {
-                    // Split into 4 unique columns
-                    const chunkSize=Math.floor(combined.length / 4);
-                    const col1=combined.slice(0, chunkSize);
-                    const col2=combined.slice(chunkSize, chunkSize * 2);
-                    const col3=combined.slice(chunkSize * 2, chunkSize * 3);
-                    const col4=combined.slice(chunkSize * 3);
+                    const chunkSize = Math.floor(combined.length / 4);
+                    const col1 = combined.slice(0, chunkSize);
+                    const col2 = combined.slice(chunkSize, chunkSize * 2);
+                    const col3 = combined.slice(chunkSize * 2, chunkSize * 3);
+                    const col4 = combined.slice(chunkSize * 3);
 
                     createTrack(col1, 50, 'up', imgBase);
                     createTrack(col2, 70, 'down', imgBase);
                     createTrack(col3, 55, 'up', imgBase);
                     createTrack(col4, 65, 'down', imgBase);
-                }
-
-                else {
-                    // Fallback if not enough unique data
-                    const list1=trendingPosters.length ? trendingPosters: cultPosters;
+                } else {
+                    const list1 = trendingPosters.length ? trendingPosters : cultPosters;
+                    if (list1.length === 0) return;
                     createTrack(list1, 50, 'up', imgBase);
                     createTrack(list1, 60, 'down', imgBase);
                     createTrack(list1, 55, 'up', imgBase);
                     createTrack(list1, 65, 'down', imgBase);
                 }
-            }
-
-            catch (e) {
+            } catch (e) {
                 console.error("Animation load failed", e);
             }
         }
 
         function createTrack(images, speed, dir, imgBase) {
-            const container=document.getElementById('waterfallContainer');
-            const track=document.createElement('div');
+            const container = document.getElementById('waterfallContainer');
+            if (!container) return;
+            const track = document.createElement('div');
 
-            track.className=`poster-track scrolling-$ {
-                dir
-            }
+            track.className = `poster-track scrolling-${dir}`;
+            track.style.animationDuration = `${speed}s`;
 
-            `;
+            const loopImages = [...images, ...images]; // Duplicate for loop
 
-            track.style.animationDuration=`$ {
-                speed
-            }
-
-            s`;
-
-            // Loop twice for smooth scroll
-            const loopImages=[...images,
-            ...images];
-
-            loopImages.forEach(path=> {
-                    const img=document.createElement('img');
-
-                    img.src=`$ {
-                        imgBase
-                    }
-
-                    $ {
-                        path
-                    }
-
-                    `;
-                    img.className='track-poster';
-                    img.loading='lazy';
-                    track.appendChild(img);
-                });
+            loopImages.forEach(path => {
+                const img = document.createElement('img');
+                img.src = `${imgBase}${path}`;
+                img.className = 'track-poster';
+                img.loading = 'lazy';
+                track.appendChild(img);
+            });
 
             container.appendChild(track);
         }
 
+        // Initialize
         initWaterfall();
+    </script>
 
-        </script></body></html>
+
+</body>
+
+</html>
