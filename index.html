@@ -282,14 +282,16 @@
                     </div>
 
                     <!-- Action Buttons -->
-                    <button class="glass-button primary" onclick="watchNow()"><i class="fas fa-play"></i> Watch
-                        Now</button>
-                    <button class="glass-button" onclick="addToWatchLater()"><i class="fas fa-plus"></i> My
-                        List</button>
-                    <button class="glass-button" onclick="openAddToCollectionModal()"><i class="fas fa-folder-plus"></i>
-                        Collection</button>
-                    <button class="glass-button" onclick="markAsWatched()"><i class="fas fa-check"></i> Mark
-                        Watched</button>
+                    <div class="action-buttons">
+                        <button class="glass-button primary" onclick="watchNow()"><i class="fas fa-play"></i> Watch
+                            Now</button>
+                        <button class="glass-button" onclick="addToWatchLater()"><i class="fas fa-plus"></i> My
+                            List</button>
+                        <button class="glass-button" onclick="openAddToCollectionModal()"><i
+                                class="fas fa-folder-plus"></i> Collection</button>
+                        <button class="glass-button" onclick="markAsWatched()"><i class="fas fa-check"></i> Mark
+                            Watched</button>
+                    </div>
                     <!-- Overview Tab -->
                     <div id="tab-overview" class="tab-content active">
                         <p id="modalOverview" class="modal-overview">Overview text...</p>
@@ -522,6 +524,7 @@
         <script type="module" src="main.js"></script>
         <script type="module" src="ai.js"></script>
         <script src="auth.js"></script>
+        <script src="public/mobile-nav.js"></script>
 </body>
 
 </html>

@@ -10,94 +10,167 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        .stats-grid {
+        /* New Hero & Split Layout */
+        .stats-hero {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(255, 255, 255, 0));
+            padding: 3rem 2rem;
+            text-align: center;
+            border-radius: 20px;
+            margin-bottom: 2rem;
+            border: 1px solid var(--glass-border);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stats-hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('https://image.tmdb.org/t/p/w500/1E5baAaEse26fej7uHcjOgEE2t2.jpg') center/cover;
+            opacity: 0.1;
+            z-index: -1;
+        }
+
+        .hero-value {
+            font-size: 4rem;
+            font-weight: 800;
+            color: #fff;
+            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            line-height: 1;
+        }
+
+        .hero-label {
+            font-size: 1.2rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 1rem;
+        }
+
+        .streak-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(251, 191, 36, 0.2);
+            color: #fbbf24;
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            font-weight: 700;
+            border: 1px solid rgba(251, 191, 36, 0.4);
+            margin-top: 1rem;
+        }
+
+        /* Grouped Cards */
+        .stats-split-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: 1fr 1fr;
             gap: 1.5rem;
             margin-bottom: 3rem;
         }
 
-        .stat-card {
-            padding: 2rem;
-            text-align: center;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01));
-            border-radius: 12px;
+        .split-card {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 16px;
+            padding: 1.5rem;
             border: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            position: relative;
         }
 
-        .stat-value {
-            font-size: 3rem;
-            font-weight: 800;
-            color: var(--primary-color);
-            margin-bottom: 0.5rem;
+        .split-card h3 {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 0;
         }
 
-        .stat-label {
+        .stat-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+
+        .stat-line-val {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .stat-line-lbl {
+            font-size: 0.8rem;
             color: var(--text-secondary);
             text-transform: uppercase;
-            letter-spacing: 1px;
-            font-size: 0.8rem;
         }
 
+        /* Badges */
         .badges-section {
             margin-top: 3rem;
         }
 
-        .badges-grid {
-            display: flex;
-            gap: 2rem;
-            flex-wrap: wrap;
-            justify-content: center;
+        /* Mobile Adjustments */
+        @media (max-width: 600px) {
+            .stats-split-grid {
+                grid-template-columns: 1fr;
+                /* Stack on mobile */
+                gap: 1rem;
+            }
+
+            .hero-value {
+                font-size: 3rem;
+            }
+
+            .split-card {
+                padding: 1.2rem;
+            }
+        }
+
+        /* Badge Scroll on Mobile */
+        .badges-wrapper {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
         }
 
         .badge {
-            width: 120px;
-            height: 120px;
+            aspect-ratio: 1;
             background: rgba(0, 0, 0, 0.3);
-            border-radius: 50%;
+            border-radius: 12px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            border: 2px solid var(--glass-border);
-            transition: transform 0.3s;
-            cursor: pointer;
-            position: relative;
+            border: 1px solid var(--glass-border);
+            text-align: center;
+            padding: 0.5rem;
+            transition: all 0.3s ease;
         }
 
-        .badge:hover {
-            transform: scale(1.1) rotate(5deg);
-            border-color: var(--accent-color);
-            box-shadow: 0 0 20px rgba(219, 39, 119, 0.3);
+        .badge.unlocked {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(168, 85, 247, 0.2));
+            border-color: var(--primary-color);
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.2);
         }
 
         .badge i {
-            font-size: 2.5rem;
+            font-size: 2rem;
             margin-bottom: 0.5rem;
             color: #fbbf24;
         }
 
-        .badge span {
-            font-size: 0.7rem;
-            font-weight: 600;
+        .badge.locked i {
+            color: #555;
         }
 
         .badge.locked {
             opacity: 0.5;
-            filter: grayscale(1);
-        }
-
-        .badge.locked::after {
-            content: '\f023';
-            /* Lock icon */
-            font-family: "Font Awesome 6 Free";
-            font-weight: 900;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 2rem;
-            color: white;
         }
     </style>
 </head>
@@ -112,74 +185,91 @@
                 <ul class="nav-links" id="navLinks">
                     <li><a href="index.html" class="nav-link"><i class="fas fa-home"></i> Home</a></li>
                     <li><a href="discover.html" class="nav-link"><i class="fas fa-compass"></i> Discover</a></li>
-                    <li><a href="collectiom.html" class="nav-link"><i class="fas fa-bookmark"></i> Collections</a></li>
+                    <li><a href="collection.html" class="nav-link"><i class="fas fa-bookmark"></i> Collections</a></li>
                     <li><a href="watchedlist.html" class="nav-link active"><i class="fas fa-list"></i> Watchlist</a>
                     </li>
                     <li><a href="communitychat.html" class="nav-link"><i class="fas fa-comments"></i> Chat</a></li>
                 </ul>
 
                 <div class="nav-actions">
-                    <button class="icon-btn theme-toggle" onclick="toggleTheme()" title="Toggle Theme">
-                        <i class="fas fa-moon"></i>
-                    </button>
-                    <a href="login.html" class="auth-btn" id="navAuthBtn">
-                        <i class="fas fa-sign-in-alt"></i> Login
-                    </a>
+                    <button class="icon-btn theme-toggle" onclick="toggleTheme()" title="Toggle Theme"><i
+                            class="fas fa-moon"></i></button>
+                    <a href="login.html" class="auth-btn" id="navAuthBtn"><i class="fas fa-sign-in-alt"></i> Login</a>
                 </div>
             </div>
-            <button class="mobile-menu-btn" id="mobileMenuBtn">
-                <i class="fas fa-bars"></i>
-            </button>
+            <button class="mobile-menu-btn" id="mobileMenuBtn"><i class="fas fa-bars"></i></button>
         </div>
     </nav>
 
-    <div class="container" style="margin-top: 7rem;">
-        <div
-            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
-            <h1 class="section-title" style="margin-bottom: 0;">Your Viewing Habits</h1>
-            <div style="display: flex; gap: 1rem;">
-                <a href="watchedlist.html" class="glass-button"><i class="fas fa-check-circle"></i> Watched History</a>
-                <a href="watchlater.html" class="glass-button"><i class="fas fa-clock"></i> Watch Later</a>
+    <div class="container" style="margin-top: 7rem; padding-bottom: 4rem;">
+
+        <!-- Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <h1 class="section-title" style="margin: 0;">Stats</h1>
+            <a href="watchedlist.html" class="glass-button"><i class="fas fa-arrow-left"></i> History</a>
+        </div>
+
+        <!-- Hero Section -->
+        <div class="stats-hero">
+            <div class="hero-label">Total Time Watched</div>
+            <div class="hero-value" id="totalHours">0</div>
+            <div class="hero-label" style="font-size: 1rem; margin-top: 5px;">HOURS</div>
+
+            <div class="streak-badge">
+                <i class="fas fa-fire"></i> <span id="streakDays">0</span> Day Streak
             </div>
         </div>
 
-        <div class="stats-grid">
-            <div class="glass-panel stat-card">
-                <div class="stat-value" id="totalHours">0</div>
-                <div class="stat-label">Hours Watched</div>
+        <!-- Split Grid (Movies vs Series) -->
+        <div class="stats-split-grid">
+            <!-- Movies Card -->
+            <div class="split-card">
+                <h3><i class="fas fa-film" style="color: #60a5fa;"></i> Movies</h3>
+                <div class="stat-line">
+                    <span class="stat-line-lbl">Watched</span>
+                    <span class="stat-line-val" id="moviesCount">0</span>
+                </div>
+                <div class="stat-line">
+                    <span class="stat-line-lbl">Hours</span>
+                    <span class="stat-line-val" id="movieHours">0</span>
+                </div>
             </div>
-            <div class="glass-panel stat-card">
-                <div class="stat-value" id="moviesCount">0</div>
-                <div class="stat-label">Movies</div>
-            </div>
-            <div class="glass-panel stat-card">
-                <div class="stat-value" id="seriesCount">0</div>
-                <div class="stat-label">Series Completed</div>
-            </div>
-            <div class="glass-panel stat-card">
-                <div class="stat-value" id="streakDays">0</div>
-                <div class="stat-label">Day Streak 🔥</div>
+
+            <!-- Series Card -->
+            <div class="split-card">
+                <h3><i class="fas fa-tv" style="color: #a78bfa;"></i> Series</h3>
+                <div class="stat-line">
+                    <span class="stat-line-lbl">Completed</span>
+                    <span class="stat-line-val" id="seriesCount">0</span>
+                </div>
+                <div class="stat-line">
+                    <span class="stat-line-lbl">Hours (Est.)</span>
+                    <span class="stat-line-val" id="seriesHours">0</span>
+                </div>
             </div>
         </div>
 
+        <!-- Achievements -->
         <div class="badges-section">
-            <h2 class="section-title">Achievements</h2>
-            <div class="badges-grid">
-                <!-- Badges will be generated by JS -->
+            <h2 class="section-title">Achievements <span style="font-size: 0.9rem; opacity: 0.6; font-weight: 400;"
+                    id="badgeCount">(0/0)</span></h2>
+            <div class="badges-wrapper" id="badgesContainer">
+                <!-- Badges injected via JS -->
             </div>
         </div>
 
         <div id="loading" style="text-align: center; margin-top: 2rem;">
             <i class="fas fa-spinner fa-spin fa-2x"></i>
         </div>
+
     </div>
 
-    <script src="config.js"></script>
+    <script src="public-config.js"></script>
     <script src="stats.js" type="module"></script>
     <script src="auth.js"></script>
 
     <script>
-        // Theme Toggle Simple Script for this page if not imported
+        // Theme & Mobile Menu
         function toggleTheme() {
             const html = document.documentElement;
             const currentTheme = html.getAttribute('data-theme');
@@ -191,7 +281,6 @@
         const savedTheme = localStorage.getItem('theme') || 'dark';
         document.documentElement.setAttribute('data-theme', savedTheme);
 
-        // Mobile Menu
         const mobileBtn = document.getElementById('mobileMenuBtn');
         const navRight = document.getElementById('navRight');
         if (mobileBtn && navRight) {
@@ -200,6 +289,7 @@
             });
         }
     </script>
+    <script src="public/mobile-nav.js"></script>
 </body>
 
 </html>

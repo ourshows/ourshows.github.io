@@ -30,3 +30,4 @@ export const limit = FirebaseConfig.limit;
 export const onSnapshot = FirebaseConfig.onSnapshot;
 export const arrayUnion = FirebaseConfig.arrayUnion;
 export const arrayRemove = FirebaseConfig.arrayRemove;
+export const updateProfile = FirebaseConfig.updateProfile;

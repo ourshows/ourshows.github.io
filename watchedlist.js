@@ -19,6 +19,8 @@ window.toggleTheme = function () {
 const savedTheme = localStorage.getItem('theme') || 'dark';
 document.documentElement.setAttribute('data-theme', savedTheme);
 
+let watchedItemsGlobal = []; // Store loaded items for filtering
+
 // Auth State
 onAuthStateChanged(auth, (user) => {
     updateAuthUI(user);
@@ -64,16 +66,17 @@ async function loadWatchedList(userId) {
         if (querySnapshot.empty) {
             loading.style.display = 'none';
             emptyState.style.display = 'block';
+            watchedItemsGlobal = [];
             return;
         }
 
-        const watchedItems = [];
+        watchedItemsGlobal = [];
         querySnapshot.forEach((doc) => {
-            watchedItems.push({ id: doc.id, ...doc.data() });
+            watchedItemsGlobal.push({ id: doc.id, ...doc.data() });
         });
 
         // Sort by timestamp if available (descending)
-        watchedItems.sort((a, b) => {
+        watchedItemsGlobal.sort((a, b) => {
             if (b.timestamp && a.timestamp) {
                 return b.timestamp.seconds - a.timestamp.seconds;
             }
@@ -81,7 +84,7 @@ async function loadWatchedList(userId) {
         });
 
         loading.style.display = 'none';
-        renderCards(watchedItems);
+        renderCards(watchedItemsGlobal);
 
     } catch (error) {
         console.error("Error loading watched list:", error);
@@ -90,13 +93,34 @@ async function loadWatchedList(userId) {
     }
 }
 
+window.filterItems = function (type) {
+    // Update Active Class
+    document.querySelectorAll('.glass-button').forEach(btn => btn.classList.remove('active'));
+    if (type === 'all') document.getElementById('filterAll').classList.add('active');
+    else if (type === 'movie') document.getElementById('filterMovies').classList.add('active');
+    else if (type === 'tv') document.getElementById('filterSeries').classList.add('active');
+
+    if (type === 'all') {
+        renderCards(watchedItemsGlobal);
+    } else {
+        const filtered = watchedItemsGlobal.filter(item => (item.mediaType || 'movie') === type);
+        renderCards(filtered);
+    }
+}
+
 function renderCards(items) {
     const container = document.getElementById('watchedContainer');
     container.innerHTML = '';
 
     if (items.length === 0) {
-        document.getElementById('emptyState').style.display = 'block';
+        if (watchedItemsGlobal.length > 0) {
+            container.innerHTML = `<div style="width:100%; text-align:center; padding:2rem; color:var(--text-secondary);">No items match this filter.</div>`;
+        } else {
+            document.getElementById('emptyState').style.display = 'block';
+        }
         return;
+    } else {
+        document.getElementById('emptyState').style.display = 'none';
     }
 
     // Config Fallback Logic

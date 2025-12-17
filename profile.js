@@ -1,5 +1,5 @@
 // Profile Page - Simple and Working
-import { auth, db, onAuthStateChanged, collection, getDocs } from './firebase-config.js';
+import { auth, db, onAuthStateChanged, collection, getDocs } from './firebase-wrapper.js';
 
 let currentUser = null;
 

@@ -6,7 +6,8 @@ window.APP_CONFIG = {
     TMDB_BASE_URL: "https://api.themoviedb.org/3",
     TMDB_IMAGE_BASE_URL: "https://image.tmdb.org/t/p/original",
     TMDB_IMAGE_SMALL_URL: "https://image.tmdb.org/t/p/w500",
-    ENABLE_AI: true
+    ENABLE_AI: true,
+    API_BASE_URL: "https://ourshow-proxy.ourshow.workers.dev"
 };
 
 window.PUBLIC_CONFIG = window.APP_CONFIG;

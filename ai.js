@@ -101,8 +101,54 @@ function isMovieRequest(message) {
 
 // Call AI API (Via Proxy)
 // Call AI API (Via Proxy or Direct Callback)
+// Call AI API (Multi-Provider Support)
 async function callAI(messages, systemPrompt, jsonMode = false) {
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+    // 0. Gemini Direct (From public/config.js)
+    // The key might be at root OR inside FIREBASE_CONFIG
+    let key = window.APP_CONFIG?.apiKey || window.APP_CONFIG?.GEMINI_API_KEY;
+    if (!key && window.APP_CONFIG?.FIREBASE_CONFIG?.apiKey) {
+        key = window.APP_CONFIG.FIREBASE_CONFIG.apiKey;
+    }
+
+    if (key) {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${key}`;
+
+        // Convert messages to Gemini format
+        // Gemini expects: { contents: [ { role: 'user'|'model', parts: [{text: ...}] } ] }
+        // We need to merge system prompt first
+
+        let promptText = "";
+        if (systemPrompt) promptText += `System: ${systemPrompt}\n\n`;
+        messages.forEach(m => {
+            promptText += `${m.role === 'user' ? 'User' : 'Model'}: ${m.content}\n`;
+        });
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: promptText }] }]
+                })
+            });
+
+            if (!response.ok) throw new Error(`Gemini Error: ${response.status}`);
+            const data = await response.json();
+            let reply = data.candidates[0].content.parts[0].text;
+
+            // Clean JSON if requested
+            if (jsonMode) {
+                reply = reply.replace(/```json/g, '').replace(/```/g, '').trim();
+            }
+            return reply;
+        } catch (e) {
+            console.error("Gemini Direct Error:", e);
+            // Fallthrough to other methods? No, if we have a key, we expect it to work.
+            throw e;
+        }
+    }
 
     // 1. Priority: Client-Side Direct Call (Public Config)
     if (window.PUBLIC_CONFIG && window.PUBLIC_CONFIG.GROQ_API_KEY) {
@@ -172,10 +218,16 @@ async function callAI(messages, systemPrompt, jsonMode = false) {
         }
     }
 
-    // 3. Cloudflare Proxy (Works for Prod & Local)
-    const url = (window.PUBLIC_CONFIG?.API_BASE_URL)
-        ? `${window.PUBLIC_CONFIG.API_BASE_URL}/api/ai`
-        : "/api/ai";
+    // 3. Cloudflare Proxy
+    // If API_BASE_URL is set, use it directly (don't append /api/ai if it looks like a full worker URL)
+    let url = "/api/ai";
+    if (window.PUBLIC_CONFIG?.API_BASE_URL) {
+        if (window.PUBLIC_CONFIG.API_BASE_URL.includes('workers.dev')) {
+            url = window.PUBLIC_CONFIG.API_BASE_URL; // Use root for workers
+        } else {
+            url = `${window.PUBLIC_CONFIG.API_BASE_URL}/api/ai`;
+        }
+    }
 
     try {
         const response = await fetch(url, {
@@ -192,6 +244,7 @@ async function callAI(messages, systemPrompt, jsonMode = false) {
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
+            // If 405, it might be the wrong path or method
             throw new Error(errorData.error || `AI Proxy Error: ${response.status}`);
         }
 

@@ -57,17 +57,120 @@ body {
 }
 
 .theme-light {
-    --os-bg-primary: #f8fafc;
-    --os-bg-secondary: #e2e8f0;
-    --os-bg-surface: rgba(255, 255, 255, 0.6);
-    --os-bg-glass: rgba(255, 255, 255, 0.7);
+    /* Premium "Apple-like" Light Theme */
+    --os-bg-primary: #f2f2f7;
+    /* Soft warm grey/white */
+    --os-bg-secondary: #ffffff;
+    /* Pure white for cards */
+    --os-bg-surface: rgba(255, 255, 255, 0.85);
 
-    --os-text-color: #0f172a;
-    --os-text-secondary: #475569;
-    --os-text-muted: #94a3b8;
+    /* Modern Glass: White tint with blur */
+    --os-bg-glass: rgba(255, 255, 255, 0.65);
+
+    --os-text-color: #1c1c1e;
+    /* Soft Black */
+    --os-text-secondary: #3a3a3c;
+    --os-text-muted: #8e8e93;
 
     --os-border-color: rgba(0, 0, 0, 0.1);
-    --os-border-glass: rgba(0, 0, 0, 0.1);
+    --os-border-glass: rgba(255, 255, 255, 0.5);
+
+    /* Shadows: Essential for light mode depth */
+    --shadow-card: 0 4px 15px rgba(0, 0, 0, 0.05);
+
+    /* FORCE TEXT COLOR OVERRIDES */
+    color: var(--os-text-color);
+}
+
+/* Aggressive Light Theme Text Fixes - EXCLUDING HERO */
+.theme-light h1,
+.theme-light h2,
+.theme-light h3,
+.theme-light h4,
+.theme-light h5,
+.theme-light h6,
+.theme-light p,
+.theme-light span,
+.theme-light i,
+.theme-light div,
+.theme-light .media-title,
+.theme-light .section-title {
+    color: var(--os-text-color);
+}
+
+/* HERO SECTION SPECIFIC OVERRIDE (Must be readable on poster) */
+.theme-light .hero-content *,
+.theme-light .hero-title,
+.theme-light .hero-overview,
+.theme-light .hero-info {
+    color: #ffffff !important;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.theme-light a:not(.glass-button):not(.nav-item) {
+    color: var(--os-text-color);
+}
+
+.theme-light .text-secondary,
+.theme-light .media-meta {
+    color: var(--os-text-secondary) !important;
+}
+
+.theme-light .glass-panel {
+    border-color: rgba(0, 0, 0, 0.1);
+    background: rgba(255, 255, 255, 0.75);
+}
+
+/* --- Premium Light Mode Header/Footer Fixes --- */
+/* "Separate Header" - Making it solid/frosted white always */
+.theme-light .navbar,
+.theme-light .bottom-nav {
+    background: rgba(255, 255, 255, 0.95) !important;
+    /* Almost solid white */
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    backdrop-filter: blur(20px) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05) !important;
+    color: #1c1c1e !important;
+}
+
+.theme-light .nav-link,
+.theme-light .nav-item,
+.theme-light .mobile-icon-btn,
+.theme-light .mobile-profile-btn {
+    color: #3a3a3c !important;
+}
+
+.theme-light .mobile-search-btn {
+    color: #3a3a3c !important;
+}
+
+.theme-light .nav-link:hover,
+.theme-light .nav-item.active,
+.theme-light .mobile-icon-btn:hover {
+    color: var(--os-accent-primary) !important;
+}
+
+/* Rating Visibility Fix */
+.theme-light .card-rating-badge,
+.theme-light .hero-rating {
+    background: rgba(0, 0, 0, 0.8) !important;
+    /* Force dark bg for contrast */
+    color: #ffd700 !important;
+    /* Gold Star */
+    backdrop-filter: blur(4px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.theme-light .modal-info span {
+    color: #1c1c1e !important;
+}
+
+/* Fix Input Text in Light Mode */
+.theme-light input,
+.theme-light textarea {
+    color: #000 !important;
+    background: rgba(0, 0, 0, 0.05) !important;
+    border-color: rgba(0, 0, 0, 0.2) !important;
 }
 
 /* 3. Vibes (Accents & Effects) */

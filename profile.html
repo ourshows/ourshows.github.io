@@ -147,8 +147,23 @@
     <div class="profile-container">
         <div class="glass-panel profile-header">
             <img id="profileAvatar" src="" alt="Profile" class="profile-avatar">
-            <h1 class="profile-name" id="profileName">Loading...</h1>
+            <h1 class="profile-name">
+                <span id="profileName">Loading...</span>
+                <i class="fas fa-edit" onclick="openEditProfile()"
+                    style="font-size: 1.2rem; cursor: pointer; color: var(--text-secondary); margin-left: 0.5rem;"
+                    title="Edit Name"></i>
+            </h1>
             <p class="profile-email" id="profileEmail">Loading...</p>
+        </div>
+
+        <!-- Achievements Section -->
+        <div class="profile-section">
+            <h2><i class="fas fa-trophy" style="color: #ffd700;"></i> Achievements</h2>
+            <div id="profileBadges" class="glass-panel profile-info"
+                style="display: flex; gap: 1rem; overflow-x: auto; padding: 10px;">
+                <div style="text-align: center; width: 100%; color: var(--text-secondary);">Watch movies to unlock
+                    badges!</div>
+            </div>
         </div>
 
         <div class="profile-section">
@@ -174,60 +189,138 @@
             <div class="glass-panel profile-info">
                 <div class="info-row">
                     <span class="info-label">Movies Watched</span>
-                    <span class="info-value">0</span>
+                    <span class="info-value" id="statMovies">0</span>
                 </div>
                 <div class="info-row">
-                    <span class="info-label">Watchlist Items</span>
-                    <span class="info-value">0</span>
+                    <span class="info-label">Series Watched</span>
+                    <span class="info-value" id="statSeries">0</span>
                 </div>
                 <div class="info-row">
-                    <span class="info-label">Reviews Written</span>
-                    <span class="info-value">0</span>
+                    <span class="info-label">Total Hours</span>
+                    <span class="info-value" id="statHours">0</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Current Streak</span>
+                    <span class="info-value" id="statStreak">0 Days</span>
                 </div>
             </div>
         </div>
 
         <div class="action-buttons">
-            <button class="glass-button primary">
-                <i class="fas fa-edit"></i> Edit Profile
-            </button>
-            <button class="glass-button">
-                <i class="fas fa-cog"></i> Settings
-            </button>
             <button class="logout-btn" onclick="logout()">
                 <i class="fas fa-sign-out-alt"></i> Logout
             </button>
         </div>
     </div>
 
-    <script src="auth.js"></script>
-    <script>
-        // Load user profile data
-        function loadProfile() {
-            const authState = window.getAuthState();
+    <!-- Edit Profile Modal -->
+    <div id="editProfileModal" class="modal" style="display: none;">
+        <div class="modal-content glass-panel edit-profile-content" style="max-width: 400px;">
+            <span class="close-modal" onclick="closeEditProfile()">&times;</span>
+            <h2 style="text-align: center; margin-bottom: 1.5rem;">Edit Name</h2>
 
-            if (!authState.isLoggedIn) {
-                alert('Please login first');
-                window.location.href = 'login.html';
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem;">Display Name</label>
+                <input type="text" id="editDisplayName" class="glass-input" placeholder="Enter name">
+            </div>
+
+            <button class="glass-button primary" onclick="saveProfile()" style="width: 100%;">Save Changes</button>
+        </div>
+    </div>
+
+    <script src="auth.js"></script>
+    <script type="module">
+        import { onAuthStateChanged, auth } from './firebase-wrapper.js';
+        import { fetchUserStats, getUnlockedBadges, updateUserProfile } from './public/profile-logic.js';
+
+        // Expose to window for onclick handlers
+        window.openEditProfile = () => {
+            const user = auth.currentUser;
+            if (user) {
+                document.getElementById('editDisplayName').value = user.displayName || '';
+            }
+            document.getElementById('editProfileModal').style.display = 'block';
+        };
+        window.closeEditProfile = () => document.getElementById('editProfileModal').style.display = 'none';
+
+        // setAvatarPreset removed
+
+        window.saveProfile = async () => {
+            const name = document.getElementById('editDisplayName').value;
+            // Removed photo edit logic as requested
+
+            console.log("Attempting to save profile name:", { name, currentUser: auth.currentUser });
+
+            if (!auth.currentUser) {
+                alert("Error: You are not logged in (User object missing). Reloading...");
+                window.location.reload();
                 return;
             }
 
-            // Update profile display
-            document.getElementById('profileAvatar').src = authState.userPhoto || 'https://ui-avatars.com/api/?name=User&background=7c3aed&color=fff';
-            document.getElementById('profileName').textContent = authState.userName || 'User';
-            document.getElementById('profileEmail').textContent = authState.userEmail || 'No email';
-            document.getElementById('infoEmail').textContent = authState.userEmail || 'No email';
-            document.getElementById('infoUserId').textContent = localStorage.getItem('userId') || 'N/A';
+            try {
+                // Determine photoURL (keep existing)
+                const currentPhoto = auth.currentUser.photoURL;
+                await updateUserProfile(name, currentPhoto);
+                alert('Profile Updated Successfully!');
+                closeEditProfile();
+                loadProfile(auth.currentUser);
+            } catch (e) {
+                console.error("Profile update failed:", e);
+                alert('Error updating profile: ' + e.message);
+            }
+        };
+
+        // Initialize
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
+            loadProfile(user);
+
+            // Load Real Stats
+            const stats = await fetchUserStats(user.uid);
+            if (stats) updateStatsUI(stats);
+        });
+
+        function loadProfile(user) {
+            document.getElementById('profileAvatar').src = user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName || 'User'}&background=7c3aed&color=fff`;
+            document.getElementById('profileName').textContent = user.displayName || 'User';
+            document.getElementById('profileEmail').textContent = user.email || 'No email';
+            document.getElementById('infoEmail').textContent = user.email || 'No email';
+            document.getElementById('infoUserId').textContent = user.uid || 'N/A';
         }
 
-        // Load profile on page load
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', loadProfile);
-        } else {
-            loadProfile();
+        function updateStatsUI(stats) {
+            document.getElementById('statMovies').textContent = stats.totalMovies;
+            document.getElementById('statSeries').textContent = stats.totalSeries;
+            document.getElementById('statHours').textContent = stats.totalHours + 'h';
+            document.getElementById('statStreak').textContent = stats.streak + ' Days';
+
+            // Badges
+            const badges = getUnlockedBadges(stats);
+            const badgeContainer = document.getElementById('profileBadges');
+            if (badges.length > 0) {
+                badgeContainer.innerHTML = '';
+                badges.forEach(b => {
+                    const div = document.createElement('div');
+                    div.style.flexShrink = '0';
+                    div.style.textAlign = 'center';
+                    div.innerHTML = `
+                        <div style="background: rgba(255,215,0,0.1); width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 5px; border: 1px solid rgba(255,215,0,0.3);">
+                            <i class="fas ${b.icon}" style="color: #ffd700; font-size: 1.5rem;"></i>
+                        </div>
+                        <span style="font-size: 0.8rem; color: var(--text-secondary);">${b.name}</span>
+                     `;
+                    badgeContainer.appendChild(div);
+                });
+            } else {
+                badgeContainer.innerHTML = '<div style="text-align: center; width: 100%; color: var(--text-secondary);">No achievements yet. Start watching!</div>';
+            }
         }
     </script>
 
+    <script src="public/mobile-nav.js"></script>
 </body>
 
 </html>

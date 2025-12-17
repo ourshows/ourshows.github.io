@@ -14,6 +14,8 @@ const savedTheme = localStorage.getItem('theme') || 'dark';
 document.documentElement.setAttribute('data-theme', savedTheme);
 
 // Auth State
+let currentItems = []; // Store loaded items for filtering
+
 onAuthStateChanged(auth, (user) => {
     updateAuthUI(user);
     if (user) {
@@ -52,22 +54,23 @@ async function loadWatchLaterList(userId) {
         if (querySnapshot.empty) {
             loading.style.display = 'none';
             emptyState.style.display = 'block';
+            currentItems = [];
             return;
         }
 
-        const items = [];
+        currentItems = [];
         querySnapshot.forEach((doc) => {
-            items.push({ id: doc.id, ...doc.data() });
+            currentItems.push({ id: doc.id, ...doc.data() });
         });
 
         // Sort by timestamp if available
-        items.sort((a, b) => {
+        currentItems.sort((a, b) => {
             if (b.timestamp && a.timestamp) return b.timestamp.seconds - a.timestamp.seconds;
             return 0;
         });
 
         loading.style.display = 'none';
-        renderCards(items);
+        renderCards(currentItems);
 
     } catch (error) {
         console.error("Error loading watch later list:", error);
@@ -76,13 +79,35 @@ async function loadWatchLaterList(userId) {
     }
 }
 
+window.filterItems = function (type) {
+    // Update Active Class
+    document.querySelectorAll('.glass-button').forEach(btn => btn.classList.remove('active'));
+    if (type === 'all') document.getElementById('filterAll').classList.add('active');
+    else if (type === 'movie') document.getElementById('filterMovies').classList.add('active');
+    else if (type === 'tv') document.getElementById('filterSeries').classList.add('active');
+
+    if (type === 'all') {
+        renderCards(currentItems);
+    } else {
+        const filtered = currentItems.filter(item => (item.mediaType || 'movie') === type);
+        renderCards(filtered);
+    }
+}
+
 function renderCards(items) {
     const container = document.getElementById('watchLaterContainer');
     container.innerHTML = '';
 
     if (items.length === 0) {
-        document.getElementById('emptyState').style.display = 'block';
+        // If empty state due to filter, show text, if due to empty account loaded elsewhere
+        if (currentItems.length > 0) {
+            container.innerHTML = `<div style="width:100%; text-align:center; padding:2rem; color:var(--text-secondary);">No items match this filter.</div>`;
+        } else {
+            document.getElementById('emptyState').style.display = 'block';
+        }
         return;
+    } else {
+        document.getElementById('emptyState').style.display = 'none';
     }
 
     // Config Fallback Logic
@@ -132,7 +157,10 @@ function openLocalModal(item) {
         'https://image.tmdb.org/t/p/w500';
     const posterUrl = item.posterPath ? `${baseUrl}${item.posterPath}` : 'https://via.placeholder.com/200x300';
 
-    document.getElementById('modalPoster').src = posterUrl;
+    // Fix: Only use standard DOM methods
+    const mp = document.getElementById('modalPoster');
+    if (mp) mp.src = posterUrl;
+
     document.getElementById('modalTitle').textContent = item.movieTitle;
     document.getElementById('modalRating').textContent = item.rating ? Number(item.rating).toFixed(1) : 'N/A';
     document.getElementById('modalYear').textContent = '';
@@ -170,7 +198,7 @@ window.moveToWatched = async function () {
         // Add to watched
         const docId = `${currentItem.mediaType || 'movie'}_${currentItem.movieId}`;
         await setDoc(doc(db, 'users', auth.currentUser.uid, 'watched', docId), {
-            ...currentItem,
+            ...currentItem, // Copies all props, including mediaType
             timestamp: serverTimestamp()
         });
 

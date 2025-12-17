@@ -11,10 +11,11 @@ let allResults = [];
 let currentFilter = 'all';
 
 async function fetchTMDB(endpoint, params = {}) {
-    if (window.PUBLIC_CONFIG && window.PUBLIC_CONFIG.TMDB_KEY) {
+    if (window.PUBLIC_CONFIG && (window.PUBLIC_CONFIG.TMDB_KEY || window.PUBLIC_CONFIG.TMDB_API_KEY)) {
         const baseUrl = window.PUBLIC_CONFIG.TMDB_BASE_URL || "https://api.themoviedb.org/3";
         const url = new URL(`${baseUrl}${endpoint}`);
-        url.searchParams.append('api_key', window.PUBLIC_CONFIG.TMDB_KEY);
+        const apiKey = window.PUBLIC_CONFIG.TMDB_KEY || window.PUBLIC_CONFIG.TMDB_API_KEY;
+        url.searchParams.append('api_key', apiKey);
         url.searchParams.append('language', 'en-US');
         url.searchParams.append('include_adult', 'false');
         Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
