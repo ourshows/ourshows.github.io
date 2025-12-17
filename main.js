@@ -126,6 +126,7 @@ async function initApp() {
     console.log('APP_CONFIG:', window.APP_CONFIG);
 
     // Default Configuration for Production (when config.js is missing/gitignored)
+    // Default Configuration for Production (when config.js is missing/gitignored)
     if (!window.APP_CONFIG) {
         console.warn("Config not found, using default production configuration.");
         window.APP_CONFIG = {
@@ -136,6 +137,14 @@ async function initApp() {
             // API Key for TMDB (Client-side safe)
             TMDB_API_KEY: "798ae7de540b25e908c68ea2ca408347"
         };
+
+        // Also set PUBLIC_CONFIG so fetchTMDB works without isLocal check
+        if (!window.PUBLIC_CONFIG) {
+            window.PUBLIC_CONFIG = {
+                TMDB_KEY: "798ae7de540b25e908c68ea2ca408347",
+                TMDB_BASE_URL: "https://api.themoviedb.org/3"
+            };
+        }
     }
 
     console.log('PUBLIC_CONFIG:', window.PUBLIC_CONFIG ? 'Loaded' : 'Not Loaded');
