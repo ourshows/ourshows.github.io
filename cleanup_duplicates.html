@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Cleanup Duplicates</title>
+    <style>
+        body {
+            background: #0f172a;
+            color: white;
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            margin: 1rem;
+            border-radius: 8px;
+            width: 300px;
+        }
+
+        button {
+            padding: 0.5rem 1rem;
+            background: red;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Cleanup Duplicate Collections</h1>
+    <div id="status">Loading...</div>
+    <div id="list"></div>
+
+    <script type="module">
+        import { auth, db, onAuthStateChanged, collection, getDocs, deleteDoc, doc, query, where } from './firebase-wrapper.js';
+
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                document.getElementById('status').textContent = "Please log in first.";
+                return;
+            }
+
+            document.getElementById('status').textContent = "Scanning for 'best comedy movies'...";
+            const list = document.getElementById('list');
+            list.innerHTML = '';
+
+            // Find valid collections with that name
+            const q = query(collection(db, 'users', user.uid, 'custom_collections'));
+            // We fetch all and filter in memory to be safe about exact matches
+            const snap = await getDocs(q);
+
+            let found = 0;
+            snap.forEach(d => {
+                const data = d.data();
+                if (data.name && data.name.toLowerCase().includes('best comedy movies')) {
+                    found++;
+                    const div = document.createElement('div');
+                    div.className = 'card';
+                    div.innerHTML = `
+                        <h3>${data.name}</h3>
+                        <p>${d.id}</p>
+                        <p>Public: ${data.isPublic}</p>
+                        <button onclick="window.deleteItem('${d.id}')">Delete This</button>
+                    `;
+                    list.appendChild(div);
+                }
+            });
+
+            if (found === 0) {
+                document.getElementById('status').textContent = "No collections found with 'best comedy movies' in the name.";
+            } else {
+                document.getElementById('status').textContent = `Found ${found} collections.`;
+            }
+
+            window.deleteItem = async (id) => {
+                if (!confirm('Delete this collection?')) return;
+                try {
+                    await deleteDoc(doc(db, 'users', user.uid, 'custom_collections', id));
+                    alert('Deleted!');
+                    location.reload();
+                } catch (e) {
+                    alert('Error: ' + e.message);
+                }
+            };
+        });
+    </script>
+</body>
+
+</html>

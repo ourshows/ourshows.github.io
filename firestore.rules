@@ -20,10 +20,12 @@ service cloud.firestore {
     function isResourceOwner(field) {
       return isSignedIn() && request.resource.data[field] == request.auth.uid;
     }
-    
-    // Check if the timestamp is reasonably current (within last minute and not in future)
-    function isNow() {
-      return request.resource.data.timestamp == request.time;
+
+    // =================================================================================
+    // COLLECTION GROUP QUERIES
+    // =================================================================================
+    match /{document=**}/custom_collections/{collectionId} {
+      allow read: if true;
     }
 
     // =================================================================================
@@ -56,6 +58,11 @@ service cloud.firestore {
       }
       
       match /stats/{statId} {
+        allow read: if true;
+        allow write: if isOwner(userId);
+      }
+
+      match /favorites/{movieId} {
         allow read: if true;
         allow write: if isOwner(userId);
       }
@@ -97,23 +104,7 @@ service cloud.firestore {
       allow delete: if isSignedIn() && resource.data.createdBy == request.auth.uid;
     }
 
-    // ---------------------------------------------------------------------------------
-    // POSTS (Social Feed)
-    // ---------------------------------------------------------------------------------
-    match /posts/{postId} {
-      allow read: if true;
-      
-      allow create: if isResourceOwner('userId') && isNow();
-      
-      allow update: if isResourceOwner('userId'); // Only author can edit
-      allow delete: if resource.data.userId == request.auth.uid; // Only author can delete
-      
-      match /comments/{commentId} {
-        allow read: if true;
-        allow create: if isResourceOwner('userId') && isNow();
-        allow update, delete: if resource.data.userId == request.auth.uid;
-      }
-    }
+
     
     // ---------------------------------------------------------------------------------
     // MESSAGES (Chat)

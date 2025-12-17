@@ -14,6 +14,7 @@ export const signInWithEmailAndPassword = FirebaseConfig.signInWithEmailAndPassw
 export const signOut = FirebaseConfig.signOut;
 export const onAuthStateChanged = FirebaseConfig.onAuthStateChanged;
 export const collection = FirebaseConfig.collection;
+export const collectionGroup = FirebaseConfig.collectionGroup;
 export const addDoc = FirebaseConfig.addDoc;
 export const setDoc = FirebaseConfig.setDoc;
 export const doc = FirebaseConfig.doc;

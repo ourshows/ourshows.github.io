@@ -11,46 +11,56 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --card-radius: 16px;
+        }
+
         .collection-header {
-            margin-top: 6rem;
+            margin-top: 5rem;
             margin-bottom: 2rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
         }
 
         .collection-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 2rem;
+            padding-bottom: 4rem;
         }
 
         .collection-card {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
+            background: rgba(30, 41, 59, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--card-radius);
             overflow: hidden;
-            transition: transform 0.3s, box-shadow 0.3s;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             cursor: pointer;
             position: relative;
             aspect-ratio: 16/9;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
         .collection-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            border-color: rgba(124, 58, 237, 0.5);
         }
 
         .collection-preview {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            opacity: 0.6;
-            transition: opacity 0.3s;
+            opacity: 0.7;
+            transition: transform 0.5s ease;
         }
 
         .collection-card:hover .collection-preview {
-            opacity: 0.4;
+            transform: scale(1.1);
+            opacity: 0.5;
         }
 
         .collection-info {
@@ -59,18 +69,22 @@
             left: 0;
             width: 100%;
             padding: 1.5rem;
-            background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
+            background: linear-gradient(to top, rgba(2, 6, 23, 0.95), rgba(2, 6, 23, 0.6), transparent);
+            z-index: 2;
         }
 
         .collection-title {
-            font-size: 1.25rem;
+            font-size: 1.4rem;
             font-weight: 700;
             margin-bottom: 0.25rem;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+            letter-spacing: 0.5px;
         }
 
         .collection-count {
             font-size: 0.9rem;
-            color: var(--text-secondary);
+            color: rgba(255, 255, 255, 0.7);
+            font-weight: 500;
         }
 
         .create-collection-btn {
@@ -79,22 +93,47 @@
             align-items: center;
             justify-content: center;
             height: 100%;
-            background: rgba(255, 255, 255, 0.05);
-            border: 2px dashed var(--glass-border);
-            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+            border-radius: var(--card-radius);
             color: var(--text-secondary);
-            transition: all 0.3s;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(4px);
         }
 
         .create-collection-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: var(--primary-color);
+            background: rgba(124, 58, 237, 0.1);
             border-color: var(--primary-color);
+            color: white;
+            transform: scale(1.02);
+            box-shadow: 0 0 30px rgba(124, 58, 237, 0.2);
+        }
+
+        .create-collection-btn i {
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .create-collection-btn:hover i {
+            transform: rotate(90deg) scale(1.2);
+            color: var(--primary-color);
         }
 
         /* Collection Detail View */
         .collection-detail {
             display: none;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .collection-detail.active {
@@ -102,16 +141,154 @@
         }
 
         .back-btn {
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
             cursor: pointer;
             color: var(--text-secondary);
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 30px;
+            transition: all 0.2s;
+            font-size: 0.9rem;
         }
 
         .back-btn:hover {
-            color: var(--text-primary);
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(-5px);
+        }
+
+        /* Remove Button Hover */
+        .remove-btn:hover {
+            transform: scale(1.2);
+            box-shadow: 0 0 10px rgba(220, 38, 38, 0.5);
+        }
+
+        /* Tabs Styles */
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .tab-btn.active {
+            background: var(--primary-color);
+            color: white;
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Toggle Switch CSS (Standardized) */
+        .switch-label {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 1rem;
+            border-radius: 12px;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 28px;
+            flex-shrink: 0;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.1);
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked+.slider {
+            background-color: var(--primary-color);
+        }
+
+        input:focus+.slider {
+            box-shadow: 0 0 1px var(--primary-color);
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(22px);
+        }
+
+        /* Mobile Optimization */
+        @media (max-width: 768px) {
+            .collection-header {
+                flex-direction: column;
+                align-items: flex-start;
+                margin-top: 4rem;
+                gap: 1.5rem;
+            }
+
+            .tabs-container {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .tab-btn {
+                flex: 1;
+                font-size: 0.9rem;
+                padding: 0.6rem;
+                text-align: center;
+            }
+
+            .collection-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+
+            .section-title {
+                font-size: 1.8rem;
+            }
         }
     </style>
 </head>
@@ -132,45 +309,43 @@
 
         <!-- Collections List View -->
         <div id="collectionsListView">
+
+            <!-- Header with Tabs -->
             <div class="collection-header">
-                <h1 class="section-title">My Collections</h1>
-                <button class="glass-button" onclick="createNewCollection()"><i class="fas fa-plus"></i> New
-                    Collection</button>
+                <div style="width: 100%;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h1 class="section-title" style="margin: 0;">Library</h1>
+                    </div>
+
+                    <div class="tabs-container"
+                        style="display: flex; gap: 0.5rem; background: rgba(0,0,0,0.3); padding: 4px; border-radius: 12px;">
+                        <button id="tabMyCollections" class="tab-btn active">My Collections</button>
+                        <button id="tabCommunity" class="tab-btn">Community</button>
+                    </div>
+                </div>
             </div>
 
-            <div class="collection-grid" id="collectionsGrid">
-                <!-- Create New Card (Always first) -->
-                <div class="create-collection-btn" onclick="createNewCollection()"
-                    style="aspect-ratio: 16/9; cursor: pointer;">
-                    <i class="fas fa-plus-circle" style="font-size: 2rem; margin-bottom: 1rem;"></i>
-                    <span>Create New</span>
-                </div>
-
-                <!-- Default Collections -->
-                <div class="collection-card" onclick="openCollection('watchlist')">
-                    <img src="https://image.tmdb.org/t/p/w500/1E5baAaEse26fej7uHkjPoXIX1O.jpg"
-                        class="collection-preview" alt="Watchlist">
-                    <div class="collection-info">
-                        <div class="collection-title">Watchlist</div>
-                        <div class="collection-count" id="watchlistCount">Loading...</div>
+            <!-- Tab: My Collections -->
+            <div id="viewMyCollections" class="tab-content active">
+                <div class="collection-grid" id="collectionsGrid">
+                    <!-- Collections injected via JS -->
+                    <div style="grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 4rem;">
+                        <i class="fas fa-circle-notch fa-spin" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                        <p>Loading your collections...</p>
                     </div>
                 </div>
+            </div>
 
-                <div class="collection-card" onclick="openCollection('favorites')">
-                    <img src="https://image.tmdb.org/t/p/w500/8Vt6mWEReuy4Of61Lnj5Xj704m8.jpg"
-                        class="collection-preview" alt="Favorites">
-                    <div class="collection-info">
-                        <div class="collection-title">Favorites</div>
-                        <div class="collection-count" id="favoritesCount">Loading...</div>
-                    </div>
+            <!-- Tab: Community -->
+            <div id="viewCommunity" class="tab-content">
+                <div class="collection-header" style="margin-top: 0; margin-bottom: 1rem;">
+                    <h2 style="font-size: 1.25rem; color: var(--text-secondary);"><i class="fas fa-globe"></i> Discover
+                        Community Lists</h2>
                 </div>
-
-                <div class="collection-card" onclick="openCollection('watched')">
-                    <img src="https://image.tmdb.org/t/p/w500/q6y0Go1tsGEsmtFryDOJo3dEmqu.jpg"
-                        class="collection-preview" alt="Watched">
-                    <div class="collection-info">
-                        <div class="collection-title">Watched History</div>
-                        <div class="collection-count" id="watchedCount">Loading...</div>
+                <div class="collection-grid" id="communityCollectionsGrid">
+                    <div style="grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 2rem;">
+                        <i class="fas fa-circle-notch fa-spin"></i> Loading community lists...
                     </div>
                 </div>
             </div>
@@ -188,7 +363,7 @@
                 </div>
                 <button class="glass-button"
                     style="background: rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.5); color: #fca5a5;"
-                    onclick="deleteCurrentCollection()" id="deleteCollectionBtn">
+                    id="deleteCollectionBtn">
                     <i class="fas fa-trash"></i> Delete
                 </button>
             </div>
@@ -237,7 +412,7 @@
                     style="background: none; border: none; color: var(--text-secondary); font-size: 1.5rem; cursor: pointer;">&times;</button>
             </div>
 
-            <form id="createCollectionForm" onsubmit="handleCreateCollection(event)">
+            <form id="createCollectionForm">
                 <div style="margin-bottom: 1.5rem;">
                     <label
                         style="display: block; margin-bottom: 0.5rem; color: var(--text-secondary); font-size: 0.9rem; font-weight: 500;">Collection
@@ -256,35 +431,19 @@
                         style="width: 100%; padding: 1rem; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--glass-border); border-radius: 12px; color: white; resize: none;"></textarea>
                 </div>
 
-                <div
-                    style="margin-bottom: 2rem; padding: 1rem; background: rgba(255, 255, 255, 0.03); border-radius: 12px; display: flex; align-items: center; gap: 1rem;">
-                    <div style="position: relative; width: 48px; height: 24px;">
-                        <input type="checkbox" id="collectionPublic"
-                            style="width: 100%; height: 100%; opacity: 0; cursor: pointer; position: absolute; z-index: 2;">
-                        <div class="toggle-track"
-                            style="width: 100%; height: 100%; background: rgba(255, 255, 255, 0.1); border-radius: 24px; position: absolute; transition: 0.3s;">
-                        </div>
-                        <div class="toggle-thumb"
-                            style="width: 20px; height: 20px; background: white; border-radius: 50%; position: absolute; top: 2px; left: 2px; transition: 0.3s; pointer-events: none;">
-                        </div>
-                        <style>
-                            #collectionPublic:checked+.toggle-track {
-                                background: var(--primary-color);
-                            }
-
-                            #collectionPublic:checked+.toggle-track+.toggle-thumb {
-                                left: 26px;
-                            }
-                        </style>
+                <label class="switch-label">
+                    <div class="switch">
+                        <input type="checkbox" id="collectionPublic">
+                        <span class="slider"></span>
                     </div>
                     <div>
                         <div style="font-weight: 600;">Public Collection</div>
                         <div style="font-size: 0.8rem; color: var(--text-secondary);">Visible to other users on your
                             profile</div>
                     </div>
-                </div>
+                </label>
 
-                <div style="display: flex; gap: 1rem;">
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
                     <button type="button" onclick="closeCreateCollectionModal()" class="glass-button"
                         style="flex: 1; justify-content: center; background: transparent;">Cancel</button>
                     <button type="submit" class="glass-button primary" style="flex: 2; justify-content: center;">Create
@@ -297,7 +456,7 @@
     <script src="public-config.js"></script>
     <script src="config.js"></script>
     <script type="module" src="collection.js"></script>
-    <script type="module" src="main.js"></script> <!-- For shared navbar logic -->
+    <script type="module" src="main.js"></script>
 </body>
 
 </html>

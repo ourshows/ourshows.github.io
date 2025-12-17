@@ -4,7 +4,7 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, collection, addDoc, setDoc, doc, updateDoc, deleteDoc, getDoc, getDocs, serverTimestamp, query, where, orderBy, limit, onSnapshot, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, collection, collectionGroup, addDoc, setDoc, doc, updateDoc, deleteDoc, getDoc, getDocs, serverTimestamp, query, where, orderBy, limit, onSnapshot, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 // Firebase configuration
 // Using the Project ID found earlier. 
@@ -34,6 +34,7 @@ export {
     signOut,
     onAuthStateChanged,
     collection,
+    collectionGroup,
     addDoc,
     setDoc,
     doc,
