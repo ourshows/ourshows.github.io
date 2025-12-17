@@ -1,5 +1,5 @@
 // Social Dashboard & Chat Logic (Tabbed Version)
-import { auth, db, onAuthStateChanged, collection, addDoc, query, orderBy, limit, getDocs, serverTimestamp, where, onSnapshot } from './firebase-wrapper.js';
+import { auth, db, onAuthStateChanged, collection, addDoc, setDoc, doc, query, orderBy, limit, getDocs, serverTimestamp, where, onSnapshot } from './firebase-wrapper.js';
 
 let currentUser = null;
 let currentChatUser = null;
@@ -8,10 +8,23 @@ let chatUnsubscribe = null;
 
 // --- Auth & Init ---
 
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
     currentUser = user;
     updateProfileUI(user);
     if (user) {
+        // Sync user to Firestore so they can be found in search
+        try {
+            await setDoc(doc(db, 'users', user.uid), {
+                displayName: user.displayName || user.email.split('@')[0],
+                email: user.email,
+                photoURL: user.photoURL || null,
+                lastSeen: serverTimestamp(),
+                username: user.email.split('@')[0].toLowerCase() // Add searchable lowercase username
+            }, { merge: true });
+        } catch (e) {
+            console.error("Error syncing user profile:", e);
+        }
+
         loadPosts();
     } else {
         document.getElementById('feedContainer').innerHTML = '<div style="text-align: center; padding: 2rem;">Please log in to view the feed.</div>';
@@ -182,11 +195,17 @@ window.searchUsers = async function () {
             const data = doc.data();
             if (doc.id === currentUser?.uid) return; // Exclude self
 
-            // Match against chatUsername or email
-            const name = data.chatUsername || 'Unknown';
+            // Robust search: Check displayName, username, chatUsername, and email
+            const name = data.displayName || data.chatUsername || 'Unknown';
             const email = data.email || '';
+            const username = data.username || '';
 
-            if (name.toLowerCase().includes(queryText) || email.toLowerCase().includes(queryText)) {
+            // Check if any field contains the query
+            if (
+                name.toLowerCase().includes(queryText) ||
+                email.toLowerCase().includes(queryText) ||
+                username.toLowerCase().includes(queryText)
+            ) {
                 users.push({ id: doc.id, name: name, handle: email.split('@')[0] });
             }
         });
