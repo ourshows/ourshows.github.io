@@ -58,6 +58,8 @@
             style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
             <h1 class="section-title" style="margin-bottom: 0;">Watched History</h1>
             <div style="display: flex; gap: 1rem;">
+                <button onclick="openBulkModal()" class="glass-button"><i class="fas fa-file-import"></i> Bulk
+                    Import</button>
                 <a href="watchlater.html" class="glass-button"><i class="fas fa-clock"></i> Watch Later</a>
                 <a href="stats.html" class="glass-button"><i class="fas fa-chart-pie"></i> Stats</a>
             </div>
@@ -85,6 +87,48 @@
             <p>Movies and shows you mark as watched will appear here.</p>
             <a href="index.html" class="glass-button primary" style="margin-top: 1rem; display: inline-block;">Explore
                 Content</a>
+        </div>
+    </div>
+
+    <!-- Bulk Import Modal -->
+    <div id="bulkImportModal" class="modal" style="display: none;">
+        <div class="modal-content glass-panel" style="max-width: 800px; width: 90%;">
+            <span class="close-modal" onclick="closeBulkModal()">&times;</span>
+            <div class="modal-body">
+                <h2 style="margin-bottom: 1rem;">Bulk Import Watched Items</h2>
+
+                <!-- Step 1: Input -->
+                <div id="bulkStep1">
+                    <p style="color: var(--text-secondary); margin-bottom: 1rem;">Paste your list of titles below (one
+                        per line). We'll find the best match for each.</p>
+                    <textarea id="bulkInput" class="glass-input" rows="10"
+                        placeholder="Breaking Bad&#10;Inception&#10;The Dark Knight"
+                        style="width: 100%; margin-bottom: 1rem; font-family: monospace;"></textarea>
+                    <button class="glass-button primary" onclick="processBulkList()">Find Matches <i
+                            class="fas fa-search"></i></button>
+                </div>
+
+                <!-- Step 2: Review -->
+                <div id="bulkStep2" style="display: none;">
+                    <p style="color: var(--text-secondary); margin-bottom: 1rem;">Review matches. Uncheck any incorrect
+                        ones.</p>
+                    <div id="bulkPreviewGrid"
+                        style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 1rem; max-height: 50vh; overflow-y: auto; margin-bottom: 1rem; padding-right: 0.5rem;">
+                        <!-- Preview Items -->
+                    </div>
+                    <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                        <button class="glass-button" onclick="resetBulkImport()">Back</button>
+                        <button class="glass-button primary" onclick="confirmBulkImport()">Import <span
+                                id="bulkCount">0</span> Items <i class="fas fa-check"></i></button>
+                    </div>
+                </div>
+
+                <!-- Loading State -->
+                <div id="bulkLoading" style="display: none; text-align: center; padding: 3rem;">
+                    <i class="fas fa-spinner fa-spin fa-2x"></i>
+                    <p style="margin-top: 1rem;">Searching TMDB...</p>
+                </div>
+            </div>
         </div>
     </div>
 

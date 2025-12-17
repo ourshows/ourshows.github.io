@@ -1,4 +1,163 @@
-import { auth, db, onAuthStateChanged, collection, getDocs, doc, deleteDoc } from './firebase-wrapper.js';
+import { auth, db, onAuthStateChanged, collection, getDocs, doc, deleteDoc, setDoc, serverTimestamp } from './firebase-wrapper.js';
+
+// --- Bulk Import Logic ---
+let bulkCandidates = [];
+
+window.openBulkModal = function () {
+    document.getElementById('bulkImportModal').style.display = 'block';
+    resetBulkImport();
+}
+
+window.closeBulkModal = function () {
+    document.getElementById('bulkImportModal').style.display = 'none';
+    resetBulkImport();
+}
+
+window.resetBulkImport = function () {
+    document.getElementById('bulkStep1').style.display = 'block';
+    document.getElementById('bulkStep2').style.display = 'none';
+    document.getElementById('bulkLoading').style.display = 'none';
+    document.getElementById('bulkInput').value = '';
+    document.getElementById('bulkPreviewGrid').innerHTML = '';
+    bulkCandidates = [];
+}
+
+window.processBulkList = async function () {
+    const rawText = document.getElementById('bulkInput').value;
+    const lines = rawText.split(/\n/).map(s => s.trim()).filter(s => s.length > 0);
+
+    if (lines.length === 0) {
+        alert("Please enter at least one title.");
+        return;
+    }
+
+    // Switch to loading
+    document.getElementById('bulkStep1').style.display = 'none';
+    document.getElementById('bulkLoading').style.display = 'block';
+
+    bulkCandidates = [];
+    const container = document.getElementById('bulkPreviewGrid');
+    container.innerHTML = '';
+
+    // Fetch in parallel (with limit if needed, but for now Promise.all for speed)
+    // Using simple loop to avoid race conditions with pushing to array
+    for (const title of lines) {
+        try {
+            const result = await searchSingleTitle(title);
+            if (result) {
+                bulkCandidates.push({ originalQuery: title, data: result });
+            }
+        } catch (e) {
+            console.error(`Failed to search for ${title}`, e);
+        }
+    }
+
+    // Render Results
+    bulkCandidates.forEach((item, index) => {
+        const div = document.createElement('div');
+        div.className = 'bulk-item';
+        // Inline styles for the grid item
+        div.style.position = 'relative';
+        div.style.background = 'rgba(255,255,255,0.05)';
+        div.style.borderRadius = '8px';
+        div.style.overflow = 'hidden';
+
+        const imgUrl = item.data.poster_path ? `https://image.tmdb.org/t/p/w200${item.data.poster_path}` : 'https://via.placeholder.com/150x225?text=No+Img';
+        const year = (item.data.release_date || item.data.first_air_date || '').split('-')[0];
+
+        div.innerHTML = `
+            <input type="checkbox" id="bulk_check_${index}" checked style="position: absolute; top: 5px; right: 5px; z-index: 10; transform: scale(1.5);">
+            <img src="${imgUrl}" style="width: 100%; height: 160px; object-fit: cover;">
+            <div style="padding: 0.5rem; font-size: 0.8rem;">
+                <div style="font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.data.title || item.data.name}</div>
+                <div style="opacity: 0.7;">${year} • ${item.data.media_type}</div>
+            </div>
+        `;
+
+        // Toggle checkbox on click
+        div.onclick = (e) => {
+            if (e.target.type !== 'checkbox') {
+                const cb = document.getElementById(`bulk_check_${index}`);
+                cb.checked = !cb.checked;
+                updateBulkCount();
+            }
+        };
+        // Update count on checkbox change
+        div.querySelector('input').onchange = updateBulkCount;
+
+        container.appendChild(div);
+    });
+
+    document.getElementById('bulkLoading').style.display = 'none';
+    document.getElementById('bulkStep2').style.display = 'block';
+    updateBulkCount();
+}
+
+function updateBulkCount() {
+    const checked = document.querySelectorAll('#bulkPreviewGrid input[type="checkbox"]:checked').length;
+    document.getElementById('bulkCount').textContent = checked;
+}
+
+async function searchSingleTitle(query) {
+    const apiKey = window.PUBLIC_CONFIG?.TMDB_KEY || "798ae7de540b25e908c68ea2ca408347"; // Fallback
+    const url = `https://api.themoviedb.org/3/search/multi?api_key=${apiKey}&query=${encodeURIComponent(query)}&page=1&include_adult=false`;
+
+    const res = await fetch(url);
+    const data = await res.json();
+
+    // Return first match that matches basic criteria
+    if (data.results && data.results.length > 0) {
+        // Prioritize Movie/TV
+        return data.results.find(r => r.media_type === 'movie' || r.media_type === 'tv') || data.results[0];
+    }
+    return null;
+}
+
+window.confirmBulkImport = async function () {
+    if (!auth.currentUser) return;
+
+    const checkedIndices = Array.from(document.querySelectorAll('#bulkPreviewGrid input[type="checkbox"]:checked'))
+        .map(cb => parseInt(cb.id.split('_')[2]));
+
+    if (checkedIndices.length === 0) {
+        alert("No items selected.");
+        return;
+    }
+
+    const btn = document.querySelector('#bulkStep2 .glass-button.primary');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Importing...';
+    btn.disabled = true;
+
+    let importedCount = 0;
+
+    for (const idx of checkedIndices) {
+        const item = bulkCandidates[idx].data;
+        const mediaType = item.media_type || 'movie';
+
+        try {
+            await setDoc(doc(db, 'users', auth.currentUser.uid, 'watched', String(item.id)), {
+                movieId: item.id,
+                movieTitle: item.title || item.name,
+                posterPath: item.poster_path,
+                rating: item.vote_average,
+                mediaType: mediaType,
+                timestamp: serverTimestamp()
+            });
+            importedCount++;
+        } catch (e) {
+            console.error("Import failed for", item, e);
+        }
+    }
+
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+
+    alert(`Successfully imported ${importedCount} items!`);
+    closeBulkModal();
+    loadWatchedList(auth.currentUser.uid); // Refresh list
+}
+
 
 // Initialize Theme
 window.toggleTheme = function () {

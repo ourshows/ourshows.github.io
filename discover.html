@@ -129,13 +129,41 @@
 <body>
 
     <!-- Navbar Placeholder (Copied from index.html structure) -->
-    <nav class="navbar">
-        <div class="logo">OurShow</div>
-        <div class="nav-links">
-            <a href="index.html">Home</a>
-            <a href="discover.html" class="active">Discover</a>
-            <a href="search.html">Search</a>
-            <a href="ai.html">AI Chat</a>
+    <!-- Full Navbar (Synced with index.html) -->
+    <nav class="navbar" id="navbar">
+        <div class="container nav-content">
+            <a href="index.html" class="logo">OurShow</a>
+
+            <div class="nav-right" id="navRight">
+                <ul class="nav-links" id="navLinks">
+                    <li><a href="index.html" class="nav-link"><i class="fas fa-home"></i> Home</a></li>
+                    <li><a href="discover.html" class="nav-link active"><i class="fas fa-compass"></i> Discover</a></li>
+                    <li><a href="collection.html" class="nav-link"><i class="fas fa-bookmark"></i> Collections</a></li>
+                    <li><a href="watchlater.html" class="nav-link"><i class="fas fa-list"></i> Watchlist</a></li>
+                    <li><a href="communitychat.html" class="nav-link"><i class="fas fa-comments"></i> Chat</a></li>
+                    <li><a href="ai.html" class="nav-link"><i class="fas fa-robot"></i> AI Assistant</a></li>
+                </ul>
+
+                <div class="nav-actions">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="Search..." id="searchInput">
+                        <div class="search-results" id="searchResults"></div>
+                    </div>
+
+                    <button class="icon-btn theme-toggle" onclick="toggleTheme()" title="Toggle Theme">
+                        <i class="fas fa-moon"></i>
+                    </button>
+
+                    <a href="login.html" class="auth-btn" id="navAuthBtn">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </a>
+                </div>
+            </div>
+
+            <button class="mobile-menu-btn" id="mobileMenuBtn">
+                <i class="fas fa-bars"></i>
+            </button>
         </div>
     </nav>
 
@@ -297,6 +325,8 @@
         <link rel="stylesheet" href="public/modal.css">
 
         <script src="public-config.js"></script>
+        <script src="auth.js"></script>
+        <script type="module" src="main.js"></script>
         <script type="module" src="discover.js"></script>
         <script src="public/mobile-nav.js"></script>
 </body>

@@ -37,127 +37,129 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- 2. Top Header Customization ---
-    const navContent = document.querySelector('.nav-content');
-    if (navContent) {
-        // Hide Desktop Nav Links & Old Mobile Elements
-        const navLinks = document.querySelector('.nav-links');
-        if (navLinks) navLinks.style.display = 'none';
+    if (isMobile) {
+        const navContent = document.querySelector('.nav-content');
+        if (navContent) {
+            // Hide Desktop Nav Links & Old Mobile Elements
+            const navLinks = document.querySelector('.nav-links');
+            if (navLinks) navLinks.style.display = 'none';
 
-        const menuBtn = document.querySelector('.mobile-menu-btn');
-        if (menuBtn) menuBtn.style.setProperty('display', 'none', 'important');
+            const menuBtn = document.querySelector('.mobile-menu-btn');
+            if (menuBtn) menuBtn.style.setProperty('display', 'none', 'important');
 
-        const oldActions = document.querySelector('.nav-actions');
-        if (oldActions) oldActions.style.display = 'none';
+            const oldActions = document.querySelector('.nav-actions');
+            if (oldActions) oldActions.style.display = 'none';
 
-        const existingMobileActions = document.querySelector('.mobile-actions');
-        if (existingMobileActions) existingMobileActions.remove();
+            const existingMobileActions = document.querySelector('.mobile-actions');
+            if (existingMobileActions) existingMobileActions.remove();
 
-        // Create Mobile Actions Container
-        const mobileActions = document.createElement('div');
-        mobileActions.className = 'mobile-actions';
+            // Create Mobile Actions Container
+            const mobileActions = document.createElement('div');
+            mobileActions.className = 'mobile-actions';
 
-        // A. Search Bar (Compact with Suggestions)
-        const searchContainer = document.createElement('div');
-        searchContainer.className = 'mobile-search-wrapper';
-        searchContainer.innerHTML = `
+            // A. Search Bar (Compact with Suggestions)
+            const searchContainer = document.createElement('div');
+            searchContainer.className = 'mobile-search-wrapper';
+            searchContainer.innerHTML = `
                 <input type="text" id="mobileSearchInput" placeholder="Search..." autocomplete="off">
                 <button class="mobile-search-btn"><i class="fas fa-search"></i></button>
                 <div class="mobile-suggestions-dropdown" style="display:none;"></div>
             `;
 
-        const mInput = searchContainer.querySelector('input');
-        const mBtn = searchContainer.querySelector('button');
-        const suggestionsBox = searchContainer.querySelector('.mobile-suggestions-dropdown');
+            const mInput = searchContainer.querySelector('input');
+            const mBtn = searchContainer.querySelector('button');
+            const suggestionsBox = searchContainer.querySelector('.mobile-suggestions-dropdown');
 
-        // Search Submit
-        const performSearch = () => {
-            if (mInput.value.trim()) {
-                window.location.href = `search.html?q=${encodeURIComponent(mInput.value.trim())}`;
+            // Search Submit
+            const performSearch = () => {
+                if (mInput.value.trim()) {
+                    window.location.href = `search.html?q=${encodeURIComponent(mInput.value.trim())}`;
+                } else {
+                    mInput.focus();
+                }
+            };
+
+            mBtn.addEventListener('click', performSearch);
+            mInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') performSearch();
+            });
+
+            // Live Suggestions Logic
+            let debounceTimer;
+            mInput.addEventListener('input', () => {
+                clearTimeout(debounceTimer);
+                const query = mInput.value.trim();
+
+                if (query.length < 2) {
+                    suggestionsBox.style.display = 'none';
+                    return;
+                }
+
+                debounceTimer = setTimeout(async () => {
+                    const results = await fetchSuggestions(query);
+                    renderSuggestions(results, suggestionsBox);
+                }, 300);
+            });
+
+            // Close suggestions on click outside
+            document.addEventListener('click', (e) => {
+                if (!searchContainer.contains(e.target)) {
+                    suggestionsBox.style.display = 'none';
+                }
+            });
+
+            // B. Theme Toggle (Fixed Class Logic)
+            const themeBtn = document.createElement('button');
+            themeBtn.className = 'mobile-icon-btn';
+
+            // Sync Initial State
+            const html = document.documentElement;
+            const currentTheme = localStorage.getItem('theme') || 'dark';
+
+            // Apply correctly on load
+            html.setAttribute('data-theme', currentTheme);
+            if (currentTheme === 'light') {
+                html.classList.add('theme-light');
+                html.classList.remove('theme-dark');
+                themeBtn.innerHTML = '<i class="fas fa-sun"></i>';
             } else {
-                mInput.focus();
-            }
-        };
-
-        mBtn.addEventListener('click', performSearch);
-        mInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') performSearch();
-        });
-
-        // Live Suggestions Logic
-        let debounceTimer;
-        mInput.addEventListener('input', () => {
-            clearTimeout(debounceTimer);
-            const query = mInput.value.trim();
-
-            if (query.length < 2) {
-                suggestionsBox.style.display = 'none';
-                return;
+                html.classList.add('theme-dark');
+                html.classList.remove('theme-light');
+                themeBtn.innerHTML = '<i class="fas fa-moon"></i>';
             }
 
-            debounceTimer = setTimeout(async () => {
-                const results = await fetchSuggestions(query);
-                renderSuggestions(results, suggestionsBox);
-            }, 300);
-        });
+            themeBtn.addEventListener('click', () => {
+                const oldTheme = html.getAttribute('data-theme') || 'dark';
+                const newTheme = oldTheme === 'light' ? 'dark' : 'light';
 
-        // Close suggestions on click outside
-        document.addEventListener('click', (e) => {
-            if (!searchContainer.contains(e.target)) {
-                suggestionsBox.style.display = 'none';
-            }
-        });
+                // Set Attribute
+                html.setAttribute('data-theme', newTheme);
 
-        // B. Theme Toggle (Fixed Class Logic)
-        const themeBtn = document.createElement('button');
-        themeBtn.className = 'mobile-icon-btn';
+                // Set Class (Critical for themes.css)
+                html.classList.remove(`theme-${oldTheme}`);
+                html.classList.add(`theme-${newTheme}`);
 
-        // Sync Initial State
-        const html = document.documentElement;
-        const currentTheme = localStorage.getItem('theme') || 'dark';
+                // Save
+                localStorage.setItem('theme', newTheme);
 
-        // Apply correctly on load
-        html.setAttribute('data-theme', currentTheme);
-        if (currentTheme === 'light') {
-            html.classList.add('theme-light');
-            html.classList.remove('theme-dark');
-            themeBtn.innerHTML = '<i class="fas fa-sun"></i>';
-        } else {
-            html.classList.add('theme-dark');
-            html.classList.remove('theme-light');
-            themeBtn.innerHTML = '<i class="fas fa-moon"></i>';
+                // Update Icon
+                themeBtn.innerHTML = newTheme === 'light' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+            });
+
+            // C. Profile Button
+            const profileBtn = document.createElement('a');
+            profileBtn.href = 'profile.html';
+            profileBtn.className = 'mobile-profile-btn'; // Changed class to match styles
+            profileBtn.innerHTML = '<i class="fas fa-user-circle"></i>';
+
+            // Append All
+            mobileActions.appendChild(searchContainer);
+            mobileActions.appendChild(themeBtn);
+            mobileActions.appendChild(profileBtn);
+
+            navContent.style.justifyContent = 'space-between';
+            navContent.appendChild(mobileActions);
         }
-
-        themeBtn.addEventListener('click', () => {
-            const oldTheme = html.getAttribute('data-theme') || 'dark';
-            const newTheme = oldTheme === 'light' ? 'dark' : 'light';
-
-            // Set Attribute
-            html.setAttribute('data-theme', newTheme);
-
-            // Set Class (Critical for themes.css)
-            html.classList.remove(`theme-${oldTheme}`);
-            html.classList.add(`theme-${newTheme}`);
-
-            // Save
-            localStorage.setItem('theme', newTheme);
-
-            // Update Icon
-            themeBtn.innerHTML = newTheme === 'light' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
-        });
-
-        // C. Profile Button
-        const profileBtn = document.createElement('a');
-        profileBtn.href = 'profile.html';
-        profileBtn.className = 'mobile-profile-btn'; // Changed class to match styles
-        profileBtn.innerHTML = '<i class="fas fa-user-circle"></i>';
-
-        // Append All
-        mobileActions.appendChild(searchContainer);
-        mobileActions.appendChild(themeBtn);
-        mobileActions.appendChild(profileBtn);
-
-        navContent.style.justifyContent = 'space-between';
-        navContent.appendChild(mobileActions);
     }
 });
 

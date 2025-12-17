@@ -441,9 +441,34 @@ window.watchHeroMovie = function () {
     }
 };
 
+// Trending Filter
+window.filterTrending = async function (type) {
+    // 1. Update UI Buttons
+    const buttons = document.querySelectorAll('.filter-chip');
+    buttons.forEach(btn => {
+        // Simple text matching or check onclick attribute
+        if (btn.onclick.toString().includes(`'${type}'`)) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+
+    // 2. Fetch Content
+    const scroller = document.getElementById('trendingScroller');
+    if (scroller) scroller.innerHTML = '<div class="media-card skeleton"></div>'.repeat(5); // Show skeleton
+
+    const endpoint = type === 'all' ? '/trending/all/week' : `/trending/${type}/week`;
+    const data = await fetchTMDB(endpoint);
+
+    // 3. Render
+    // If 'all', we might have mixed types. 'movie' and 'tv' are explicit.
+    if (data) renderCards(data.results, 'trendingScroller', type === 'tv' ? 'tv' : 'movie');
+}
+
 async function loadTrending() {
-    const data = await fetchTMDB('/trending/movie/week');
-    if (data) renderCards(data.results, 'trendingScroller', 'movie');
+    // Default to 'all' on load
+    await window.filterTrending('all');
 }
 
 async function loadPopular() {
