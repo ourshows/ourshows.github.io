@@ -138,16 +138,30 @@
             }
 
             .visual-pane {
-                display: none;
-                /* Keep hidden on mobile to save data/battery */
+                display: flex;
+                position: fixed;
+                /* Fix to viewport so it doesn't scroll away */
+                inset: 0;
+                z-index: 0;
+                opacity: 1;
+                /* Full opacity, let the overlay handle dimming */
+                pointer-events: none;
+            }
+
+            /* Brighter posters on mobile since they are behind glass */
+            .visual-pane .track-poster {
+                filter: brightness(1.1) !important;
             }
 
             .login-pane {
                 width: 100%;
-                /* Premium animated gradient for mobile */
-                background: linear-gradient(-45deg, #0f0c29, #302b63, #24243e, #1a1a2e);
-                background-size: 400% 400%;
-                animation: gradientBG 15s ease infinite;
+                /* More transparent overlay */
+                background: rgba(15, 12, 41, 0.75);
+                backdrop-filter: blur(10px);
+                z-index: 10;
+
+                margin: 0;
+                min-height: 100vh;
                 padding: 2rem;
                 align-items: center;
                 /* Center horizontally */
@@ -155,19 +169,7 @@
                 /* Center vertically */
             }
 
-            @keyframes gradientBG {
-                0% {
-                    background-position: 0% 50%;
-                }
 
-                50% {
-                    background-position: 100% 50%;
-                }
-
-                100% {
-                    background-position: 0% 50%;
-                }
-            }
 
             .login-box {
                 padding: 2rem;
