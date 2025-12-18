@@ -15,30 +15,27 @@
             left: 0;
             width: 100%;
             height: 100vh;
-            background: #0f172a;
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
             z-index: 99999;
             display: flex;
             justify-content: center;
             align-items: center;
             flex-direction: column;
             transition: opacity 0.5s ease-out, visibility 0.5s;
+            overflow: hidden;
         }
 
-        .loader-content {
-            text-align: center;
-        }
-
-        .loader-logo {
-            font-size: 3rem;
-            font-weight: 800;
-            background: linear-gradient(to right, #7c3aed, #a855f7);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            margin-bottom: 2rem;
-            opacity: 0;
-            transform: translateY(20px);
-            animation: fadeInUp 0.8s ease-out forwards;
+        #globalLoader::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 150vmax;
+            height: 150vmax;
+            background: radial-gradient(circle, rgba(124, 58, 237, 0.08) 0%, transparent 60%);
+            animation: pulseGradient 8s ease-in-out infinite;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
         }
 
         .loader-text-container {
@@ -46,6 +43,8 @@
             flex-direction: column;
             align-items: center;
             gap: 1.5rem;
+            position: relative;
+            z-index: 10;
         }
 
         .loader-brand {
@@ -58,11 +57,13 @@
             opacity: 0;
             animation: loaderFadeUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
             letter-spacing: -2px;
+            margin-bottom: 0.5rem;
         }
 
         .loader-tags {
             display: flex;
             gap: 2rem;
+            align-items: center;
         }
 
         .loader-tag {
@@ -89,16 +90,43 @@
                 filter: blur(0);
             }
         }
+
+        @keyframes pulseGradient {
+
+            0%,
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.5;
+            }
+
+            50% {
+                transform: translate(-50%, -50%) scale(1.1);
+                opacity: 0.8;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .loader-brand {
+                font-size: 3rem;
+                letter-spacing: -1px;
+            }
+
+            .loader-tags {
+                flex-direction: column;
+                gap: 0.8rem;
+            }
+
+            .loader-tag {
+                font-size: 1rem;
+                letter-spacing: 2px;
+            }
+        }
     </style>
     <script>
-        // Define loader immediately
         window.ourShowLoader = {
             show: function () {
                 const l = document.getElementById('globalLoader');
-                if (l) {
-                    l.style.opacity = '1';
-                    l.style.visibility = 'visible';
-                }
+                if (l) { l.style.opacity = '1'; l.style.visibility = 'visible'; }
             },
             hide: function () {
                 const l = document.getElementById('globalLoader');
@@ -108,53 +136,170 @@
                 }
             }
         };
+        setTimeout(() => {
+            const l = document.getElementById('globalLoader');
+            if (l && getComputedStyle(l).visibility !== 'hidden' && getComputedStyle(l).opacity !== '0') {
+                console.warn("Loader safety timeout");
+                window.ourShowLoader.hide();
+            }
+        }, 8000);
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         .profile-container {
-            max-width: 800px;
+            max-width: 1200px;
             margin: 6rem auto 2rem;
-            padding: 2rem;
+            padding: 0 1.5rem;
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 2rem;
         }
 
-        .profile-header {
+        /* Sidebar */
+        .profile-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .sidebar-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 2rem;
             text-align: center;
-            margin-bottom: 3rem;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
         }
 
         .profile-avatar {
-            width: 120px;
-            height: 120px;
+            width: 140px;
+            height: 140px;
             border-radius: 50%;
             border: 4px solid var(--primary-color);
             margin-bottom: 1rem;
+            box-shadow: 0 0 20px rgba(124, 58, 237, 0.3);
+            object-fit: cover;
         }
 
         .profile-name {
-            font-size: 2rem;
+            font-size: 1.8rem;
             font-weight: 700;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .profile-level-badge {
+            background: linear-gradient(135deg, #ffd700, #ffa500);
+            color: #000;
+            font-weight: 800;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+            display: inline-block;
+            box-shadow: 0 2px 10px rgba(255, 215, 0, 0.3);
+        }
+
+        /* Level Progress */
+        .level-progress-container {
+            margin-top: 1.5rem;
+            text-align: left;
+        }
+
+        .level-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
             margin-bottom: 0.5rem;
         }
 
-        .profile-email {
+        .progress-bar-bg {
+            background: rgba(255, 255, 255, 0.1);
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+            width: 0%;
+            transition: width 1s ease-out;
+            box-shadow: 0 0 10px rgba(124, 58, 237, 0.5);
+        }
+
+        /* Dashboard Content */
+        .dashboard-content {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .stat-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: transform 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            background: rgba(124, 58, 237, 0.2);
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .stat-info h3 {
+            font-size: 0.9rem;
             color: var(--text-secondary);
-            font-size: 1.1rem;
+            font-weight: 500;
         }
 
-        .profile-section {
-            margin-bottom: 2rem;
+        .stat-info p {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-primary);
         }
 
-        .profile-section h2 {
+        /* Recent Activity */
+        .activity-section h2,
+        .badges-section h2 {
             font-size: 1.5rem;
             margin-bottom: 1rem;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.8rem;
         }
 
-        .profile-section h2::before {
+        .activity-section h2::before,
+        .badges-section h2::before {
             content: '';
             width: 4px;
             height: 24px;
@@ -162,32 +307,119 @@
             border-radius: 2px;
         }
 
-        .profile-info {
+        .activity-list {
+            display: flex;
+            gap: 1rem;
+            overflow-x: auto;
+            padding-bottom: 1rem;
+            scrollbar-width: thin;
+        }
+
+        .activity-card {
+            min-width: 140px;
+            width: 140px;
+            background: var(--glass-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--glass-border);
+            transition: transform 0.3s;
+            position: relative;
+        }
+
+        .activity-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .activity-poster {
+            width: 100%;
+            aspect-ratio: 2/3;
+            object-fit: cover;
+        }
+
+        .activity-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
+            padding: 0.5rem;
+        }
+
+        .activity-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: white;
+        }
+
+        /* Shared Styles */
+        .glass-panel {
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            padding: 1.5rem;
         }
 
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 1rem 0;
-            border-bottom: 1px solid var(--glass-border);
+        .glass-input {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            color: var(--text-primary);
+            width: 100%;
+            outline: none;
+            transition: border-color 0.3s;
         }
 
-        .info-row:last-child {
-            border-bottom: none;
+        .glass-input:focus {
+            border-color: var(--primary-color);
         }
 
-        .info-label {
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-
-        .info-value {
+        .glass-button {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--glass-border);
+            padding: 0.75rem 1.5rem;
+            border-radius: 99px;
             color: var(--text-primary);
             font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .glass-button.primary {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .modal {
+            position: fixed;
+            z-index: 10000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            margin: 10% auto;
+            padding: 2rem;
+            width: 90%;
+            max-width: 500px;
+            border-radius: 16px;
+            position: relative;
+        }
+
+        .close-modal {
+            position: absolute;
+            right: 1.5rem;
+            top: 1rem;
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
         }
 
         .action-buttons {
@@ -211,6 +443,22 @@
         .logout-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
+        }
+
+        /* Media Queries */
+        @media (max-width: 900px) {
+            .profile-container {
+                grid-template-columns: 1fr;
+            }
+
+            .profile-sidebar {
+                align-items: center;
+            }
+
+            .sidebar-card {
+                width: 100%;
+                max-width: 500px;
+            }
         }
     </style>
 </head>
@@ -255,74 +503,114 @@
         </div>
     </nav>
 
-    <!-- Profile Content -->
+    <!-- Dynamic Profile Content -->
     <div class="profile-container">
-        <div class="glass-panel profile-header">
-            <img id="profileAvatar" src="" alt="Profile" class="profile-avatar">
-            <h1 class="profile-name">
-                <span id="profileName">Loading...</span>
-                <i class="fas fa-edit" onclick="openEditProfile()"
-                    style="font-size: 1.2rem; cursor: pointer; color: var(--text-secondary); margin-left: 0.5rem;"
-                    title="Edit Name"></i>
-            </h1>
-            <p class="profile-email" id="profileEmail">Loading...</p>
-        </div>
 
-        <!-- Achievements Section -->
-        <div class="profile-section">
-            <h2><i class="fas fa-trophy" style="color: #ffd700;"></i> Achievements</h2>
-            <div id="profileBadges" class="glass-panel profile-info"
-                style="display: flex; gap: 1rem; overflow-x: auto; padding: 10px;">
-                <div style="text-align: center; width: 100%; color: var(--text-secondary);">Watch movies to unlock
-                    badges!</div>
-            </div>
-        </div>
+        <!-- Left Sidebar: Identity & Level -->
+        <aside class="profile-sidebar">
+            <div class="sidebar-card">
+                <img id="profileAvatar" src="" alt="Profile" class="profile-avatar">
+                <div class="profile-level-badge" id="levelBadge">Level 1</div>
+                <h1 class="profile-name">
+                    <span id="profileName">Loading...</span>
+                    <i class="fas fa-edit" onclick="openEditProfile()"
+                        style="font-size: 1rem; cursor: pointer; color: var(--text-secondary); opacity: 0.7; transition: 0.3s;"
+                        onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7"></i>
+                </h1>
+                <p style="color: var(--text-secondary); font-size: 0.9rem;" id="levelTitle">Newbie Watcher</p>
 
-        <div class="profile-section">
-            <h2>Account Information</h2>
-            <div class="glass-panel profile-info">
-                <div class="info-row">
-                    <span class="info-label">Email</span>
-                    <span class="info-value" id="infoEmail">-</span>
+                <div class="level-progress-container">
+                    <div class="level-info">
+                        <span>XP Progress</span>
+                        <span id="xpText">0 / 100</span>
+                    </div>
+                    <div class="progress-bar-bg">
+                        <div class="progress-bar-fill" id="xpBar"></div>
+                    </div>
+                    <p
+                        style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.5rem; text-align: center;">
+                        Watch more to level up!
+                    </p>
                 </div>
-                <div class="info-row">
-                    <span class="info-label">User ID</span>
-                    <span class="info-value" id="infoUserId">-</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Account Status</span>
-                    <span class="info-value" style="color: #2ecc71;">Active</span>
+
+                <div class="action-buttons" style="justify-content: center; margin-top: 1.5rem;">
+                    <button class="logout-btn" onclick="logout()"
+                        style="width: 100%; background: rgba(231, 76, 60, 0.1); border: 1px solid #e74c3c; color: #e74c3c;">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
                 </div>
             </div>
-        </div>
 
-        <div class="profile-section">
-            <h2>Quick Stats</h2>
-            <div class="glass-panel profile-info">
-                <div class="info-row">
-                    <span class="info-label">Movies Watched</span>
-                    <span class="info-value" id="statMovies">0</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Series Watched</span>
-                    <span class="info-value" id="statSeries">0</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Total Hours</span>
-                    <span class="info-value" id="statHours">0</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Current Streak</span>
-                    <span class="info-value" id="statStreak">0 Days</span>
+            <div class="sidebar-card" style="text-align: left; padding: 1.5rem;">
+                <h3 style="margin-bottom: 1rem; font-size: 1rem; color: var(--text-secondary);">Account Details</h3>
+                <div style="font-size: 0.9rem; display: flex; flex-direction: column; gap: 0.8rem;">
+                    <div>
+                        <span style="color: var(--text-secondary); display: block; font-size: 0.75rem;">EMAIL</span>
+                        <span id="infoEmail" style="color: var(--text-primary);">user@example.com</span>
+                    </div>
+                    <div>
+                        <span style="color: var(--text-secondary); display: block; font-size: 0.75rem;">USER ID</span>
+                        <span id="infoUserId" style="color: var(--text-secondary); font-family: monospace;">-</span>
+                    </div>
+                    <div>
+                        <span style="color: var(--text-secondary); display: block; font-size: 0.75rem;">STATUS</span>
+                        <span style="color: #2ecc71; font-weight: 600;">Active Member</span>
+                    </div>
                 </div>
             </div>
-        </div>
+        </aside>
 
-        <div class="action-buttons">
-            <button class="logout-btn" onclick="logout()">
-                <i class="fas fa-sign-out-alt"></i> Logout
-            </button>
-        </div>
+        <!-- Main Content: Stats & Activity -->
+        <main class="dashboard-content">
+
+            <!-- Quick Stats Grid -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                    <div class="stat-info">
+                        <h3>Total Hours</h3>
+                        <p id="statHours">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: rgba(59, 130, 246, 0.2); color: #3b82f6;"><i
+                            class="fas fa-film"></i></div>
+                    <div class="stat-info">
+                        <h3>Movies</h3>
+                        <p id="statMovies">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: rgba(16, 185, 129, 0.2); color: #10b981;"><i
+                            class="fas fa-tv"></i></div>
+                    <div class="stat-info">
+                        <h3>Series</h3>
+                        <p id="statSeries">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: rgba(249, 115, 22, 0.2); color: #f97316;"><i
+                            class="fas fa-fire"></i></div>
+                    <div class="stat-info">
+                        <h3>Day Streak</h3>
+                        <p id="statStreak">0</p>
+                    </div>
+                </div>
+            </div>
+
+
+
+            <!-- Badges -->
+            <section class="badges-section">
+                <h2><i class="fas fa-trophy" style="color: #ffd700;"></i> Achievements</h2>
+                <div id="profileBadges" class="glass-panel"
+                    style="padding: 1.5rem; display: flex; gap: 1rem; flex-wrap: wrap;">
+                    <div style="text-align: center; width: 100%; color: var(--text-secondary);">Watch movies to unlock
+                        badges!</div>
+                </div>
+            </section>
+
+        </main>
     </div>
 
     <!-- Edit Profile Modal -->
@@ -355,12 +643,8 @@
         };
         window.closeEditProfile = () => document.getElementById('editProfileModal').style.display = 'none';
 
-        // setAvatarPreset removed
-
         window.saveProfile = async () => {
             const name = document.getElementById('editDisplayName').value;
-            // Removed photo edit logic as requested
-
             console.log("Attempting to save profile name:", { name, currentUser: auth.currentUser });
 
             if (!auth.currentUser) {
@@ -370,7 +654,6 @@
             }
 
             try {
-                // Determine photoURL (keep existing)
                 const currentPhoto = auth.currentUser.photoURL;
                 await updateUserProfile(name, currentPhoto);
                 alert('Profile Updated Successfully!');
@@ -393,12 +676,14 @@
             // Load Real Stats
             const stats = await fetchUserStats(user.uid);
             if (stats) updateStatsUI(stats);
+
+            // Hide loader
+            if (window.ourShowLoader) window.ourShowLoader.hide();
         });
 
         function loadProfile(user) {
             document.getElementById('profileAvatar').src = user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName || 'User'}&background=7c3aed&color=fff`;
             document.getElementById('profileName').textContent = user.displayName || 'User';
-            document.getElementById('profileEmail').textContent = user.email || 'No email';
             document.getElementById('infoEmail').textContent = user.email || 'No email';
             document.getElementById('infoUserId').textContent = user.uid || 'N/A';
         }
@@ -409,9 +694,57 @@
             document.getElementById('statHours').textContent = stats.totalHours + 'h';
             document.getElementById('statStreak').textContent = stats.streak + ' Days';
 
+            // Leveling
+            if (stats.level) {
+                document.getElementById('levelBadge').textContent = 'Level ' + stats.level.currentLevel;
+                document.getElementById('levelTitle').textContent = stats.level.title;
+                document.getElementById('xpText').textContent = `${stats.level.currentXP} / ${stats.level.nextLevelXP} Hours`;
+                document.getElementById('xpBar').style.width = stats.level.progress + '%';
+            }
+
+
+
+            // Favorite Genres
+            if (stats.favoriteGenres && stats.favoriteGenres.length > 0) {
+                // We need to inject this section if it doesn't exist, or we can add it to HTML first.
+                // Let's create a container dynamically if missing or append to stats-grid. 
+                // For now, let's append a new section after stats-grid in the dashboard-content.
+
+                let genreSection = document.getElementById('genreSection');
+                if (!genreSection) {
+                    genreSection = document.createElement('section');
+                    genreSection.id = 'genreSection';
+                    genreSection.className = 'activity-section';
+                    genreSection.style.marginTop = '2rem';
+                    genreSection.innerHTML = `<h2><i class="fas fa-heart" style="color: #e74c3c;"></i> Top Genres</h2><div class="stats-grid" id="genreList"></div>`;
+
+                    // Insert after stats grid
+                    const statsGrid = document.querySelector('.stats-grid');
+                    statsGrid.parentNode.insertBefore(genreSection, statsGrid.nextSibling);
+                }
+
+                const genreList = document.getElementById('genreList');
+                genreList.innerHTML = '';
+                stats.favoriteGenres.forEach(g => {
+                    const card = document.createElement('div');
+                    card.className = 'stat-card';
+                    card.innerHTML = `
+                        <div class="stat-icon" style="background: rgba(236, 72, 153, 0.2); color: #ec4899;">
+                            <i class="fas fa-tag"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>${g.name}</h3>
+                            <p>${g.count}</p>
+                        </div>
+                    `;
+                    genreList.appendChild(card);
+                });
+            }
+
             // Badges
             const badges = getUnlockedBadges(stats);
             const badgeContainer = document.getElementById('profileBadges');
+
             if (badges.length > 0) {
                 badgeContainer.innerHTML = '';
                 badges.forEach(b => {
@@ -423,7 +756,7 @@
                             <i class="fas ${b.icon}" style="color: #ffd700; font-size: 1.5rem;"></i>
                         </div>
                         <span style="font-size: 0.8rem; color: var(--text-secondary);">${b.name}</span>
-                     `;
+                    `;
                     badgeContainer.appendChild(div);
                 });
             } else {
@@ -431,7 +764,6 @@
             }
         }
     </script>
-
     <script src="public/mobile-nav.js"></script>
 </body>
 

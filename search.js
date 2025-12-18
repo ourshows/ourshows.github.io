@@ -310,10 +310,58 @@ async function openMovieModal(id, type = 'movie') {
     const badge = document.createElement('span');
     badge.className = `verdict-badge ${verdict.class}`;
     badge.textContent = verdict.text;
+    badge.style.marginLeft = '0.5rem';
+    badge.style.fontSize = '0.8rem';
+    badge.style.padding = '2px 6px';
+    badge.style.borderRadius = '4px';
     ratingEl.parentNode.appendChild(badge);
 
-    // Render Gauge
+    // Render Verdict Meter
     renderVerdictMeter(details, verdict);
+
+    // Reset Buttons
+    const watchLaterBtn = document.getElementById('modalWatchLaterBtn');
+    const watchedBtn = document.getElementById('modalWatchedBtn');
+
+    if (watchLaterBtn) {
+        watchLaterBtn.style.background = 'rgba(255, 255, 255, 0.1)';
+        watchLaterBtn.style.color = 'white';
+        watchLaterBtn.innerHTML = '<i class="fas fa-plus"></i> My List';
+        watchLaterBtn.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+    }
+    if (watchedBtn) {
+        watchedBtn.style.background = 'rgba(255, 255, 255, 0.1)';
+        watchedBtn.style.color = 'white';
+        watchedBtn.innerHTML = '<i class="fas fa-check"></i> Mark Watched';
+        watchedBtn.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+    }
+
+    // Check Persistent State
+    if (currentUser) {
+        try {
+            const watchedDoc = await getDoc(doc(db, 'users', currentUser.uid, 'watched', String(id)));
+            if (watchedDoc.exists()) {
+                if (watchedBtn) {
+                    watchedBtn.style.background = '#22c55e';
+                    watchedBtn.style.color = '#fff';
+                    watchedBtn.innerHTML = '<i class="fas fa-check"></i> Watched';
+                    watchedBtn.style.borderColor = '#22c55e';
+                }
+            }
+
+            const watchlistDoc = await getDoc(doc(db, 'users', currentUser.uid, 'watchlist', String(id)));
+            if (watchlistDoc.exists()) {
+                if (watchLaterBtn) {
+                    watchLaterBtn.style.background = '#eab308';
+                    watchLaterBtn.style.color = '#000';
+                    watchLaterBtn.innerHTML = '<i class="fas fa-check"></i> Added';
+                    watchLaterBtn.style.borderColor = '#eab308';
+                }
+            }
+        } catch (e) {
+            console.error("Error checking item state:", e);
+        }
+    }
 
     // Switch to Overview tab by default
     switchTab('overview');
@@ -415,19 +463,40 @@ async function markAsWatched() {
         window.location.href = 'login.html';
         return;
     }
+    const btn = document.getElementById('modalWatchedBtn');
     try {
-        await setDoc(doc(db, 'users', currentUser.uid, 'watched', String(currentMovieId)), {
-            movieId: currentMovieId,
-            movieTitle: currentMovieData.title || currentMovieData.name,
-            posterPath: currentMovieData.poster_path,
-            rating: currentMovieData.vote_average,
-            mediaType: currentMovieData.media_type || 'movie',
-            timestamp: serverTimestamp()
-        });
-        alert('Added to watched list!');
+        const docRef = doc(db, 'users', currentUser.uid, 'watched', String(currentMovieId));
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            // UNDO
+            await deleteDoc(docRef);
+            if (btn) {
+                btn.style.background = 'rgba(255, 255, 255, 0.1)';
+                btn.style.color = 'white';
+                btn.innerHTML = '<i class="fas fa-check"></i> Mark Watched';
+                btn.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+            }
+        } else {
+            // DO
+            await setDoc(docRef, {
+                movieId: currentMovieId,
+                movieTitle: currentMovieData.title || currentMovieData.name,
+                posterPath: currentMovieData.poster_path,
+                rating: currentMovieData.vote_average,
+                mediaType: currentMovieData.media_type || 'movie',
+                genres: currentMovieData.genres || [],
+                timestamp: serverTimestamp()
+            });
+            if (btn) {
+                btn.style.background = '#22c55e'; // Green
+                btn.style.color = '#fff';
+                btn.innerHTML = '<i class="fas fa-check"></i> Watched';
+                btn.style.borderColor = '#22c55e';
+            }
+        }
     } catch (error) {
-        console.error('Error marking as watched:', error);
-        alert('Failed to add to watched list.');
+        console.error('Error toggling watched status:', error);
     }
 }
 
@@ -437,19 +506,40 @@ async function addToWatchLater() {
         window.location.href = 'login.html';
         return;
     }
+    const btn = document.getElementById('modalWatchLaterBtn');
     try {
-        await setDoc(doc(db, 'users', currentUser.uid, 'watchlist', String(currentMovieId)), {
-            movieId: currentMovieId,
-            movieTitle: currentMovieData.title || currentMovieData.name,
-            posterPath: currentMovieData.poster_path,
-            rating: currentMovieData.vote_average,
-            mediaType: currentMovieData.media_type || 'movie',
-            timestamp: serverTimestamp()
-        });
-        alert('Added to watch later!');
+        const docRef = doc(db, 'users', currentUser.uid, 'watchlist', String(currentMovieId));
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            // UNDO
+            await deleteDoc(docRef);
+            if (btn) {
+                btn.style.background = 'rgba(255, 255, 255, 0.1)';
+                btn.style.color = 'white';
+                btn.innerHTML = '<i class="fas fa-plus"></i> My List';
+                btn.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+            }
+        } else {
+            // DO
+            await setDoc(docRef, {
+                movieId: currentMovieId,
+                movieTitle: currentMovieData.title || currentMovieData.name,
+                posterPath: currentMovieData.poster_path,
+                rating: currentMovieData.vote_average,
+                mediaType: currentMovieData.media_type || 'movie',
+                genres: currentMovieData.genres || [],
+                timestamp: serverTimestamp()
+            });
+            if (btn) {
+                btn.style.background = '#eab308'; // Yellow
+                btn.style.color = '#000';
+                btn.innerHTML = '<i class="fas fa-check"></i> Added';
+                btn.style.borderColor = '#eab308';
+            }
+        }
     } catch (error) {
-        console.error('Error adding to watch later:', error);
-        alert('Failed to add to watch later.');
+        console.error('Error toggling watch later status:', error);
     }
 }
 

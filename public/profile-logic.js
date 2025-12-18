@@ -36,18 +36,91 @@ export function calculateStatsFromItems(items) {
         }
     });
 
+    // Recent Activity (Top 5)
+    // Sort by timestamp descending
+    const sortedByDate = [...items]
+        .filter(m => m.timestamp)
+        .sort((a, b) => b.timestamp.seconds - a.timestamp.seconds)
+        .slice(0, 5);
+
     const totalHours = Math.floor(totalMinutes / 60);
 
     // Streaks (simplified)
     const streak = calculateStreak(items);
+
+    // Level Calculation
+    const levelData = calculateLevel(totalHours);
+
+    // Favorite Genres Calculation
+    const genreCounts = {};
+    items.forEach(item => {
+        if (item.genres && Array.isArray(item.genres)) {
+            item.genres.forEach(g => {
+                const name = typeof g === 'string' ? g : g.name; // Handle potential object/string difference
+                if (name) genreCounts[name] = (genreCounts[name] || 0) + 1;
+            });
+        }
+    });
+
+    const sortedGenres = Object.entries(genreCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3) // Top 3
+        .map(([name, count]) => ({ name, count }));
 
     return {
         totalMovies,
         totalSeries,
         totalHours,
         streak,
-        itemsCount: items.length
+        itemsCount: items.length,
+        recentActivity: sortedByDate,
+        level: levelData,
+        favoriteGenres: sortedGenres
     };
+}
+
+export function calculateLevel(totalHours) {
+    // Level 1: 0-5 hrs
+    // Level 2: 5-15 hrs
+    // Level 3: 15-30 hrs
+    // Simple formula: Level = floor(sqrt(hours)) + 1 (roughly)
+    // Let's use a custom threshold array for better control
+    const thresholds = [0, 5, 15, 30, 50, 80, 120, 170, 230, 300, 400, 550, 750, 1000];
+
+    let level = 1;
+    let nextLevelXP = 5;
+    let currentLevelXP = 0;
+
+    for (let i = 0; i < thresholds.length; i++) {
+        if (totalHours >= thresholds[i]) {
+            level = i + 1;
+            currentLevelXP = thresholds[i];
+            nextLevelXP = thresholds[i + 1] || (thresholds[i] + 100); // Fallback for high levels
+        } else {
+            break;
+        }
+    }
+
+    const xpInLevel = totalHours - currentLevelXP;
+    const levelSpan = nextLevelXP - currentLevelXP;
+    const progress = Math.min(100, Math.floor((xpInLevel / levelSpan) * 100));
+
+    return {
+        currentLevel: level,
+        progress: progress,
+        currentXP: totalHours,
+        nextLevelXP: nextLevelXP,
+        title: getLevelTitle(level)
+    };
+}
+
+function getLevelTitle(level) {
+    if (level >= 10) return "Cinema Legend";
+    if (level >= 8) return "Film Virtuoso";
+    if (level >= 6) return "Movie Buff";
+    if (level >= 4) return "Binge Watcher";
+    if (level >= 2) return "Film Fanatic";
+    return "Newbie Watcher";
 }
 
 function calculateStreak(items) {

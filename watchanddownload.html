@@ -15,30 +15,27 @@
             left: 0;
             width: 100%;
             height: 100vh;
-            background: #0f172a;
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
             z-index: 99999;
             display: flex;
             justify-content: center;
             align-items: center;
             flex-direction: column;
             transition: opacity 0.5s ease-out, visibility 0.5s;
+            overflow: hidden;
         }
 
-        .loader-content {
-            text-align: center;
-        }
-
-        .loader-logo {
-            font-size: 3rem;
-            font-weight: 800;
-            background: linear-gradient(to right, #7c3aed, #a855f7);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            margin-bottom: 2rem;
-            opacity: 0;
-            transform: translateY(20px);
-            animation: fadeInUp 0.8s ease-out forwards;
+        #globalLoader::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 150vmax;
+            height: 150vmax;
+            background: radial-gradient(circle, rgba(124, 58, 237, 0.08) 0%, transparent 60%);
+            animation: pulseGradient 8s ease-in-out infinite;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
         }
 
         .loader-text-container {
@@ -46,6 +43,8 @@
             flex-direction: column;
             align-items: center;
             gap: 1.5rem;
+            position: relative;
+            z-index: 10;
         }
 
         .loader-brand {
@@ -58,11 +57,13 @@
             opacity: 0;
             animation: loaderFadeUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
             letter-spacing: -2px;
+            margin-bottom: 0.5rem;
         }
 
         .loader-tags {
             display: flex;
             gap: 2rem;
+            align-items: center;
         }
 
         .loader-tag {
@@ -89,16 +90,43 @@
                 filter: blur(0);
             }
         }
+
+        @keyframes pulseGradient {
+
+            0%,
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.5;
+            }
+
+            50% {
+                transform: translate(-50%, -50%) scale(1.1);
+                opacity: 0.8;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .loader-brand {
+                font-size: 3rem;
+                letter-spacing: -1px;
+            }
+
+            .loader-tags {
+                flex-direction: column;
+                gap: 0.8rem;
+            }
+
+            .loader-tag {
+                font-size: 1rem;
+                letter-spacing: 2px;
+            }
+        }
     </style>
     <script>
-        // Define loader immediately
         window.ourShowLoader = {
             show: function () {
                 const l = document.getElementById('globalLoader');
-                if (l) {
-                    l.style.opacity = '1';
-                    l.style.visibility = 'visible';
-                }
+                if (l) { l.style.opacity = '1'; l.style.visibility = 'visible'; }
             },
             hide: function () {
                 const l = document.getElementById('globalLoader');
@@ -108,6 +136,13 @@
                 }
             }
         };
+        setTimeout(() => {
+            const l = document.getElementById('globalLoader');
+            if (l && getComputedStyle(l).visibility !== 'hidden' && getComputedStyle(l).opacity !== '0') {
+                console.warn("Loader safety timeout");
+                window.ourShowLoader.hide();
+            }
+        }, 8000);
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
