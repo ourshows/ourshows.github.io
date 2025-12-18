@@ -46,7 +46,8 @@ async function fetchTMDB(endpoint, params = {}) {
 }
 
 // Init
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    if (window.ourShowLoader) window.ourShowLoader.show();
 
     // Auth Listener
     onAuthStateChanged(auth, (user) => {
@@ -72,7 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (queryDisplay && query) queryDisplay.textContent = query;
 
     if (query) {
-        performSearch(query);
+        await performSearch(query);
     } else {
         document.getElementById('loading').style.display = 'none';
 
@@ -83,6 +84,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('resultsCount').textContent = 'Please enter a search term.';
         }
     }
+
+    if (window.ourShowLoader) window.ourShowLoader.hide();
 
     // Handle Nav Search (redirects to search page)
     const navInput = document.getElementById('navSearchInput');
@@ -179,13 +182,15 @@ function renderResults(items) {
         const posterUrl = item.poster_path
             ? `${window.APP_CONFIG.TMDB_IMAGE_SMALL_URL}${item.poster_path}`
             : 'https://via.placeholder.com/200x300';
-        const rating = item.vote_average ? item.vote_average.toFixed(1) : 'N/A';
         const year = (item.release_date || item.first_air_date || '').split('-')[0];
+
+        // Calculate verdict for poster
+        const verdict = calculateVerdict(item);
 
         card.innerHTML = `
             <div class="media-poster-container">
                 <img class="media-poster" src="${posterUrl}" loading="lazy" alt="${title}">
-                <div class="card-rating-badge">★ ${rating}</div>
+                <div class="card-rating-badge" style="color: ${getVerdictColor(verdict.text)};">${verdict.text}</div>
                 <div class="card-overlay">
                     <button class="card-download-btn" onclick="event.stopPropagation(); window.location.href='watchanddownload.html?id=${item.id}&type=${item.media_type}'">
                         <i class="fas fa-play"></i> Watch
@@ -333,15 +338,15 @@ function calculateVerdict(details) {
     if (rating >= 5.0) {
         return { text: "One time watch", class: "verdict-once" };
     }
-    // "Pass": Low rating
-    return { text: "Pass", class: "verdict-pass" };
+    // "Skip": Low rating
+    return { text: "Skip", class: "verdict-skip" };
 }
 
 function getVerdictColor(text) {
     if (text === 'Perfection') return '#ffd700';
     if (text === 'Go for it') return '#22c55e';
     if (text === 'One time watch') return '#f59e0b';
-    return '#ef4444'; // Pass
+    return '#ef4444'; // Skip
 }
 
 function renderVerdictMeter(details, verdict) {
@@ -629,7 +634,7 @@ function getVerdictFromRating(rating) {
     if (rating >= 8.0) return { text: 'Perfection', class: 'verdict-perfection' };
     if (rating >= 6.8) return { text: 'Go for it', class: 'verdict-go' };
     if (rating >= 5.0) return { text: 'One time watch', class: 'verdict-once' };
-    return { text: 'Pass', class: 'verdict-pass' };
+    return { text: 'Skip', class: 'verdict-skip' };
 }
 
 async function loadReviews(tmdbReviews, movieId) {

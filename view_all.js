@@ -1,4 +1,4 @@
-import { auth, db, addDoc, setDoc, doc, serverTimestamp, collection, onAuthStateChanged } from './firebase-wrapper.js';
+import { auth, db, addDoc, setDoc, doc, serverTimestamp, collection, onAuthStateChanged, query, where, orderBy, getDocs } from './firebase-wrapper.js';
 
 let currentPage = 1;
 let currentCategory = '';
@@ -15,16 +15,20 @@ onAuthStateChanged(auth, user => {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Default Configuration Fallback (if config.js is missing or fails)
+    // Default Configuration Fallback
     if (!window.APP_CONFIG) {
-        console.warn("Config not found in view_all, using default configuration.");
-        window.APP_CONFIG = {
-            TMDB_IMAGE_BASE_URL: "https://image.tmdb.org/t/p/original",
-            TMDB_IMAGE_SMALL_URL: "https://image.tmdb.org/t/p/w500",
-            TMDB_BASE_URL: "https://api.themoviedb.org/3",
-            // API Key for TMDB (Client-side safe)
-            TMDB_API_KEY: "798ae7de540b25e908c68ea2ca408347"
-        };
+        // Try to recover config if possible or rely on public-config
+        if (window.PUBLIC_CONFIG) {
+            window.APP_CONFIG = window.PUBLIC_CONFIG;
+        } else {
+            console.warn("Config not found in view_all, using default configuration.");
+            window.APP_CONFIG = {
+                TMDB_IMAGE_BASE_URL: "https://image.tmdb.org/t/p/original",
+                TMDB_IMAGE_SMALL_URL: "https://image.tmdb.org/t/p/w500",
+                TMDB_BASE_URL: "https://api.themoviedb.org/3",
+                TMDB_API_KEY: "798ae7de540b25e908c68ea2ca408347"
+            };
+        }
     }
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -51,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (sentinel) observer.observe(sentinel);
 });
 
-// Expose functions to window for onclick handlers in HTML
+// Expose functions to window
 window.closeModal = closeModal;
 window.switchTab = switchTab;
 window.rateMovie = rateMovie;
@@ -60,7 +64,23 @@ window.markAsWatched = markAsWatched;
 window.addToWatchLater = addToWatchLater;
 window.watchNow = watchNow;
 window.askAI = askAI;
-window.openMovieModal = openMovieModal; // Ensure this is exposed
+window.openMovieModal = openMovieModal;
+window.toggleReview = toggleReview;
+
+// Toggle review read more/less
+function toggleReview(reviewId, fullContent, button) {
+    const reviewElement = document.getElementById(reviewId);
+    if (!reviewElement) return;
+
+    if (button.textContent === 'Read More') {
+        reviewElement.textContent = fullContent;
+        button.textContent = 'Read Less';
+    } else {
+        const truncated = fullContent.substring(0, 200) + '...';
+        reviewElement.textContent = truncated;
+        button.textContent = 'Read More';
+    }
+}
 
 function updateTitle(category) {
     const titles = {
@@ -71,7 +91,12 @@ function updateTitle(category) {
         'now_playing': 'Now in Theaters',
         'nepali': 'Nepali Hits 🇳🇵',
         'hindi': 'Bollywood & Hindi 🇮🇳',
-        // Add other categories...
+        'new_to_stream': 'New to Stream',
+        'highest_grossing': 'Highest Grossing',
+        'cult_classics': 'Cult Classics',
+        'underrated_gems': 'Underrated Gems',
+        'action_thrillers': 'Action & Thrillers',
+        'drama_romance': 'Drama & Romance'
     };
     document.getElementById('pageTitle').textContent = titles[category] || category.replace(/_/g, ' ').toUpperCase();
 }
@@ -87,6 +112,9 @@ async function loadContent(category, page) {
         let endpoint = '';
         let params = { page: page };
 
+        // Logic matched from main.js/custom_lists.js logic would be better, but we simplify here
+        // If it's a known non-standard list, we might need custom logic.
+        // For standard TMDB endpoints:
         switch (category) {
             case 'trending': endpoint = '/trending/movie/week'; break;
             case 'popular': endpoint = '/movie/popular'; break;
@@ -104,10 +132,27 @@ async function loadContent(category, page) {
                 params.sort_by = 'popularity.desc';
                 params.region = 'IN';
                 break;
-            default:
-                // Handle custom lists or generic discovery
+            // Add other cases like 'new_to_stream' etc. if we can dynamically build them
+            case 'new_to_stream':
                 endpoint = '/discover/movie';
+                const threeMonthsAgo = new Date();
+                threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+                params['primary_release_date.gte'] = threeMonthsAgo.toISOString().split('T')[0];
                 params.sort_by = 'popularity.desc';
+                break;
+            case 'highest_grossing':
+                endpoint = '/discover/movie';
+                params['primary_release_date.gte'] = '2020-01-01';
+                params.sort_by = 'revenue.desc';
+                break;
+            default:
+                // For custom lists (cult_classics etc), we can't easily pagination without the ID list.
+                // If it's a manual list, view_all fails unless we pass the list.
+                // Currently, we'll default to discovery if unknown.
+                if (!endpoint) {
+                    endpoint = '/discover/movie';
+                    params.sort_by = 'popularity.desc';
+                }
         }
 
         const data = await fetchTMDB(endpoint, params);
@@ -116,7 +161,7 @@ async function loadContent(category, page) {
             renderGrid(data.results);
             if (page >= data.total_pages) {
                 hasMore = false;
-                if (sentinel) sentinel.style.display = 'none'; // Hide if no more pages
+                if (sentinel) sentinel.style.display = 'none';
             }
         } else {
             hasMore = false;
@@ -124,19 +169,19 @@ async function loadContent(category, page) {
         }
     } catch (error) {
         console.error("Error loading content:", error);
-        // Optional: show error message to user
     } finally {
         isLoading = false;
-        if (sentinel && hasMore) sentinel.style.opacity = '0'; // Hide spinner when idle
+        if (sentinel && hasMore) sentinel.style.opacity = '0';
     }
 }
 
 async function fetchTMDB(endpoint, params = {}) {
-    // 1. Priority: Client-Side Direct Call (Public Config) - Matches main.js
-    if (window.PUBLIC_CONFIG && window.PUBLIC_CONFIG.TMDB_KEY) {
+    // 1. Priority: Client-Side Direct Call (Public/App Config)
+    if (window.PUBLIC_CONFIG && (window.PUBLIC_CONFIG.TMDB_KEY || window.PUBLIC_CONFIG.TMDB_API_KEY)) {
+        const apiKey = window.PUBLIC_CONFIG.TMDB_KEY || window.PUBLIC_CONFIG.TMDB_API_KEY;
         const baseUrl = window.PUBLIC_CONFIG.TMDB_BASE_URL || "https://api.themoviedb.org/3";
         const url = new URL(`${baseUrl}${endpoint}`);
-        url.searchParams.append('api_key', window.PUBLIC_CONFIG.TMDB_KEY);
+        url.searchParams.append('api_key', apiKey);
         url.searchParams.append('language', 'en-US');
         url.searchParams.append('include_adult', 'false');
         Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
@@ -151,9 +196,8 @@ async function fetchTMDB(endpoint, params = {}) {
         }
     }
 
-    // 2. Fallback: Dev/Local Direct Call (App Config)
+    // 2. Fallback: Dev/Local Direct Call
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-
     if (isLocal && window.APP_CONFIG && window.APP_CONFIG.TMDB_API_KEY) {
         const baseUrl = window.APP_CONFIG.TMDB_BASE_URL || "https://api.themoviedb.org/3";
         const url = new URL(`${baseUrl}${endpoint}`);
@@ -192,18 +236,20 @@ function renderGrid(items) {
         if (!item.poster_path) return;
 
         const card = document.createElement('div');
-        card.className = 'media-card'; // Uses global styles
+        card.className = 'media-card';
 
-        // Ensure card looks premium
+        // Calculate verdict for poster
+        const verdict = calculateVerdict(item);
+
         const title = item.title || item.name;
-        const rating = item.vote_average ? item.vote_average.toFixed(1) : 'N/A';
+        // const rating = item.vote_average ? item.vote_average.toFixed(1) : 'N/A'; // Replaced by Verdict
         const year = (item.release_date || item.first_air_date || '').split('-')[0];
         const mediaType = item.media_type || 'movie';
 
         card.innerHTML = `
             <div class="media-poster-container">
                 <img class="media-poster" src="${window.APP_CONFIG.TMDB_IMAGE_SMALL_URL}${item.poster_path}" loading="lazy" alt="${title}">
-                <div class="card-rating-badge">★ ${rating}</div>
+                <div class="card-rating-badge" style="color: ${getVerdictColor(verdict.text)};">${verdict.text}</div>
                  <div class="card-overlay">
                     <button class="card-download-btn" onclick="event.stopPropagation(); window.location.href='watchanddownload.html?id=${item.id}&type=${mediaType}'">
                         <i class="fas fa-play"></i> Watch
@@ -227,7 +273,7 @@ function renderGrid(items) {
     });
 }
 
-// --- Modal Logic (Duplicated from main.js) ---
+// --- Modal Logic ---
 
 async function openMovieModal(id, type = 'movie') {
     currentMovieId = id;
@@ -248,14 +294,20 @@ async function openMovieModal(id, type = 'movie') {
     document.getElementById('modalRating').textContent = details.vote_average ? details.vote_average.toFixed(1) : 'N/A';
     document.getElementById('modalYear').textContent = (details.release_date || details.first_air_date || '').split('-')[0];
     document.getElementById('modalRuntime').textContent = details.runtime ? `${details.runtime} min` : '';
-    document.getElementById('modalOverview').textContent = details.overview;
+    // Update Overview (Text version)
+    document.getElementById('modalOverviewText').textContent = details.overview;
 
     // Load sections
     loadTrailer(details.videos);
     loadGenres(details.genres);
     loadCast(details.credits);
-    loadReviews(details.reviews);
+    loadReviews(details.reviews, id);
     loadSimilar(details.similar);
+
+    // Initial Verdict Calculation
+    const verdict = calculateVerdict(details);
+    // Render Gauge (Text Only)
+    renderVerdictMeter(details, verdict);
 }
 
 function closeModal() {
@@ -274,11 +326,7 @@ function switchTab(tabName) {
     const buttons = document.querySelectorAll('.tab-btn');
     buttons.forEach(btn => {
         if (btn.textContent.toLowerCase().includes(tabName.toLowerCase()) ||
-            (tabName === 'overview' && btn.textContent === 'Overview') ||
-            (tabName === 'cast' && btn.textContent === 'Cast & Crew') ||
-            (tabName === 'reviews' && btn.textContent === 'Reviews') ||
-            (tabName === 'similar' && btn.textContent === 'Similar') ||
-            (tabName === 'ai' && btn.textContent === 'Ask AI')) {
+            btn.onclick.toString().includes(tabName)) {
             btn.classList.add('active');
         }
     });
@@ -332,24 +380,152 @@ function loadCast(credits) {
     `).join('');
 }
 
-function loadReviews(reviews) {
+// Verdict Logic
+function calculateVerdict(details) {
+    const rating = details.vote_average || 0;
+    const votes = details.vote_count || 0;
+    const popularity = details.popularity || 0;
+
+    if (rating >= 8.0 && (votes >= 500 || popularity >= 100)) {
+        return { text: "Perfection", class: "verdict-perfection" };
+    }
+    if (rating >= 6.8) {
+        return { text: "Go for it", class: "verdict-go" };
+    }
+    if (rating >= 5.0) {
+        return { text: "One time watch", class: "verdict-once" };
+    }
+    return { text: "Skip", class: "verdict-skip" };
+}
+
+function renderVerdictMeter(details, verdict) {
+    const containers = [
+        document.getElementById('pcVerdictMeter'),
+        document.getElementById('mobileVerdictMeter')
+    ];
+
+    const rating = details.vote_average || 0;
+
+    // Text-Only Verdict
+    const html = `
+        <div class="verdict-label" style="color: ${getVerdictColor(verdict.text)}">${verdict.text}</div>
+        <div class="verdict-subtext">${rating.toFixed(1)}/10 based on TMDB</div>
+    `;
+
+    containers.forEach(container => {
+        if (container) container.innerHTML = html;
+    });
+}
+
+function getVerdictColor(text) {
+    if (text === 'Perfection') return '#ffd700';
+    if (text === 'Go for it') return '#22c55e';
+    if (text === 'One time watch') return '#f59e0b';
+    return '#ef4444'; // Skip
+}
+
+function getVerdictFromRating(rating) {
+    const numRating = parseFloat(rating);
+    if (isNaN(numRating)) return { text: 'N/A', class: '' };
+    if (numRating >= 8.0) return { text: 'Perfection', class: 'verdict-perfection' };
+    if (numRating >= 6.8) return { text: 'Go for it', class: 'verdict-go' };
+    if (numRating >= 5.0) return { text: 'One time watch', class: 'verdict-once' };
+    return { text: 'Skip', class: 'verdict-skip' };
+}
+
+// Reviews
+async function loadReviews(tmdbReviews, movieId) {
     const reviewsContainer = document.getElementById('modalReviews');
-    if (!reviews || !reviews.results || reviews.results.length === 0) {
+    reviewsContainer.innerHTML = '<p style="text-align:center;">Loading reviews...</p>';
+
+    let firebaseReviews = [];
+    try {
+        if (movieId) {
+            const q = query(
+                collection(db, 'reviews'),
+                where('movieId', '==', String(movieId)),
+                orderBy('timestamp', 'desc')
+            );
+            const snapshot = await getDocs(q);
+            firebaseReviews = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+                source: 'ourshow'
+            }));
+        }
+    } catch (e) {
+        console.error("Error fetching firebase reviews:", e);
+    }
+
+    const tmdbResults = (tmdbReviews && tmdbReviews.results) ? tmdbReviews.results.map(r => ({
+        id: r.id,
+        author: r.author,
+        content: r.content,
+        rating: r.author_details.rating,
+        avatar_path: r.author_details.avatar_path,
+        source: 'tmdb',
+        timestamp: new Date(r.created_at || 0)
+    })) : [];
+
+    const combined = [...firebaseReviews, ...tmdbResults];
+
+    if (combined.length === 0) {
         reviewsContainer.innerHTML = '<p>No reviews yet. Be the first to review!</p>';
         return;
     }
-    reviewsContainer.innerHTML = reviews.results.slice(0, 5).map(review => `
-        <div class="review-card">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                <strong>${review.author}</strong>
-                <span style="color: #ffd700;">★ ${review.author_details.rating || 'N/A'}</span>
+
+    reviewsContainer.innerHTML = combined.slice(0, 10).map(review => {
+        const author = review.source === 'ourshow' ? review.username : review.author;
+        const rating = review.source === 'ourshow' ? review.rating : review.rating;
+        const content = review.source === 'ourshow' ? review.review : review.content;
+
+        let verdictHTML = '';
+        if (rating) {
+            let v = { text: 'N/A', class: '' };
+            if (typeof rating === 'string') {
+                if (rating === 'Perfection') v = { text: 'Perfection', class: 'verdict-perfection' };
+                else if (rating === 'Go For It' || rating === 'Go for it') v = { text: 'Go for it', class: 'verdict-go' };
+                else if (rating === 'One Time Watch' || rating === 'One time watch') v = { text: 'One time watch', class: 'verdict-once' };
+                else if (rating === 'Pass' || rating === 'Skip') v = { text: 'Skip', class: 'verdict-skip' };
+                else {
+                    v = getVerdictFromRating(rating);
+                }
+            } else {
+                v = getVerdictFromRating(rating);
+            }
+            if (v.text !== 'N/A') {
+                verdictHTML = `<span class="review-verdict-badge ${v.class}" style="font-size: 0.7rem; padding: 2px 6px;">${v.text}</span>`;
+            }
+        }
+
+        let avatarUrl = 'https://secure.gravatar.com/avatar/ad516503a11cd5ca435acc9bb6523536?s=128';
+        if (review.source === 'tmdb' && review.avatar_path) {
+            if (review.avatar_path.startsWith('/https')) avatarUrl = review.avatar_path.substring(1);
+            else avatarUrl = `${window.APP_CONFIG.TMDB_IMAGE_SMALL_URL}${review.avatar_path}`;
+        }
+
+        const maxLength = 200;
+        const isLong = content.length > maxLength;
+        const truncatedContent = isLong ? content.substring(0, maxLength) + '...' : content;
+        const reviewId = `review-${review.id || Math.random().toString(36).substr(2, 9)}`;
+
+        return `
+            <div class="review-card" style="${review.source === 'ourshow' ? 'border-left: 3px solid var(--primary-color);' : ''}">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong style="display:flex; gap:0.5rem; align-items:center;">
+                        <img class="review-avatar" src="${avatarUrl}" alt="${author}" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;"> ${author}
+                    </strong>
+                    ${verdictHTML}
+                </div>
+                <p style="color: var(--text-secondary); line-height: 1.6;" id="${reviewId}">
+                    ${truncatedContent}
+                </p>
+                ${isLong ? `<button class="read-more-btn" onclick="toggleReview('${reviewId}', \`${content.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`, this)">Read More</button>` : ''}
             </div>
-            <p style="color: var(--text-secondary); line-height: 1.6;">
-                ${review.content.substring(0, 300)}${review.content.length > 300 ? '...' : ''}
-            </p>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
+
 
 function loadSimilar(similar) {
     const similarContainer = document.getElementById('modalSimilar');
@@ -357,17 +533,24 @@ function loadSimilar(similar) {
         similarContainer.innerHTML = '<p>No similar titles found.</p>';
         return;
     }
-    // Reuse renderGrid but target the similar container
-    // We can't reuse renderGrid directly because it targets 'mediaGrid'.
-    // Let's make a mini render function or just inline it.
+    // Reuse renderGrid logic but for similar container. 
+    // Since renderGrid targets 'mediaGrid', we inline here or reuse if we made it generic.
+    // For simplicity, inline similar rendering:
     similarContainer.innerHTML = '';
+
+    // We want a scrollable row typically, but modalSimilar in view_all.html likely expects a grid or scroller.
+    // view_all.html uses "media-scroller" class for modalSimilar. 
+    // renderGrid uses grid. Let's make similar a scroller.
+
     similar.results.slice(0, 10).forEach(item => {
         if (!item.poster_path) return;
         const card = document.createElement('div');
         card.className = 'media-card';
-        card.style.minWidth = '160px'; // Ensure horizontal scrolling works
+        card.style.minWidth = '160px'; // Force width for scroller
         card.innerHTML = `
+            <div class="media-poster-container">
             <img class="media-poster" src="${window.APP_CONFIG.TMDB_IMAGE_SMALL_URL}${item.poster_path}" loading="lazy" alt="${item.title || item.name}">
+            </div>
             <div class="media-info">
                 <div class="media-title">${item.title || item.name}</div>
                 <div class="media-year">${(item.release_date || item.first_air_date || '').split('-')[0]}</div>
@@ -413,6 +596,9 @@ async function submitReview() {
         document.getElementById('reviewText').value = '';
         userRating = null;
         document.querySelectorAll('.rating-btn').forEach(btn => btn.classList.remove('selected'));
+
+        // Reload reviews
+        loadReviews(currentMovieData.reviews, currentMovieId);
     } catch (error) {
         console.error('Error submitting review:', error);
         alert('Failed to submit review. Please try again.');

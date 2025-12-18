@@ -6,6 +6,7 @@ let currentUser = null;
 
 // --- INITIALIZATION & EVENT LISTENERS ---
 document.addEventListener('DOMContentLoaded', () => {
+    if (window.ourShowLoader) window.ourShowLoader.show();
     console.log("DOM Loaded - Attaching Listeners");
     setupEventListeners();
 });
@@ -260,14 +261,16 @@ window.openCollection = async function (type, isCustom = false, ownerId = null) 
 };
 
 // --- AUTH LISTENER ---
-onAuthStateChanged(auth, (user) => {
+// --- AUTH LISTENER ---
+onAuthStateChanged(auth, async (user) => {
     currentUser = user;
     if (user) {
-        loadCollections();
+        await loadCollections();
     } else {
         const grid = document.getElementById('collectionsGrid');
         if (grid) grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 2rem;">Please <a href="login.html" style="color: var(--primary-color);">log in</a> to view your collections.</div>';
     }
+    if (window.ourShowLoader) window.ourShowLoader.hide();
 });
 
 // --- CORE LOAD FUNCTIONS ---

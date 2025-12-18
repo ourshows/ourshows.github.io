@@ -6,14 +6,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>View All - OurShow</title>
     <link rel="stylesheet" href="public/style.css">
+    <link rel="stylesheet" href="public/modal.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         .grid-container {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
             gap: 1.5rem;
             margin-top: 2rem;
+            width: 100%;
+        }
+
+        .load-more-btn {
+            display: block;
             width: 200px;
             margin: 3rem auto;
             padding: 1rem;
@@ -31,151 +37,34 @@
             transform: scale(1.05);
         }
 
-        /* Modal Styles copied from index.html */
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.9);
-            z-index: 10000;
-            overflow-y: auto;
-            padding: 2rem;
+        /* Mobile Adjustments for Modal */
+        @media (max-width: 768px) {
+            .modal-header {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+
+            .modal-poster {
+                width: 180px;
+                margin-bottom: 1rem;
+            }
+
+            .modal-actions {
+                justify-content: center;
+            }
+
+            .modal-meta {
+                justify-content: center;
+            }
         }
 
-        .modal-content {
-            max-width: 1200px;
-            margin: 0 auto;
-            position: relative;
-            padding: 2rem;
-        }
-
-        .modal-close {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            font-size: 2rem;
-            cursor: pointer;
-            color: white;
-            z-index: 10;
-        }
-
-        .modal-header {
-            display: flex;
-            gap: 2rem;
-            margin-bottom: 2rem;
-        }
-
-        .modal-poster {
-            width: 300px;
-            border-radius: 12px;
-        }
-
-        .modal-header-info {
-            flex: 1;
-        }
-
-        .modal-meta {
-            display: flex;
-            gap: 1rem;
-            margin: 1rem 0;
-        }
-
-        .modal-actions {
-            display: flex;
-            gap: 1rem;
-            margin-top: 1.5rem;
-            flex-wrap: wrap;
-        }
-
-        .modal-tabs {
-            display: flex;
-            gap: 1rem;
-            border-bottom: 2px solid var(--glass-border);
-            margin-bottom: 2rem;
-        }
-
-        .tab-btn {
-            background: none;
-            border: none;
-            color: var(--text-secondary);
-            padding: 1rem 1.5rem;
-            cursor: pointer;
-            font-weight: 600;
-            border-bottom: 3px solid transparent;
-            transition: all 0.3s;
-        }
-
-        .tab-btn.active {
-            color: var(--primary-color);
-            border-bottom-color: var(--primary-color);
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        .rating-section {
-            margin-top: 2rem;
-            padding: 1.5rem;
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 12px;
-        }
-
-        .rating-buttons {
-            display: flex;
-            gap: 1rem;
-            margin: 1rem 0;
-            flex-wrap: wrap;
-        }
-
-        .rating-btn {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid var(--glass-border);
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .rating-btn:hover,
-        .rating-btn.selected {
-            background: var(--primary-color);
-            border-color: var(--primary-color);
-        }
-
-        .cast-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-            gap: 1rem;
-        }
-
-        .cast-card {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-            overflow: hidden;
-            text-align: center;
-            padding-bottom: 0.5rem;
-        }
-
-        .cast-card img {
-            width: 100%;
-            height: 150px;
-            object-fit: cover;
-            margin-bottom: 0.5rem;
-        }
-
-        .review-card {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 1.5rem;
-            border-radius: 12px;
-            margin-bottom: 1rem;
+        .review-avatar {
+            width: 24px !important;
+            height: 24px !important;
+            border-radius: 50% !important;
+            object-fit: cover !important;
+            flex-shrink: 0;
         }
     </style>
 </head>
@@ -193,11 +82,10 @@
 
     <div class="container" style="margin-top: 6rem;">
         <h1 class="page-title" id="pageTitle">Loading...</h1>
-        <!-- Using results-grid class from style.css/search.html which is standardized -->
         <style>
             .view-all-grid {
                 display: grid;
-                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
                 gap: 2rem 1.5rem;
                 padding-bottom: 2rem;
             }
@@ -240,43 +128,52 @@
     <!-- Movie Details Modal -->
     <div id="movieModal" class="modal" style="display: none;">
         <div class="modal-content glass-panel">
-            <span class="modal-close" onclick="closeModal()">&times;</span>
-
-            <div class="modal-header">
-                <img id="modalPoster" src="" alt="Poster" class="modal-poster">
-                <div class="modal-header-info">
-                    <h2 id="modalTitle"></h2>
-                    <div class="modal-meta">
-                        <span class="rating-badge" id="modalRating"></span>
-                        <span id="modalYear"></span>
-                        <span id="modalRuntime"></span>
+            <span class="close-modal" onclick="closeModal()">&times;</span>
+            <div class="modal-body">
+                <div class="modal-header">
+                    <div class="modal-poster-container">
+                        <img id="modalPoster" src="" alt="Poster" class="modal-poster">
+                        <!-- Verdict Meter (Universal - visible on mobile below poster) -->
+                        <div id="pcVerdictMeter" class="verdict-meter-container"></div>
                     </div>
-                    <p id="modalOverview"></p>
 
-                    <!-- Action Buttons -->
-                    <div class="modal-actions">
-                        <button class="glass-button" onclick="markAsWatched()"><i class="fas fa-check"></i>
-                            Watched</button>
-                        <button class="glass-button" onclick="addToWatchLater()"><i class="fas fa-clock"></i> Watch
-                            Later</button>
-                        <button class="glass-button" onclick="watchNow()"><i class="fas fa-play"></i> Watch Now</button>
+                    <div class="modal-header-info">
+                        <h2 id="modalTitle"></h2>
+                        <div class="modal-meta">
+                            <span class="rating-badge" id="modalRating"></span>
+                            <span id="modalYear"></span>
+                            <span id="modalRuntime"></span>
+                        </div>
+                        <p id="modalOverview" style="display: none;"></p> <!-- Hidden in header, shown in tab -->
+
+                        <!-- Action Buttons -->
+                        <div class="modal-actions">
+                            <button class="glass-button" onclick="markAsWatched()"><i class="fas fa-check"></i>
+                                Watched</button>
+                            <button class="glass-button" onclick="addToWatchLater()"><i class="fas fa-clock"></i> Watch
+                                Later</button>
+                            <button class="glass-button primary" onclick="watchNow()"><i class="fas fa-play"></i> Watch
+                                Now</button>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Tabs -->
-            <div class="modal-tabs">
-                <button class="tab-btn active" onclick="switchTab('overview')">Overview</button>
-                <button class="tab-btn" onclick="switchTab('cast')">Cast & Crew</button>
-                <button class="tab-btn" onclick="switchTab('reviews')">Reviews</button>
-                <button class="tab-btn" onclick="switchTab('similar')">Similar</button>
-                <button class="tab-btn" onclick="switchTab('ai')">Ask AI</button>
-            </div>
+                <!-- Tabs -->
+                <div class="modal-tabs">
+                    <button class="tab-btn active" onclick="switchTab('overview')">Overview</button>
+                    <button class="tab-btn" onclick="switchTab('cast')">Cast & Crew</button>
+                    <button class="tab-btn" onclick="switchTab('reviews')">Reviews</button>
+                    <button class="tab-btn" onclick="switchTab('similar')">Similar</button>
+                    <button class="tab-btn" onclick="switchTab('ai')">Ask AI</button>
+                </div>
 
-            <!-- Tab Content -->
-            <div class="modal-body">
+                <!-- Tab Content -->
+
                 <!-- Overview Tab -->
                 <div id="tab-overview" class="tab-content active">
+                    <p id="modalOverviewText" class="modal-overview"
+                        style="margin-bottom: 1.5rem; line-height: 1.6; color: var(--text-secondary);"></p>
+
                     <div id="modalTrailer"></div>
                     <div id="modalGenres"></div>
 
@@ -284,11 +181,13 @@
                     <div class="rating-section">
                         <h3>Rate This Movie</h3>
                         <div class="rating-buttons">
-                            <button class="rating-btn" data-rating="1" onclick="rateMovie(1)">😞 Bad</button>
-                            <button class="rating-btn" data-rating="2" onclick="rateMovie(2)">😐 One-Time Watch</button>
-                            <button class="rating-btn" data-rating="3" onclick="rateMovie(3)">🙂 Good</button>
-                            <button class="rating-btn" data-rating="4" onclick="rateMovie(4)">😃 Must Watch</button>
-                            <button class="rating-btn" data-rating="5" onclick="rateMovie(5)">🤩 Perfection</button>
+                            <button class="rating-btn" data-rating="Pass" onclick="rateMovie('Pass')">😞 Pass</button>
+                            <button class="rating-btn" data-rating="One Time Watch"
+                                onclick="rateMovie('One Time Watch')">😐 One-Time Watch</button>
+                            <button class="rating-btn" data-rating="Go For It" onclick="rateMovie('Go For It')">🙂 Go
+                                For It</button>
+                            <button class="rating-btn" data-rating="Perfection" onclick="rateMovie('Perfection')">🤩
+                                Perfection</button>
                         </div>
                         <textarea id="reviewText" class="glass-input" placeholder="Write your review..."
                             rows="4"></textarea>
@@ -306,6 +205,24 @@
                 <div id="tab-reviews" class="tab-content" style="display: none;">
                     <h3>User Reviews</h3>
                     <div id="modalReviews"></div>
+                    <div class="add-review-section"
+                        style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--glass-border);">
+                        <h3>Add Your Review</h3>
+                        <div class="rating-select" style="margin: 1rem 0; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                            <button class="rating-btn" onclick="rateMovie('Skip')" data-rating="Skip">Skip
+                                🔴</button>
+                            <button class="rating-btn" onclick="rateMovie('One Time Watch')"
+                                data-rating="One Time Watch">One Time Watch 🟠</button>
+                            <button class="rating-btn" onclick="rateMovie('Go For It')" data-rating="Go For It">Go
+                                For It 🟢</button>
+                            <button class="rating-btn" onclick="rateMovie('Perfection')"
+                                data-rating="Perfection">Perfection 🌟</button>
+                        </div>
+                        <textarea id="reviewText" class="glass-input" rows="3"
+                            placeholder="Write your review..."></textarea>
+                        <button class="glass-button" onclick="submitReview()" style="margin-top: 1rem;">Submit
+                            Review</button>
+                    </div>
                 </div>
 
                 <!-- Similar Tab -->
@@ -324,6 +241,7 @@
                         <button class="glass-button" onclick="askAI()"><i class="fas fa-paper-plane"></i> Ask</button>
                     </div>
                 </div>
+
             </div>
         </div>
     </div>

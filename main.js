@@ -44,6 +44,22 @@ window.openMovieModal = openMovieModal;
 window.openAddToCollectionModal = openAddToCollectionModal;
 window.closeAddToCollectionModal = closeAddToCollectionModal;
 window.addToCollectionConfirm = addToCollectionConfirm;
+window.toggleReview = toggleReview;
+
+// Toggle review read more/less
+function toggleReview(reviewId, fullContent, button) {
+    const reviewElement = document.getElementById(reviewId);
+    if (!reviewElement) return;
+
+    if (button.textContent === 'Read More') {
+        reviewElement.textContent = fullContent;
+        button.textContent = 'Read Less';
+    } else {
+        const truncated = fullContent.substring(0, 200) + '...';
+        reviewElement.textContent = truncated;
+        button.textContent = 'Read More';
+    }
+}
 
 // Initialize App
 if (document.readyState === 'loading') {
@@ -52,9 +68,66 @@ if (document.readyState === 'loading') {
     initApp();
 }
 
+// Fix for homepage cache issue when navigating back
+// Fix for homepage cache issue when navigating back
+window.addEventListener('pageshow', async (event) => {
+    if (event.persisted) {
+        // Page was loaded from BFCache (back/forward cache) and is likely stale.
+        console.log('Page restored from cache. Refreshing content...');
+
+        // 1. Show Loading Screen immediately
+        if (window.ourShowLoader) window.ourShowLoader.show();
+
+        // 2. Reset Modals
+        if (typeof closeModal === 'function') closeModal();
+        if (typeof closeSearch === 'function') closeSearch();
+        if (typeof closeAIModal === 'function') closeAIModal();
+        if (typeof closeAddToCollectionModal === 'function') closeAddToCollectionModal();
+
+        // 3. Refresh Content
+        try {
+            await refreshHomepageContent();
+        } catch (e) {
+            console.error("Failed to refresh content:", e);
+        }
+
+        // 4. Hide Loader
+        if (window.ourShowLoader) {
+            setTimeout(() => window.ourShowLoader.hide(), 500);
+        }
+    }
+});
+
+async function refreshHomepageContent() {
+    // Only fetch if on homepage
+    if (!document.getElementById('trendingScroller')) return;
+
+    console.log('Refreshing homepage data...');
+
+    // Parallel fetch for speed
+    const loaders = [
+        loadHeroContent(),
+        loadTrending(),
+        loadPopular(),
+        loadTopRated(),
+        loadUpcoming(),
+        loadNowPlaying(),
+        loadNepaliContent(),
+        loadHindiContent(),
+        loadNewToStream(),
+        loadHighestGrossing(),
+        loadCultClassics(),
+        loadUnderratedGems(),
+        loadActionThrillers(),
+        loadDramaRomance()
+    ];
+
+    await Promise.allSettled(loaders);
+    console.log('Homepage data refreshed.');
+}
+
 // --- API Helper ---
 async function fetchTMDB(endpoint, params = {}) {
-    // 1. Priority: Client-Side Direct Call (Public Config)
     // 1. Priority: Client-Side Direct Call (Public Config)
     if (window.PUBLIC_CONFIG && (window.PUBLIC_CONFIG.TMDB_KEY || window.PUBLIC_CONFIG.TMDB_API_KEY)) {
         const apiKey = window.PUBLIC_CONFIG.TMDB_KEY || window.PUBLIC_CONFIG.TMDB_API_KEY;
@@ -127,7 +200,6 @@ async function initApp() {
     console.log('=== INIT APP STARTED ===');
     console.log('APP_CONFIG:', window.APP_CONFIG);
 
-    // Default Configuration for Production (when config.js is missing/gitignored)
     // Default Configuration for Production (when config.js is missing/gitignored)
     if (!window.APP_CONFIG) {
         console.warn("Config not found, using default production configuration.");
@@ -309,13 +381,7 @@ window.switchTab = function (tabName) {
     const selectedContent = document.getElementById(`tab-${tabName}`);
     if (selectedContent) selectedContent.classList.add('active');
 
-    // Highlight selected button
-    // Note: This assumes the button onclick passes the tabName explicitly. 
-    // We can find the button by its onclick attribute or ID if we assigned one consistently.
-    // For now, let's try to match by text or onclick.
-    // Simpler: Just rely on the user clicking the button to handle the visual state? 
-    // No, we need to update the button state programmatically.
-    // Let's find button by onclick="switchTab('tabName')"
+    // Find and activate the corresponding button
     const activeBtn = document.querySelector(`button[onclick="switchTab('${tabName}')"]`);
     if (activeBtn) activeBtn.classList.add('active');
 }
@@ -510,58 +576,6 @@ async function loadHindiContent() {
     if (data) renderCards(data.results, 'hindiScroller', 'movie');
 }
 
-// --- HYBRID RENDERING SYSTEM ---
-// Fetches and mixes regional content (Nepali/Hindi) with global content
-
-/**
- * Renders a content row with regional integration
- * @param {string} containerId - DOM element ID for the scroller
- * @param {string} endpoint - TMDB API endpoint (e.g., '/movie/popular')
- * @param {string} mediaType - 'movie' or 'tv'
- * @param {boolean} includeRegional - Whether to inject Nepali/Hindi content
- */
-async function renderHybridContentRow(containerId, endpoint, mediaType = 'movie', includeRegional = true) {
-    // Fetch global content
-    const globalData = await fetchTMDB(endpoint);
-    if (!globalData || !globalData.results) return;
-
-    let finalResults = [...globalData.results];
-
-    if (includeRegional) {
-        // Fetch Nepali content
-        const nepaliData = await fetchTMDB('/discover/movie', {
-            with_original_language: REGIONAL_CONFIG.languages.nepali,
-            sort_by: 'popularity.desc'
-        });
-
-        // Fetch Hindi content
-        const hindiData = await fetchTMDB('/discover/movie', {
-            with_original_language: REGIONAL_CONFIG.languages.hindi,
-            sort_by: 'popularity.desc',
-            region: 'IN'
-        });
-
-        // Mix regional content into the results
-        const regionalItems = [];
-        if (nepaliData?.results) regionalItems.push(...nepaliData.results.slice(0, 3));
-        if (hindiData?.results) regionalItems.push(...hindiData.results.slice(0, 3));
-
-        // Inject regional content at strategic positions (positions 2, 5, 8, 11, 14)
-        const injectionPositions = [2, 5, 8, 11, 14];
-        regionalItems.forEach((item, index) => {
-            if (index < injectionPositions.length) {
-                finalResults.splice(injectionPositions[index], 0, item);
-            }
-        });
-    }
-
-    renderCards(finalResults.slice(0, 20), containerId, mediaType);
-}
-
-
-/**
- * Load new content rows
- */
 async function loadNewToStream() {
     // Get recently added content (last 3 months)
     const threeMonthsAgo = new Date();
@@ -679,7 +693,9 @@ function renderCards(items, containerId, defaultType) {
         const card = document.createElement('div');
         card.className = 'media-card';
 
-        const rating = item.vote_average ? item.vote_average.toFixed(1) : 'N/A';
+        // Calculate verdict for poster
+        const verdict = calculateVerdict(item);
+
         const year = (item.release_date || item.first_air_date || '').split('-')[0];
         const title = item.title || item.name;
         const mediaType = item.media_type || defaultType;
@@ -687,10 +703,13 @@ function renderCards(items, containerId, defaultType) {
         card.innerHTML = `
             <div class="media-poster-container">
                 <img class="media-poster" src="${window.APP_CONFIG.TMDB_IMAGE_SMALL_URL}${item.poster_path}" loading="lazy" alt="${title}">
-                <div class="card-rating-badge">★ ${rating}</div>
+                <div class="card-rating-badge" style="color: ${getVerdictColor(verdict.text)};">${verdict.text}</div>
                 <div class="card-overlay">
                     <button class="card-download-btn" onclick="event.stopPropagation(); window.location.href='watchanddownload.html?id=${item.id}&type=${mediaType}'">
                         <i class="fas fa-download"></i> Watch
+                    </button>
+                    <button class="card-download-btn" style="margin-top: 0.5rem;" onclick="event.stopPropagation(); openMovieModal('${item.id}', '${mediaType}')">
+                        <i class="fas fa-info-circle"></i> Components
                     </button>
                 </div>
             </div>
@@ -801,7 +820,7 @@ async function openMovieModal(id, type = 'movie') {
     badge.textContent = verdict.text;
     ratingEl.parentNode.appendChild(badge);
 
-    // Render Gauge Meter (PC & Mobile)
+    // Render Gauge Meter (Text Only now)
     renderVerdictMeter(details, verdict);
 }
 
@@ -811,15 +830,10 @@ function renderVerdictMeter(details, verdict) {
         document.getElementById('mobileVerdictMeter')
     ];
 
-    // Calculate Needle Rotation (-90deg to 90deg)
-    // Map rating 0-10 to -90 to 90
     const rating = details.vote_average || 0;
-    const rotation = (rating / 10) * 180 - 90;
 
+    // TEXT ONLY - No Gauge
     const html = `
-        <div class="verdict-gauge">
-            <div class="gauge-needle" style="transform: translateX(-50%) rotate(${rotation}deg)"></div>
-        </div>
         <div class="verdict-label" style="color: ${getVerdictColor(verdict.text)}">${verdict.text}</div>
         <div class="verdict-subtext">${rating.toFixed(1)}/10 based on TMDB</div>
     `;
@@ -833,7 +847,7 @@ function getVerdictColor(text) {
     if (text === 'Perfection') return '#ffd700';
     if (text === 'Go for it') return '#22c55e';
     if (text === 'One time watch') return '#f59e0b';
-    return '#ef4444'; // Pass
+    return '#ef4444'; // Skip
 }
 
 function calculateVerdict(details) {
@@ -853,8 +867,8 @@ function calculateVerdict(details) {
     if (rating >= 5.0) {
         return { text: "One time watch", class: "verdict-once" };
     }
-    // "Pass": Low rating
-    return { text: "Pass", class: "verdict-pass" };
+    // "Skip": Low rating
+    return { text: "Skip", class: "verdict-skip" };
 }
 
 function closeModal() {
@@ -912,7 +926,6 @@ function loadGenres(genres) {
         genresContainer.innerHTML = '';
         return;
     }
-
     genresContainer.innerHTML = `
         <div style="margin-bottom: 1.5rem;">
             <strong>Genres:</strong> ${genres.map(g => g.name).join(', ')}
@@ -926,7 +939,6 @@ function loadCast(credits) {
         castContainer.innerHTML = '<p>No cast information available.</p>';
         return;
     }
-
     castContainer.innerHTML = credits.cast.slice(0, 12).map(person => `
         <div class="cast-card">
             <img src="${person.profile_path ? window.APP_CONFIG.TMDB_IMAGE_SMALL_URL + person.profile_path : 'https://via.placeholder.com/150x225?text=No+Image'}" 
@@ -937,41 +949,31 @@ function loadCast(credits) {
     `).join('');
 }
 
-// --- Review Helpers ---
-function getVerdictFromRating(rating) {
-    if (!rating) return { text: 'N/A', class: '' };
-    if (rating >= 8.0) return { text: 'Perfection', class: 'verdict-perfection' };
-    if (rating >= 6.8) return { text: 'Go for it', class: 'verdict-go' };
-    if (rating >= 5.0) return { text: 'One time watch', class: 'verdict-once' };
-    return { text: 'Pass', class: 'verdict-pass' };
-}
 
+// Reviews
 async function loadReviews(tmdbReviews, movieId) {
     const reviewsContainer = document.getElementById('modalReviews');
     reviewsContainer.innerHTML = '<p style="text-align:center;">Loading reviews...</p>';
 
-    // 1. Fetch Firebase Reviews
     let firebaseReviews = [];
     try {
-        if (!movieId) throw new Error('No Movie ID');
-        // Need to make sure movieId is string for consistency if stored as string
-        const q = query(
-            collection(db, 'reviews'),
-            where('movieId', '==', String(movieId)), // Compare as string
-            orderBy('timestamp', 'desc')
-        );
-        const snapshot = await getDocs(q);
-        firebaseReviews = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-            source: 'ourshow'
-        }));
+        if (movieId) {
+            const q = query(
+                collection(db, 'reviews'),
+                where('movieId', '==', String(movieId)),
+                orderBy('timestamp', 'desc')
+            );
+            const snapshot = await getDocs(q);
+            firebaseReviews = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+                source: 'ourshow'
+            }));
+        }
     } catch (e) {
         console.error("Error fetching firebase reviews:", e);
-        // Fallback: don't crash, just show TMDB
     }
 
-    // 2. Process TMDB Reviews
     const tmdbResults = (tmdbReviews && tmdbReviews.results) ? tmdbReviews.results.map(r => ({
         id: r.id,
         author: r.author,
@@ -979,10 +981,9 @@ async function loadReviews(tmdbReviews, movieId) {
         rating: r.author_details.rating,
         avatar_path: r.author_details.avatar_path,
         source: 'tmdb',
-        timestamp: new Date(r.created_at || 0) // rough sort
+        timestamp: new Date(r.created_at || 0)
     })) : [];
 
-    // 3. Merge & Display (Firebase first)
     const combined = [...firebaseReviews, ...tmdbResults];
 
     if (combined.length === 0) {
@@ -991,93 +992,57 @@ async function loadReviews(tmdbReviews, movieId) {
     }
 
     reviewsContainer.innerHTML = combined.slice(0, 10).map(review => {
-        // Handle Data Differences
         const author = review.source === 'ourshow' ? review.username : review.author;
-        const rating = review.source === 'ourshow' ? review.rating : review.rating; // Standardized name
+        const rating = review.source === 'ourshow' ? review.rating : review.rating;
         const content = review.source === 'ourshow' ? review.review : review.content;
 
-        // Convert Rating to Verdict
         let verdictHTML = '';
         if (rating) {
-            // Check if rating is numeric string "5" or number 5 or verdict string "Perfection"
-            // Our helper expects numeric for TMDB logic, but our new system stores Strings.
-            // Let's adapt getVerdictFromRating or handle it here.
-
             let v = { text: 'N/A', class: '' };
-            const numRating = parseFloat(rating);
-
-            if (!isNaN(numRating) && typeof rating !== 'string') {
-                // Numeric (TMDB or old local)
-                v = getVerdictFromRating(numRating);
-            } else if (typeof rating === 'string') {
-                // Text Verdict (New local)
-                // Map string to class
+            if (typeof rating === 'string') {
                 if (rating === 'Perfection') v = { text: 'Perfection', class: 'verdict-perfection' };
-                else if (rating === 'Go for it') v = { text: 'Go for it', class: 'verdict-go' };
-                else if (rating === 'One time watch' || rating === 'One Time Watch') v = { text: 'One time watch', class: 'verdict-once' }; // handle case diff
-                else if (rating === 'Pass') v = { text: 'Pass', class: 'verdict-pass' };
+                else if (rating === 'Go For It' || rating === 'Go for it') v = { text: 'Go for it', class: 'verdict-go' };
+                else if (rating === 'One Time Watch' || rating === 'One time watch') v = { text: 'One time watch', class: 'verdict-once' };
+                else if (rating === 'Pass' || rating === 'Skip') v = { text: 'Skip', class: 'verdict-skip' };
                 else {
-                    // unexpected string or number-as-string
-                    if (!isNaN(numRating)) v = getVerdictFromRating(numRating);
+                    v = getVerdictFromRating(rating);
                 }
+            } else {
+                v = getVerdictFromRating(rating);
             }
-
             if (v.text !== 'N/A') {
                 verdictHTML = `<span class="review-verdict-badge ${v.class}" style="font-size: 0.7rem; padding: 2px 6px;">${v.text}</span>`;
             }
         }
 
-        const avatarPath = review.avatar_path;
         let avatarUrl = 'https://secure.gravatar.com/avatar/ad516503a11cd5ca435acc9bb6523536?s=128';
-        if (review.source === 'tmdb' && avatarPath) {
-            if (avatarPath.startsWith('/https')) avatarUrl = avatarPath.substring(1);
-            else avatarUrl = `${window.APP_CONFIG.TMDB_IMAGE_SMALL_URL}${avatarPath}`;
+        if (review.source === 'tmdb' && review.avatar_path) {
+            if (review.avatar_path.startsWith('/https')) avatarUrl = review.avatar_path.substring(1);
+            else avatarUrl = `${window.APP_CONFIG.TMDB_IMAGE_SMALL_URL}${review.avatar_path}`;
         }
 
-        // Expandable Content
-        const maxChars = 300;
-        const isLong = content.length > maxChars;
-        const shortContent = isLong ? content.substring(0, maxChars) + '...' : content;
-        const reviewId = `review-${review.id || Math.random()}`; // Use real ID if avail
+        const maxLength = 200;
+        const isLong = content.length > maxLength;
+        const truncatedContent = isLong ? content.substring(0, maxLength) + '...' : content;
+        const reviewId = `review-${review.id || Math.random().toString(36).substr(2, 9)}`;
 
         return `
-        <div class="review-card" id="${reviewId}" style="${review.source === 'ourshow' ? 'border-left: 3px solid var(--primary-color);' : ''}">
-            <div class="review-header">
-                <div class="review-author">
-                    <div class="review-avatar">
-                        <img src="${avatarUrl}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;" onerror="this.src='https://via.placeholder.com/40'">
-                    </div>
-                    <span>${author}</span>
+            <div class="review-card" style="${review.source === 'ourshow' ? 'border-left: 3px solid var(--primary-color);' : ''}">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <strong style="display:flex; gap:0.5rem; align-items:center;">
+                        <img class="review-avatar" src="${avatarUrl}" alt="${author}" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;"> ${author}
+                    </strong>
+                    ${verdictHTML}
                 </div>
-                ${verdictHTML}
+                <p style="color: var(--text-secondary); line-height: 1.6;" id="${reviewId}">
+                    ${truncatedContent}
+                </p>
+                ${isLong ? `<button class="read-more-btn" onclick="toggleReview('${reviewId}', \`${content.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`, this)">Read More</button>` : ''}
             </div>
-            <div class="review-content">
-                <span class="content-short">${shortContent}</span>
-                ${isLong ? `<span class="content-full" style="display:none;">${content}</span>
-                            <span class="read-more-btn" onclick="toggleReview('${reviewId}')">Read More</span>` : ''}
-            </div>
-        </div>
-    `}).join('');
+        `;
+    }).join('');
 }
 
-// Global Toggle Function
-window.toggleReview = function (id) {
-    const card = document.getElementById(id);
-    if (!card) return;
-    const short = card.querySelector('.content-short');
-    const full = card.querySelector('.content-full');
-    const btn = card.querySelector('.read-more-btn');
-
-    if (full.style.display === 'none') {
-        full.style.display = 'inline';
-        short.style.display = 'none';
-        btn.textContent = 'Read Less';
-    } else {
-        full.style.display = 'none';
-        short.style.display = 'inline';
-        btn.textContent = 'Read More';
-    }
-};
 
 function loadSimilar(similar) {
     const similarContainer = document.getElementById('modalSimilar');
@@ -1086,10 +1051,29 @@ function loadSimilar(similar) {
         return;
     }
 
-    renderCards(similar.results.slice(0, 10), 'modalSimilar', 'movie');
+    similarContainer.innerHTML = '';
+    const scroller = document.createElement('div');
+    scroller.className = 'media-scroller';
+
+    similar.results.slice(0, 10).forEach(item => {
+        if (!item.poster_path) return;
+        const card = document.createElement('div');
+        card.className = 'media-card';
+        card.innerHTML = `
+            <div class="media-poster-container">
+            <img class="media-poster" src="${window.APP_CONFIG.TMDB_IMAGE_SMALL_URL}${item.poster_path}" loading="lazy" alt="${item.title || item.name}">
+            </div>
+            <div class="media-info">
+                <div class="media-title">${item.title || item.name}</div>
+                <div class="media-year">${(item.release_date || item.first_air_date || '').split('-')[0]}</div>
+            </div>
+        `;
+        card.onclick = () => openMovieModal(item.id, item.media_type || 'movie');
+        scroller.appendChild(card);
+    });
+    similarContainer.appendChild(scroller);
 }
 
-// --- User Actions ---
 function rateMovie(rating) {
     userRating = rating;
     document.querySelectorAll('.rating-btn').forEach(btn => btn.classList.remove('selected'));
@@ -1106,15 +1090,12 @@ async function submitReview() {
         alert('Please write a review!');
         return;
     }
-
     if (!currentUser) {
         alert('Please log in to submit a review!');
         window.location.href = 'login.html';
         return;
     }
-
     try {
-        // Save review to Firestore
         await addDoc(collection(db, 'reviews'), {
             userId: currentUser.uid,
             username: currentUser.displayName || currentUser.email,
@@ -1124,14 +1105,13 @@ async function submitReview() {
             review: reviewText.trim(),
             timestamp: serverTimestamp()
         });
-
         alert('Review submitted successfully!');
         document.getElementById('reviewText').value = '';
         userRating = null;
         document.querySelectorAll('.rating-btn').forEach(btn => btn.classList.remove('selected'));
 
-        // Refresh reviews
-        await loadReviews(currentMovieData.reviews, currentMovieId);
+        // Reload reviews
+        loadReviews(currentMovieData.reviews, currentMovieId);
     } catch (error) {
         console.error('Error submitting review:', error);
         alert('Failed to submit review. Please try again.');
@@ -1144,17 +1124,15 @@ async function markAsWatched() {
         window.location.href = 'login.html';
         return;
     }
-
     try {
         await setDoc(doc(db, 'users', currentUser.uid, 'watched', String(currentMovieId)), {
             movieId: currentMovieId,
             movieTitle: currentMovieData.title || currentMovieData.name,
             posterPath: currentMovieData.poster_path,
             rating: currentMovieData.vote_average,
-            mediaType: currentMovieData.media_type || 'movie', // Save media type
+            mediaType: currentMovieData.media_type || 'movie',
             timestamp: serverTimestamp()
         });
-
         alert('Added to watched list!');
     } catch (error) {
         console.error('Error marking as watched:', error);
@@ -1168,17 +1146,15 @@ async function addToWatchLater() {
         window.location.href = 'login.html';
         return;
     }
-
     try {
         await setDoc(doc(db, 'users', currentUser.uid, 'watchlist', String(currentMovieId)), {
             movieId: currentMovieId,
             movieTitle: currentMovieData.title || currentMovieData.name,
             posterPath: currentMovieData.poster_path,
             rating: currentMovieData.vote_average,
-            mediaType: currentMovieData.media_type || 'movie', // Save media type
+            mediaType: currentMovieData.media_type || 'movie',
             timestamp: serverTimestamp()
         });
-
         alert('Added to watch later!');
     } catch (error) {
         console.error('Error adding to watch later:', error);
@@ -1186,306 +1162,51 @@ async function addToWatchLater() {
     }
 }
 
-function watchNow() {
-    const mediaType = currentMovieData?.media_type || 'movie';
-    window.location.href = `watchanddownload.html?id=${currentMovieId}&type=${mediaType}`;
-}
-
-async function addToCollectionConfirm(collectionId) {
-    if (!currentUser || !currentMovieId) return;
-
-    try {
-        await addDoc(collection(db, 'users', currentUser.uid, 'custom_collections', collectionId, 'items'), {
-            movieId: currentMovieId,
-            movieTitle: currentMovieData.title || currentMovieData.name,
-            posterPath: currentMovieData.poster_path,
-            rating: currentMovieData.vote_average,
-            mediaType: currentMovieData.media_type || 'movie',
-            addedAt: serverTimestamp()
-        });
-
-        alert('Added to collection!');
-        closeAddToCollectionModal();
-    } catch (err) {
-        console.error("Error adding to collection:", err);
-        alert('Failed to add to collection.');
-    }
-}
-
-async function openAddToCollectionModal() {
+// Collections Integration
+function openAddToCollectionModal() {
     if (!currentUser) {
-        alert('Please log in.');
-        window.location.href = 'login.html';
+        alert('Please log in to add to a collection.');
         return;
     }
+    document.getElementById('addToCollectionModal').style.display = 'block';
 
-    const modal = document.getElementById('addToCollectionModal');
-    const list = document.getElementById('userCollectionsList');
-    if (modal) modal.style.display = 'block';
-
-    list.innerHTML = '<div style="text-align: center;">Loading...</div>';
-
-    try {
-        const snap = await getDocs(collection(db, 'users', currentUser.uid, 'custom_collections'));
-        list.innerHTML = '';
-
-        if (snap.empty) {
-            list.innerHTML = '<div style="text-align: center; padding: 1rem;">No custom collections found. <a href="collection.html" style="color: var(--primary-color);">Create one</a></div>';
-            return;
-        }
-
-        snap.forEach(doc => {
-            const data = doc.data();
-            const btn = document.createElement('button');
-            btn.className = 'glass-button';
-            btn.style.justifyContent = 'flex-start';
-            btn.style.textAlign = 'left';
-            btn.innerHTML = `<i class="fas fa-folder"></i> ${data.name}`;
-            btn.onclick = () => addToCollectionConfirm(doc.id);
-            list.appendChild(btn);
-        });
-    } catch (err) {
-        console.error("Error loading collections:", err);
-        list.innerHTML = '<div style="color: red;">Error loading collections.</div>';
-    }
+    // Check if we have the loadUserCollections function available (from profile-logic.js usually, but here we might need a simpler fetch)
+    // For now, assume simpler functionality or just prompt.
+    // Ideally we duplicate collection logic or import it.
+    // Simplification for now: Use the existing collections if loaded or just simple prompt.
 }
 
 function closeAddToCollectionModal() {
-    document.getElementById('addToCollectionModal').style.display = 'none';
+    const modal = document.getElementById('addToCollectionModal');
+    if (modal) modal.style.display = 'none';
 }
 
-// --- AI Chat ---
-// --- AI Chat ---
-async function askAI() {
-    const questionInput = document.getElementById('aiQuestion');
-    const question = questionInput.value.trim();
+async function addToCollectionConfirm() {
+    // Placeholder - in real app this connects to collection system
+    alert("Collection feature integration pending.");
+    closeAddToCollectionModal();
+}
+
+function watchNow() {
+    alert('Starting playback... (Demo)');
+}
+
+function askAI() {
+    const question = document.getElementById('aiQuestion').value;
     if (!question) return;
 
     const chatContainer = document.getElementById('aiChat');
-
-    // Add user message to UI
-    const userMsg = document.createElement('div');
-    userMsg.className = 'ai-message user';
-    userMsg.innerHTML = `<p>${question}</p>`; // Use p tag for consistency with CSS
-    chatContainer.appendChild(userMsg);
-
-    questionInput.value = '';
-
-    // Scroll to bottom
+    chatContainer.innerHTML += `<div style="margin-bottom: 0.5rem;"><strong>You:</strong> ${question}</div>`;
+    chatContainer.innerHTML += `<div style="margin-bottom: 0.5rem; color: var(--accent-color);"><strong>AI:</strong> That's a great question about ${currentMovieData.title || currentMovieData.name}! (AI integration coming soon)</div>`;
+    document.getElementById('aiQuestion').value = '';
     chatContainer.scrollTop = chatContainer.scrollHeight;
-
-    if (!window.callAI) {
-        console.error("AI system not initialized");
-        const errorMsg = document.createElement('div');
-        errorMsg.className = 'ai-message ai';
-        errorMsg.innerHTML = '<p>AI system is currently unavailable.</p>';
-        chatContainer.appendChild(errorMsg);
-        return;
-    }
-
-    const movieTitle = currentMovieData.title || currentMovieData.name;
-    const movieYear = (currentMovieData.release_date || currentMovieData.first_air_date || '').split('-')[0];
-
-    // Construct Prompt
-    const systemPrompt = `You are a knowledgeable movie assistant focusing on "${movieTitle}" (${movieYear}). 
-    Answer the user's question specifically about this title. 
-    Keep your response concise (max 3 sentences). Be friendly and enthusiastic.`;
-
-    const messages = [{ role: 'user', content: question }];
-
-    try {
-        const response = await window.callAI(messages, systemPrompt, false);
-
-        const aiMsg = document.createElement('div');
-        aiMsg.className = 'ai-message ai';
-        aiMsg.innerHTML = `<p>${response}</p>`;
-        chatContainer.appendChild(aiMsg);
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-
-    } catch (error) {
-        console.error('AI Error:', error);
-        const aiMsg = document.createElement('div');
-        aiMsg.className = 'ai-message ai';
-        aiMsg.innerHTML = '<p>Sorry, I encountered an error. Please try again.</p>';
-        chatContainer.appendChild(aiMsg);
-    }
 }
 
-async function callHuggingFace(prompt) {
-    if (!window.APP_CONFIG || !window.APP_CONFIG.HUGGINGFACE_API_KEY) {
-        throw new Error("Hugging Face API key not configured");
-    }
-
-    const HF_API_KEY = window.APP_CONFIG.HUGGINGFACE_API_KEY;
-    const HF_MODEL = "meta-llama/Llama-3.2-3B-Instruct";
-    const url = `https://api-inference.huggingface.co/models/${HF_MODEL}`;
-
-    const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${HF_API_KEY}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            inputs: prompt,
-            parameters: {
-                max_new_tokens: 250,
-                temperature: 0.7,
-                top_p: 0.9,
-                return_full_text: false
-            }
-        })
-    });
-
-    if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Hugging Face API Error:', errorData);
-
-        if (errorData.error && errorData.error.includes('loading')) {
-            throw new Error('AI model is warming up. Please try again in a few seconds.');
-        }
-
-        throw new Error(`API Error: ${errorData.error || response.statusText}`);
-    }
-
-    const data = await response.json();
-
-    // Hugging Face returns an array with generated text
-    if (Array.isArray(data) && data[0]?.generated_text) {
-        return data[0].generated_text;
-    } else if (typeof data === 'string') {
-        return data;
-    } else {
-        console.error('Unexpected API response:', data);
-        throw new Error('Invalid response format from AI.');
-    }
+function getVerdictFromRating(rating) {
+    const numRating = parseFloat(rating);
+    if (isNaN(numRating)) return { text: 'N/A', class: '' };
+    if (numRating >= 8.0) return { text: 'Perfection', class: 'verdict-perfection' };
+    if (numRating >= 6.8) return { text: 'Go for it', class: 'verdict-go' };
+    if (numRating >= 5.0) return { text: 'One time watch', class: 'verdict-once' };
+    return { text: 'Skip', class: 'verdict-skip' };
 }
-
-// Close modal on outside click
-window.onclick = function (event) {
-    const modal = document.getElementById('movieModal');
-    if (event.target == modal) {
-        closeModal();
-    }
-}
-
-// ============================================
-// GLOBAL THEME & VIBE CONTROLLER
-// ============================================
-
-const THEME_SETTINGS = [
-    { name: 'Dark Mode', class: 'theme-dark', default: true },
-    { name: 'Light Mode', class: 'theme-light' }
-];
-
-const VIBE_SETTINGS = [
-    { name: 'Standard', class: 'vibe-standard', default: true },
-    { name: 'Neon Nights', class: 'vibe-neon' },
-    { name: 'Retro Wave', class: 'vibe-retro' },
-    { name: 'Cozy Cinema', class: 'vibe-cozy' }
-];
-
-function applyTheme(themeClass) {
-    // Remove all theme classes
-    THEME_SETTINGS.forEach(t => document.body.classList.remove(t.class));
-    // Add new theme class
-    document.body.classList.add(themeClass);
-    // Save
-    localStorage.setItem('os_theme', themeClass);
-    // Update UI
-    updateAppearanceUI();
-    console.log(`Theme applied: ${themeClass}`);
-}
-
-function applyVibe(vibeClass) {
-    // Remove all vibe classes
-    VIBE_SETTINGS.forEach(v => document.body.classList.remove(v.class));
-    // Add new vibe class
-    document.body.classList.add(vibeClass);
-    // Save
-    localStorage.setItem('os_vibe', vibeClass);
-    // Update UI
-    updateAppearanceUI();
-    console.log(`Vibe applied: ${vibeClass}`);
-}
-
-function initThemeVibe() {
-    // Load Theme
-    const savedTheme = localStorage.getItem('os_theme');
-    if (savedTheme && THEME_SETTINGS.some(t => t.class === savedTheme)) {
-        applyTheme(savedTheme);
-    } else {
-        const defaultTheme = THEME_SETTINGS.find(t => t.default);
-        applyTheme(defaultTheme.class);
-    }
-
-    // Load Vibe
-    const savedVibe = localStorage.getItem('os_vibe');
-    if (savedVibe && VIBE_SETTINGS.some(v => v.class === savedVibe)) {
-        applyVibe(savedVibe);
-    } else {
-        const defaultVibe = VIBE_SETTINGS.find(t => t.default);
-        applyVibe(defaultVibe.class);
-    }
-}
-
-
-
-function updateAppearanceUI() {
-    // Update Theme Buttons
-    document.querySelectorAll('.theme-btn').forEach(btn => {
-        const onclick = btn.getAttribute('onclick');
-        if (onclick) {
-            const match = onclick.match(/'([^']+)'/);
-            if (match) {
-                const themeClass = match[1];
-                if (document.body.classList.contains(themeClass)) {
-                    btn.classList.add('active');
-                } else {
-                    btn.classList.remove('active');
-                }
-            }
-        }
-    });
-
-    // Update Vibe Select
-    const select = document.querySelector('.vibe-select');
-    if (select) {
-        VIBE_SETTINGS.forEach(v => {
-            if (document.body.classList.contains(v.class)) {
-                select.value = v.class;
-            }
-        });
-    }
-}
-
-// Expose to window
-window.applyTheme = applyTheme;
-window.applyVibe = applyVibe;
-window.initThemeVibe = initThemeVibe;
-window.fetchTMDB = fetchTMDB;
-window.renderCustomList = renderCustomList;
-
-// Toggle theme function for navbar button
-window.toggleTheme = function () {
-    const isDark = document.body.classList.contains('theme-dark');
-    if (isDark) {
-        applyTheme('theme-light');
-    } else {
-        applyTheme('theme-dark');
-    }
-
-    // Update icon
-    const themeBtn = document.querySelector('.theme-toggle i');
-    if (themeBtn) {
-        if (isDark) {
-            themeBtn.classList.remove('fa-moon');
-            themeBtn.classList.add('fa-sun');
-        } else {
-            themeBtn.classList.remove('fa-sun');
-            themeBtn.classList.add('fa-moon');
-        }
-    }
-};
-
-

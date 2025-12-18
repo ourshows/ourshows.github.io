@@ -1602,65 +1602,37 @@ a {
     border-radius: 100px 100px 0 0;
     position: relative;
     overflow: hidden;
+    display: none;
+    /* User requested removal */
 }
 
 /* Inner cutout to make it an arc */
 .verdict-gauge::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 140px;
-    height: 70px;
-    background: #1e293b;
-    /* Match modal/card bg */
-    border-radius: 70px 70px 0 0;
+    display: none;
 }
 
 .gauge-needle {
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    width: 4px;
-    height: 90px;
-    background: white;
-    transform-origin: bottom center;
-    transform: translateX(-50%) rotate(0deg);
-    /* 0deg = left (start) */
-    z-index: 10;
-    border-radius: 4px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-    transition: transform 1s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.gauge-needle::after {
-    content: '';
-    position: absolute;
-    bottom: -5px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 12px;
-    height: 12px;
-    background: white;
-    border-radius: 50%;
-    box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    display: none;
 }
 
 .verdict-label {
-    margin-top: 0.5rem;
-    font-size: 1.4rem;
+    margin-top: 0;
+    /* Adjusted since gauge is gone */
+    font-size: 1.8rem;
+    /* Larger text */
     font-weight: 900;
     text-transform: uppercase;
     letter-spacing: 1.5px;
     text-shadow: 0 4px 12px rgba(0, 0, 0, 0.8);
     z-index: 5;
+    text-align: center;
 }
 
 .verdict-subtext {
     font-size: 0.85rem;
     color: var(--text-secondary);
     margin-top: 0.25rem;
+    text-align: center;
 }
 
 /* Responsive Visibility */
@@ -1669,33 +1641,18 @@ a {
 }
 
 .mobile-only {
-    display: none;
+    display: flex;
+    /* Unified - show everywhere */
 }
 
 @media (max-width: 768px) {
     .pc-only {
-        display: none !important;
+        display: flex !important;
+        /* Unified */
     }
 
     .mobile-only {
         display: flex !important;
-    }
-
-    .verdict-gauge {
-        width: 100%;
-        max-width: 260px;
-        height: 130px;
-        border-radius: 130px 130px 0 0;
-    }
-
-    .verdict-gauge::after {
-        width: 70%;
-        height: 70%;
-        border-radius: 200px 200px 0 0;
-    }
-
-    .gauge-needle {
-        height: 120px;
     }
 }
 
@@ -1721,4 +1678,46 @@ a {
     margin-left: auto;
     /* Push to right */
     display: inline-block;
+}
+
+/* Strict Avatar Sizing */
+.review-avatar {
+    width: 24px !important;
+    height: 24px !important;
+    min-width: 24px !important;
+    max-width: 24px !important;
+    min-height: 24px !important;
+    max-height: 24px !important;
+    border-radius: 50% !important;
+    object-fit: cover !important;
+    flex-shrink: 0 !important;
+}
+
+/* Skip Verdict */
+.verdict-skip {
+    background: linear-gradient(135deg, #ef4444 0%, #991b1b 100%);
+    color: white;
+    border-color: #f87171;
+}
+
+/* Updated Card Rating Badge for Text */
+.card-rating-badge {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    /* Pill shape */
+    font-weight: 700;
+    font-size: 0.8rem;
+    color: #ffd700;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    z-index: 2;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    white-space: nowrap;
 }

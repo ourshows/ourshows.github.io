@@ -42,15 +42,19 @@ const LANG_MAP = {
 };
 
 // 2. Initialization
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    if (window.ourShowLoader) window.ourShowLoader.show();
+
     if (!window.PUBLIC_CONFIG) {
         console.error("Public Config not loaded");
         // Could define fallback here if needed
     }
 
     setupFilters();
-    loadItems(); // Initial Load
+    await loadItems(); // Initial Load (Await to ensure loader stays up)
     setupInfiniteScroll();
+
+    if (window.ourShowLoader) window.ourShowLoader.hide();
 });
 
 // Expose functions to window (since this is a module)
@@ -196,12 +200,15 @@ function renderGrid(items, mediaType) {
         const year = date.split('-')[0];
         const watchLink = `watchanddownload.html?id=${item.id}&type=${mediaType}`;
 
+        // Calculate verdict for poster
+        const verdict = calculateVerdict(item);
+
         const card = document.createElement('div');
         card.className = 'media-card';
         card.innerHTML = `
             <div class="media-poster-container">
                 <img class="media-poster" src="${imgBase}${item.poster_path}" loading="lazy" alt="${title}">
-                <div class="card-rating-badge">${item.vote_average ? item.vote_average.toFixed(1) : ''} \u2605</div>
+                <div class="card-rating-badge" style="color: ${getVerdictColor(verdict.text)};">${verdict.text}</div>
                 <div class="card-overlay">
                     <button class="card-download-btn" onclick="event.stopPropagation(); window.location.href='${watchLink}'">
                         <i class="fas fa-play"></i> Watch
@@ -315,15 +322,15 @@ function calculateVerdict(details) {
     if (rating >= 5.0) {
         return { text: "One time watch", class: "verdict-once" };
     }
-    // "Pass": Low rating
-    return { text: "Pass", class: "verdict-pass" };
+    // "Skip": Low rating
+    return { text: "Skip", class: "verdict-skip" };
 }
 
 function getVerdictColor(text) {
     if (text === 'Perfection') return '#ffd700';
     if (text === 'Go for it') return '#22c55e';
     if (text === 'One time watch') return '#f59e0b';
-    return '#ef4444'; // Pass
+    return '#ef4444'; // Skip
 }
 
 function renderVerdictMeter(details, verdict) {
@@ -426,7 +433,7 @@ function getVerdictFromRating(rating) {
     if (rating >= 8.0) return { text: 'Perfection', class: 'verdict-perfection' };
     if (rating >= 6.8) return { text: 'Go for it', class: 'verdict-go' };
     if (rating >= 5.0) return { text: 'One time watch', class: 'verdict-once' };
-    return { text: 'Pass', class: 'verdict-pass' };
+    return { text: 'Skip', class: 'verdict-skip' };
 }
 
 async function loadReviews(tmdbReviews, movieId) {

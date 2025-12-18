@@ -1,5 +1,9 @@
 import { auth, db, onAuthStateChanged, collection, getDocs, doc, deleteDoc, setDoc, serverTimestamp } from './firebase-wrapper.js';
 
+document.addEventListener('DOMContentLoaded', () => {
+    if (window.ourShowLoader) window.ourShowLoader.show();
+});
+
 // --- Bulk Import Logic ---
 let bulkCandidates = [];
 
@@ -43,54 +47,130 @@ window.processBulkList = async function () {
     // Using simple loop to avoid race conditions with pushing to array
     for (const title of lines) {
         try {
-            const result = await searchSingleTitle(title);
-            if (result) {
-                bulkCandidates.push({ originalQuery: title, data: result });
+            const results = await searchSingleTitle(title);
+            if (results && results.length > 0) {
+                // Default to 0, but maybe prefer exact match? For now, 0.
+                bulkCandidates.push({ originalQuery: title, results: results, selectedIndex: 0 });
             }
         } catch (e) {
             console.error(`Failed to search for ${title}`, e);
         }
     }
 
-    // Render Results
+    renderBulkCandidates();
+
+    document.getElementById('bulkLoading').style.display = 'none';
+    document.getElementById('bulkStep2').style.display = 'block';
+    updateBulkCount();
+}
+
+function renderBulkCandidates() {
+    const container = document.getElementById('bulkPreviewGrid');
+    container.innerHTML = '';
+
     bulkCandidates.forEach((item, index) => {
         const div = document.createElement('div');
         div.className = 'bulk-item';
-        // Inline styles for the grid item
+        div.id = `bulk-item-${index}`;
         div.style.position = 'relative';
         div.style.background = 'rgba(255,255,255,0.05)';
         div.style.borderRadius = '8px';
         div.style.overflow = 'hidden';
 
-        const imgUrl = item.data.poster_path ? `https://image.tmdb.org/t/p/w200${item.data.poster_path}` : 'https://via.placeholder.com/150x225?text=No+Img';
-        const year = (item.data.release_date || item.data.first_air_date || '').split('-')[0];
+        const data = item.results[item.selectedIndex];
+
+        const imgUrl = data.poster_path ? `https://image.tmdb.org/t/p/w200${data.poster_path}` : 'https://via.placeholder.com/150x225?text=No+Img';
+        const year = (data.release_date || data.first_air_date || '').split('-')[0];
 
         div.innerHTML = `
             <input type="checkbox" id="bulk_check_${index}" checked style="position: absolute; top: 5px; right: 5px; z-index: 10; transform: scale(1.5);">
-            <img src="${imgUrl}" style="width: 100%; height: 160px; object-fit: cover;">
-            <div style="padding: 0.5rem; font-size: 0.8rem;">
-                <div style="font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.data.title || item.data.name}</div>
-                <div style="opacity: 0.7;">${year} • ${item.data.media_type}</div>
+            <img src="${imgUrl}" style="width: 100%; height: 160px; object-fit: cover; opacity: 0.7;">
+            <div style="padding: 0.5rem; font-size: 0.8rem; position: relative;">
+                <div style="font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${data.title || data.name}</div>
+                <div style="opacity: 0.7; margin-bottom: 4px;">${year} • ${data.media_type}</div>
+                <div style="font-size: 0.7rem; color: #aaa; margin-top: 2px;">
+                    ${item.results.length > 1 ? `<span style="cursor: pointer; color: #4fc3f7; text-decoration: underline;" onclick="event.stopPropagation(); window.openSwapModal(${index})">Wrong Title? (${item.results.length - 1} more)</span>` : ''}
+                </div>
             </div>
         `;
 
-        // Toggle checkbox on click
+        // Toggle checkbox on click (background)
         div.onclick = (e) => {
-            if (e.target.type !== 'checkbox') {
+            if (e.target.type !== 'checkbox' && !e.target.getAttribute('onclick')) {
                 const cb = document.getElementById(`bulk_check_${index}`);
                 cb.checked = !cb.checked;
                 updateBulkCount();
             }
         };
+
         // Update count on checkbox change
-        div.querySelector('input').onchange = updateBulkCount;
+        const cb = div.querySelector('input');
+        if (cb) cb.onchange = updateBulkCount;
 
         container.appendChild(div);
     });
+}
 
-    document.getElementById('bulkLoading').style.display = 'none';
-    document.getElementById('bulkStep2').style.display = 'block';
-    updateBulkCount();
+
+// New Swap Logic
+window.openSwapModal = function (index) {
+    const item = bulkCandidates[index];
+
+    // Create a temporary modal/overlay to show options
+    const existingOverlay = document.getElementById('swapOverlay');
+    if (existingOverlay) existingOverlay.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'swapOverlay';
+    overlay.style.position = 'fixed';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.width = '100%';
+    overlay.style.height = '100%';
+    overlay.style.background = 'rgba(0,0,0,0.85)';
+    overlay.style.zIndex = '10000';
+    overlay.style.display = 'flex';
+    overlay.style.justifyContent = 'center';
+    overlay.style.alignItems = 'center';
+
+    let listHtml = '';
+    item.results.forEach((res, rIndex) => {
+        const img = res.poster_path ? `https://image.tmdb.org/t/p/w92${res.poster_path}` : 'https://via.placeholder.com/45x68';
+        const year = (res.release_date || res.first_air_date || '').split('-')[0];
+        const isSelected = rIndex === item.selectedIndex;
+
+        listHtml += `
+            <div onclick="window.selectBulkCandidate(${index}, ${rIndex})" style="display: flex; gap: 10px; padding: 10px; background: ${isSelected ? 'rgba(79, 195, 247, 0.2)' : 'rgba(255,255,255,0.05)'}; margin-bottom: 5px; cursor: pointer; border-radius: 4px; border: 1px solid ${isSelected ? '#4fc3f7' : 'transparent'};">
+                <img src="${img}" style="width: 45px; height: 68px; object-fit: cover;">
+                <div>
+                     <div style="font-weight: bold;">${res.title || res.name}</div>
+                     <div style="font-size: 0.85rem; opacity: 0.7;">${year} • ${res.media_type}</div>
+                     <div style="font-size: 0.8rem; margin-top: 4px; max-height: 40px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">${res.overview || ''}</div>
+                </div>
+            </div>
+         `;
+    });
+
+    overlay.innerHTML = `
+        <div style="background: var(--glass-bg); backdrop-filter: blur(16px); width: 90%; max-width: 500px; max-height: 80vh; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: column;">
+            <div style="padding: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin: 0;">Select Correct Title</h3>
+                <span style="cursor: pointer; font-size: 1.5rem;" onclick="document.getElementById('swapOverlay').remove()">&times;</span>
+            </div>
+            <div style="padding: 1rem; overflow-y: auto; flex: 1;">
+                ${listHtml}
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+}
+
+window.selectBulkCandidate = function (candidateIndex, resultIndex) {
+    bulkCandidates[candidateIndex].selectedIndex = resultIndex;
+    renderBulkCandidates();
+    const overlay = document.getElementById('swapOverlay');
+    if (overlay) overlay.remove();
 }
 
 function updateBulkCount() {
@@ -105,12 +185,11 @@ async function searchSingleTitle(query) {
     const res = await fetch(url);
     const data = await res.json();
 
-    // Return first match that matches basic criteria
+    // Return all results
     if (data.results && data.results.length > 0) {
-        // Prioritize Movie/TV
-        return data.results.find(r => r.media_type === 'movie' || r.media_type === 'tv') || data.results[0];
+        return data.results.slice(0, 10);
     }
-    return null;
+    return [];
 }
 
 window.confirmBulkImport = async function () {
@@ -132,7 +211,7 @@ window.confirmBulkImport = async function () {
     let importedCount = 0;
 
     for (const idx of checkedIndices) {
-        const item = bulkCandidates[idx].data;
+        const item = bulkCandidates[idx].results[bulkCandidates[idx].selectedIndex];
         const mediaType = item.media_type || 'movie';
 
         try {
@@ -181,15 +260,17 @@ document.documentElement.setAttribute('data-theme', savedTheme);
 let watchedItemsGlobal = []; // Store loaded items for filtering
 
 // Auth State
-onAuthStateChanged(auth, (user) => {
+// Auth State
+onAuthStateChanged(auth, async (user) => {
     updateAuthUI(user);
     if (user) {
-        loadWatchedList(user.uid);
+        await loadWatchedList(user.uid);
     } else {
         showEmptyState();
         document.getElementById('loading').style.display = 'none';
         // Optionally redirect or show "Login to view"
     }
+    if (window.ourShowLoader) window.ourShowLoader.hide();
 });
 
 function updateAuthUI(user) {

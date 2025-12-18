@@ -4,7 +4,7 @@
     "start_url": "./index.html",
     "display": "standalone",
     "background_color": "#0f172a",
-    "theme_color": "#e50914",
+    "theme_color": "#0f172a",
     "description": "Watch, Track, and Discover Movies & TV Shows",
     "icons": [
         {

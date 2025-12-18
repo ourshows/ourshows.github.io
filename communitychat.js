@@ -22,6 +22,7 @@ onAuthStateChanged(auth, async (user) => {
         // Enforce Login
         window.location.href = 'login.html';
     }
+    if (window.ourShowLoader) window.ourShowLoader.hide();
 });
 
 async function checkChatUsername(uid) {
@@ -70,6 +71,7 @@ async function saveChatUsername() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    if (window.ourShowLoader) window.ourShowLoader.show();
     const input = document.getElementById('msgInput');
     const sendBtn = document.getElementById('sendBtn');
     const spoilerBtn = document.getElementById('spoilerToggle');

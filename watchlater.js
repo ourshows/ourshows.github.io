@@ -1,5 +1,9 @@
 import { auth, db, onAuthStateChanged, collection, getDocs, doc, deleteDoc, setDoc, serverTimestamp } from './firebase-wrapper.js';
 
+document.addEventListener('DOMContentLoaded', () => {
+    if (window.ourShowLoader) window.ourShowLoader.show();
+});
+
 // Theme Toggle
 window.toggleTheme = function () {
     const html = document.documentElement;
@@ -16,14 +20,15 @@ document.documentElement.setAttribute('data-theme', savedTheme);
 // Auth State
 let currentItems = []; // Store loaded items for filtering
 
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
     updateAuthUI(user);
     if (user) {
-        loadWatchLaterList(user.uid);
+        await loadWatchLaterList(user.uid);
     } else {
         showEmptyState();
         document.getElementById('loading').style.display = 'none';
     }
+    if (window.ourShowLoader) window.ourShowLoader.hide();
 });
 
 function updateAuthUI(user) {

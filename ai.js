@@ -7,7 +7,11 @@ let conversationHistory = [];
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     const input = document.getElementById('aiInput');
-    if (!input) return; // Exit if AI elements aren't present
+    if (window.ourShowLoader) window.ourShowLoader.show();
+    if (!input) {
+        if (window.ourShowLoader) window.ourShowLoader.hide();
+        return;
+    }
 
     // Focus input on load (only if standalone page, maybe not in modal to avoid annoying scroll)
     // input.focus(); 
@@ -27,6 +31,8 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Failed to load conversation history');
         }
     }
+
+    if (window.ourShowLoader) window.ourShowLoader.hide();
 });
 
 // Quick prompt function
