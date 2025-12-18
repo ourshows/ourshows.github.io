@@ -5,21 +5,23 @@ let currentUser = null;
 
 // Wait for DOM to load
 document.addEventListener('DOMContentLoaded', () => {
+    if (window.ourShowLoader) window.ourShowLoader.show();
     console.log('Profile page loaded, waiting for auth...');
 });
 
 // Auth state listener
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
     console.log('Auth state changed:', user);
 
     if (user) {
         currentUser = user;
         displayUserInfo(user);
-        loadUserData(user);
+        await loadUserData(user);
     } else {
         console.log('No user, redirecting to login');
         window.location.href = 'login.html';
     }
+    if (window.ourShowLoader) window.ourShowLoader.hide();
 });
 
 function displayUserInfo(user) {

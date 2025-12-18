@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
+    if (window.ourShowLoader) window.ourShowLoader.show();
+
     const urlParams = new URLSearchParams(window.location.search);
     const id = urlParams.get('id');
     const type = urlParams.get('type') || 'movie';
@@ -7,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
         loadDetails(id, type);
     } else {
         document.getElementById('title').textContent = "Content not found";
+        if (window.ourShowLoader) window.ourShowLoader.hide();
     }
 
     // Setup Download Button Immediately
@@ -55,13 +58,27 @@ async function loadDetails(id, type) {
         const res = await fetch(url);
         if (!res.ok) throw new Error('Network response was not ok');
         const data = await res.json();
-        renderDetails(data);
+
+        if (typeof renderDetails === 'function') {
+            renderDetails(data);
+        } else {
+            console.warn("renderDetails function not found!");
+            // Fallback basic render if missing
+            document.getElementById('title').textContent = data.title || data.name;
+            document.getElementById('backdrop').style.backgroundImage = `url(https://image.tmdb.org/t/p/original${data.backdrop_path})`;
+            document.getElementById('poster').src = `https://image.tmdb.org/t/p/w500${data.poster_path}`;
+            document.getElementById('overview').textContent = data.overview;
+            document.getElementById('rating').textContent = `★ ${data.vote_average.toFixed(1)}`;
+            document.getElementById('releaseDate').textContent = (data.release_date || data.first_air_date || '').split('-')[0];
+        }
 
         // Fetch Providers
-        loadProviders(id, type);
+        await loadProviders(id, type);
 
     } catch (e) {
         console.error("Error loading details:", e);
+    } finally {
+        if (window.ourShowLoader) window.ourShowLoader.hide();
     }
 }
 
