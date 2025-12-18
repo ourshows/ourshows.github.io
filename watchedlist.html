@@ -109,6 +109,14 @@
                 }
             }
         };
+        // Safety timeout to prevent infinite loading
+        setTimeout(() => {
+            const l = document.getElementById('globalLoader');
+            if (l && getComputedStyle(l).visibility !== 'hidden' && getComputedStyle(l).opacity !== '0') {
+                console.warn("Loader safety timeout triggered");
+                window.ourShowLoader.hide();
+            }
+        }, 8000);
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">

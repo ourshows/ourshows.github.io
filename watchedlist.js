@@ -1,8 +1,6 @@
 import { auth, db, onAuthStateChanged, collection, getDocs, doc, deleteDoc, setDoc, serverTimestamp } from './firebase-wrapper.js';
 
-document.addEventListener('DOMContentLoaded', () => {
-    if (window.ourShowLoader) window.ourShowLoader.show();
-});
+
 
 // --- Bulk Import Logic ---
 let bulkCandidates = [];
