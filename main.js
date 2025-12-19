@@ -128,6 +128,14 @@ async function refreshHomepageContent() {
 
 // --- API Helper ---
 async function fetchTMDB(endpoint, params = {}) {
+    // Check cache first
+    if (window.cacheManager) {
+        const cached = window.cacheManager.get(endpoint, params);
+        if (cached) return cached;
+    }
+
+    let data = null;
+
     // 1. Priority: Client-Side Direct Call (Public Config)
     if (window.PUBLIC_CONFIG && (window.PUBLIC_CONFIG.TMDB_KEY || window.PUBLIC_CONFIG.TMDB_API_KEY)) {
         const apiKey = window.PUBLIC_CONFIG.TMDB_KEY || window.PUBLIC_CONFIG.TMDB_API_KEY;
@@ -141,37 +149,49 @@ async function fetchTMDB(endpoint, params = {}) {
         try {
             const response = await fetch(url);
             if (!response.ok) throw new Error(`TMDB API Error: ${response.status}`);
-            return await response.json();
+            data = await response.json();
         } catch (error) {
             console.error('Direct TMDB Fetch Error:', error);
-            return null;
         }
     }
 
     // 2. Fallback: Dev/Local Direct Call (App Config)
-    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    if (isLocal && window.APP_CONFIG && window.APP_CONFIG.TMDB_API_KEY) {
-        const baseUrl = window.APP_CONFIG.TMDB_BASE_URL || "https://api.themoviedb.org/3";
-        const url = new URL(`${baseUrl}${endpoint}`);
-        url.searchParams.append('api_key', window.APP_CONFIG.TMDB_API_KEY);
-        url.searchParams.append('language', 'en-US');
-        url.searchParams.append('include_adult', 'false');
-        Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
+    if (!data) {
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        if (isLocal && window.APP_CONFIG && window.APP_CONFIG.TMDB_API_KEY) {
+            const baseUrl = window.APP_CONFIG.TMDB_BASE_URL || "https://api.themoviedb.org/3";
+            const url = new URL(`${baseUrl}${endpoint}`);
+            url.searchParams.append('api_key', window.APP_CONFIG.TMDB_API_KEY);
+            url.searchParams.append('language', 'en-US');
+            url.searchParams.append('include_adult', 'false');
+            Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
 
-        try {
-            const response = await fetch(url);
-            if (response.ok) return await response.json();
-        } catch (e) { console.error(e); }
+            try {
+                const response = await fetch(url);
+                if (response.ok) data = await response.json();
+            } catch (e) { console.error(e); }
+        }
     }
 
     // 3. Fallback: Proxy
-    try {
-        const url = new URL('/api/tmdb', window.location.origin);
-        url.searchParams.append('endpoint', endpoint);
-        Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
-        const response = await fetch(url);
-        return await response.json();
-    } catch (e) { return null; }
+    if (!data) {
+        try {
+            const url = new URL('/api/tmdb', window.location.origin);
+            url.searchParams.append('endpoint', endpoint);
+            Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
+            const response = await fetch(url);
+            data = await response.json();
+        } catch (e) {
+            console.error('Proxy fetch failed:', e);
+        }
+    }
+
+    // Cache the result if we got data
+    if (data && window.cacheManager) {
+        window.cacheManager.set(endpoint, params, data);
+    }
+
+    return data;
 }
 
 async function renderCustomList(containerId, listConfig, mediaType) {
