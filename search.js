@@ -97,6 +97,91 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
     }
+
+    // Handle Mobile Search with Dropdown
+    const mobileInput = document.getElementById('mobileSearchInput');
+    const mobileDropdown = document.getElementById('mobileSearchDropdown');
+    let mobileSearchTimeout;
+
+    if (mobileInput && mobileDropdown) {
+        mobileInput.addEventListener('input', (e) => {
+            clearTimeout(mobileSearchTimeout);
+            const query = e.target.value.trim();
+
+            if (query.length < 2) {
+                mobileDropdown.style.display = 'none';
+                return;
+            }
+
+            mobileSearchTimeout = setTimeout(async () => {
+                try {
+                    const data = await fetchTMDB('/search/multi', { query: query });
+                    if (data && data.results && data.results.length > 0) {
+                        const validResults = data.results
+                            .filter(item => (item.media_type === 'movie' || item.media_type === 'tv') && item.poster_path)
+                            .slice(0, 5);
+
+                        if (validResults.length > 0) {
+                            mobileDropdown.innerHTML = validResults.map(item => {
+                                const title = item.title || item.name;
+                                const year = (item.release_date || item.first_air_date || '').split('-')[0];
+                                const type = item.media_type === 'tv' ? 'TV Show' : 'Movie';
+                                const poster = window.APP_CONFIG.TMDB_IMAGE_SMALL_URL + item.poster_path;
+
+                                return `
+                                    <div class="mobile-search-item" data-id="${item.id}" data-type="${item.media_type}">
+                                        <img src="${poster}" class="mobile-search-poster" alt="${title}">
+                                        <div class="mobile-search-info">
+                                            <div class="mobile-search-title">${title}</div>
+                                            <div class="mobile-search-meta">${year} • ${type}</div>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('');
+
+                            // Add click handlers
+                            mobileDropdown.querySelectorAll('.mobile-search-item').forEach(item => {
+                                item.addEventListener('click', () => {
+                                    const id = item.getAttribute('data-id');
+                                    const type = item.getAttribute('data-type');
+                                    mobileDropdown.style.display = 'none';
+                                    mobileInput.value = '';
+                                    openMovieModal(id, type);
+                                });
+                            });
+
+                            mobileDropdown.style.display = 'block';
+                        } else {
+                            mobileDropdown.style.display = 'none';
+                        }
+                    } else {
+                        mobileDropdown.style.display = 'none';
+                    }
+                } catch (error) {
+                    console.error('Mobile search error:', error);
+                    mobileDropdown.style.display = 'none';
+                }
+            }, 300);
+        });
+
+        // Handle Enter key
+        mobileInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const query = mobileInput.value.trim();
+                if (query) {
+                    mobileDropdown.style.display = 'none';
+                    window.location.href = `search.html?q=${encodeURIComponent(query)}`;
+                }
+            }
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!mobileInput.contains(e.target) && !mobileDropdown.contains(e.target)) {
+                mobileDropdown.style.display = 'none';
+            }
+        });
+    }
 });
 
 

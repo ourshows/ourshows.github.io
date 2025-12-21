@@ -24,6 +24,9 @@ self.addEventListener('fetch', (event) => {
 
     const url = new URL(event.request.url);
 
+    // EXCLUDE: Do not cache APK files or non-GET requests
+    if (url.pathname.endsWith('.apk')) return;
+
     // STRATEGY: Network First for HTML (Navigation)
     // This ensures the user always gets the latest page content/skeleton
     if (event.request.mode === 'navigate' || url.pathname.endsWith('.html') || url.pathname.endsWith('/')) {

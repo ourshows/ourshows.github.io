@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Watch - OurShow</title>
     <link rel="stylesheet" href="public/style.css">
-    <link rel="stylesheet" href="public/themes.css">
+    <link rel="stylesheet" href="themes.css">
     <style>
         /* Info Loader Styles (Critical Path) */
         #globalLoader {
@@ -296,14 +296,55 @@
 
             <p id="overview" style="line-height: 1.6; color: #cbd5e1; margin-bottom: 2rem;"></p>
 
-            <!-- Custom Watch Actions -->
+            <!-- Streaming Options Section -->
             <div class="custom-actions">
-                <button class="action-btn" id="btnApp">
-                    <i class="fas fa-mobile-alt"></i> Download PP_Cine App (Free)
-                </button>
-                <a href="#" class="action-btn secondary" id="btnWeb">
-                    <i class="fas fa-globe"></i> Watch on Net2025.cc (Free)
-                </a>
+                <h3 style="margin-bottom: 1.5rem; font-size: 1.3rem; color: #fff; font-weight: 700;">
+                    <i class="fas fa-play-circle" style="color: var(--primary-color);"></i> Stream & Download
+                </h3>
+
+                <!-- Mobile App (Mobile Only) - Recommended -->
+                <div class="mobile-only-section" style="display: none; margin-bottom: 2rem;">
+                    <h4 style="font-size: 1rem; color: #94a3b8; margin-bottom: 1rem; font-weight: 500;">
+                        <i class="fas fa-mobile-alt"></i> Recommended App
+                    </h4>
+                    <div style="display: grid; grid-template-columns: 1fr; gap: 0.75rem;">
+                        <a href="app/PP_Cine.apk" download class="action-btn" id="btnApp"
+                            style="background: linear-gradient(135deg, #10b981, #059669); padding: 1rem; border-radius: 10px;">
+                            <i class="fas fa-download"></i> Download PP Cine App
+                            <div style="font-size: 0.7rem; opacity: 0.85; margin-top: 0.3rem;">Best for Mobile (Free
+                                APK)</div>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Dynamic Streaming Links Container -->
+                <div id="dynamicLinksContainer" style="margin-bottom: 2rem; min-height: 100px;">
+                    <!-- Links will be injected here by watchanddownload.js -->
+                    <div style="text-align: center; color: #64748b; padding: 2rem;">
+                        <i class="fas fa-circle-notch fa-spin"></i> Loading options...
+                    </div>
+                </div>
+
+                <style>
+                    @media (max-width: 768px) {
+                        .mobile-only-section {
+                            display: block !important;
+                        }
+
+                        .custom-actions h3 {
+                            font-size: 1.1rem !important;
+                        }
+
+                        .custom-actions h4 {
+                            font-size: 0.9rem !important;
+                        }
+                    }
+                </style>
+
+                <p
+                    style="margin-top: 1.5rem; font-size: 0.85rem; color: #64748b; text-align: center; line-height: 1.5;">
+                    <i class="fas fa-info-circle"></i> Choose a platform above to watch or download this content
+                </p>
             </div>
 
             <!-- Official Providers -->

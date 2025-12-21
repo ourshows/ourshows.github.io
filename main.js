@@ -1298,7 +1298,12 @@ async function addToCollectionConfirm() {
 }
 
 function watchNow() {
-    alert('Starting playback... (Demo)');
+    if (!currentMovieId || !currentMovieData) {
+        alert('Movie information not available');
+        return;
+    }
+    const mediaType = currentMovieData.media_type || 'movie';
+    window.location.href = `watchanddownload.html?id=${currentMovieId}&type=${mediaType}`;
 }
 
 function askAI() {
