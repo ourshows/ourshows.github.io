@@ -68,17 +68,25 @@ window.openMovieModal = openMovieModal;
 window.toggleReview = toggleReview;
 
 // Toggle review read more/less
-function toggleReview(reviewId, fullContent, button) {
-    const reviewElement = document.getElementById(reviewId);
-    if (!reviewElement) return;
+// Toggle review read more/less
+function toggleReview(reviewId) {
+    const card = document.getElementById(reviewId);
+    if (!card) return;
 
-    if (button.textContent === 'Read More') {
-        reviewElement.textContent = fullContent;
-        button.textContent = 'Read Less';
+    const short = card.querySelector('.content-short');
+    const full = card.querySelector('.content-full');
+    const btn = card.querySelector('.read-more-btn');
+
+    if (!short || !full || !btn) return;
+
+    if (full.style.display === 'none') {
+        full.style.display = 'inline';
+        short.style.display = 'none';
+        btn.textContent = 'Read Less';
     } else {
-        const truncated = fullContent.substring(0, 200) + '...';
-        reviewElement.textContent = truncated;
-        button.textContent = 'Read More';
+        full.style.display = 'none';
+        short.style.display = 'inline';
+        btn.textContent = 'Read More';
     }
 }
 
@@ -371,7 +379,7 @@ function loadCast(credits) {
         return;
     }
     castContainer.innerHTML = credits.cast.slice(0, 12).map(person => `
-        <div class="cast-card">
+        <div class="cast-card" style="cursor: pointer;" onclick="window.location.href='cast.html?id=${person.id}'">
             <img src="${person.profile_path ? window.APP_CONFIG.TMDB_IMAGE_SMALL_URL + person.profile_path : 'https://via.placeholder.com/150x225?text=No+Image'}" 
                 alt="${person.name}">
             <div style="font-weight: 600; font-size: 0.9rem;">${person.name}</div>
@@ -506,21 +514,22 @@ async function loadReviews(tmdbReviews, movieId) {
 
         const maxLength = 200;
         const isLong = content.length > maxLength;
-        const truncatedContent = isLong ? content.substring(0, maxLength) + '...' : content;
-        const reviewId = `review-${review.id || Math.random().toString(36).substr(2, 9)}`;
+        const shortContent = isLong ? content.substring(0, maxLength) + '...' : content;
+        const reviewId = `review-viewall-${review.id || Math.random().toString(36).substr(2, 9)}`;
 
         return `
-            <div class="review-card" style="${review.source === 'ourshow' ? 'border-left: 3px solid var(--primary-color);' : ''}">
+            <div class="review-card" id="${reviewId}" style="${review.source === 'ourshow' ? 'border-left: 3px solid var(--primary-color);' : ''}">
                 <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
                     <strong style="display:flex; gap:0.5rem; align-items:center;">
                         <img class="review-avatar" src="${avatarUrl}" alt="${author}" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;"> ${author}
                     </strong>
                     ${verdictHTML}
                 </div>
-                <p style="color: var(--text-secondary); line-height: 1.6;" id="${reviewId}">
-                    ${truncatedContent}
-                </p>
-                ${isLong ? `<button class="read-more-btn" onclick="toggleReview('${reviewId}', \`${content.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`, this)">Read More</button>` : ''}
+                <div class="review-content" style="color: var(--text-secondary); line-height: 1.6;">
+                    <span class="content-short">${shortContent}</span>
+                    ${isLong ? `<span class="content-full" style="display:none;">${content}</span>
+                                <span class="read-more-btn" style="color:var(--primary-color); cursor:pointer; margin-left:5px;" onclick="toggleReview('${reviewId}')">Read More</span>` : ''}
+                </div>
             </div>
         `;
     }).join('');
@@ -546,7 +555,7 @@ function loadSimilar(similar) {
         if (!item.poster_path) return;
         const card = document.createElement('div');
         card.className = 'media-card';
-        card.style.minWidth = '160px'; // Force width for scroller
+        // card.style.minWidth = '160px'; // Removed for grid layout
         card.innerHTML = `
             <div class="media-poster-container">
             <img class="media-poster" src="${window.APP_CONFIG.TMDB_IMAGE_SMALL_URL}${item.poster_path}" loading="lazy" alt="${item.title || item.name}">
@@ -658,13 +667,75 @@ function watchNow() {
     window.location.href = `watchanddownload.html?id=${currentMovieId}&type=${mediaType}`;
 }
 
-function askAI() {
-    const question = document.getElementById('aiQuestion').value;
+async function askAI() {
+    const questionInput = document.getElementById('aiQuestion');
+    const question = questionInput.value.trim();
     if (!question) return;
 
     const chatContainer = document.getElementById('aiChat');
-    chatContainer.innerHTML += `<div style="margin-bottom: 0.5rem;"><strong>You:</strong> ${question}</div>`;
-    chatContainer.innerHTML += `<div style="margin-bottom: 0.5rem; color: var(--accent-color);"><strong>AI:</strong> That's a great question about ${currentMovieData.title || currentMovieData.name}! (AI integration coming soon)</div>`;
-    document.getElementById('aiQuestion').value = '';
+
+    // Add User Message
+    chatContainer.innerHTML += `
+        <div class="ai-message user" style="text-align: right; margin-bottom: 0.5rem;">
+            <div style="background: var(--primary-color); display: inline-block; padding: 0.5rem 1rem; border-radius: 12px 12px 0 12px;">${question}</div>
+        </div>`;
+
+    questionInput.value = '';
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+
+    // Show Loading
+    const loadingId = 'ai-loading-' + Date.now();
+    chatContainer.innerHTML += `
+        <div id="${loadingId}" class="ai-message ai" style="margin-bottom: 0.5rem;">
+             <div style="background: rgba(255,255,255,0.1); display: inline-block; padding: 0.5rem 1rem; border-radius: 12px 12px 12px 0;">
+                <i class="fas fa-circle-notch fa-spin"></i> Thinking...
+             </div>
+        </div>`;
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+
+    try {
+        const movieContext = `Movie: ${currentMovieData.title || currentMovieData.name} (${(currentMovieData.release_date || currentMovieData.first_air_date || '').split('-')[0]}). 
+        Overview: ${currentMovieData.overview}. 
+        Rating: ${currentMovieData.vote_average}.`;
+
+        const systemPrompt = `You are an intelligent movie assistant. The user is asking about the following movie:
+        ${movieContext}
+        Keep your answer concise, engaging, and relevant to this specific movie. Avoid spoilers unless asked.`;
+
+        const messages = [{ role: 'user', content: question }];
+
+        // Use window.callAI from ai.js if available, else simulated response
+        let reply = "I'm sorry, I can't connect to the analytics engine right now.";
+
+        if (window.callAI) {
+            reply = await window.callAI(messages, systemPrompt);
+        } else {
+            // Fallback if ai.js failed to load
+            reply = "AI System Offline. Please check your connection.";
+            console.error("ai.js not loaded or callAI not found");
+        }
+
+        // Remove loading
+        const loader = document.getElementById(loadingId);
+        if (loader) loader.remove();
+
+        // Add AI Response
+        chatContainer.innerHTML += `
+            <div class="ai-message ai" style="margin-bottom: 0.5rem;">
+                <div style="background: rgba(255,255,255,0.1); display: inline-block; padding: 0.5rem 1rem; border-radius: 12px 12px 12px 0;">
+                    <strong>AI:</strong> ${reply}
+                </div>
+            </div>`;
+
+    } catch (error) {
+        const loader = document.getElementById(loadingId);
+        if (loader) loader.remove();
+
+        chatContainer.innerHTML += `
+            <div class="ai-message ai error" style="margin-bottom: 0.5rem;">
+                <div style="color: #ff6b6b;">Error: ${error.message || "Something went wrong."}</div>
+            </div>`;
+    }
+
     chatContainer.scrollTop = chatContainer.scrollHeight;
 }

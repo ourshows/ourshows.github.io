@@ -7,6 +7,14 @@
     <title>Profile - OurShow</title>
     <link rel="stylesheet" href="public/style.css">
     <link rel="stylesheet" href="themes.css">
+
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/jpeg" href="public/logo.jpg">
+    <link rel="apple-touch-icon" href="public/logo.jpg">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <style>
         /* Info Loader Styles (Critical Path) */
         #globalLoader {
@@ -764,6 +772,10 @@
             }
         }
     </script>
+    <script src="public-config.js"></script>
+    <script src="auth.js"></script>
+    <script type="module" src="profile.js"></script>
+    <script type="module" src="ai.js"></script>
     <script src="public/mobile-nav.js"></script>
 </body>
 

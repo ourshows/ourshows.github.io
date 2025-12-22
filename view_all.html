@@ -130,124 +130,124 @@
         <div class="modal-content glass-panel">
             <span class="close-modal" onclick="closeModal()">&times;</span>
             <div class="modal-body">
-                <div class="modal-header">
-                    <div class="modal-poster-container">
-                        <img id="modalPoster" src="" alt="Poster" class="modal-poster">
-                        <!-- Verdict Meter (Universal - visible on mobile below poster) -->
-                        <div id="pcVerdictMeter" class="verdict-meter-container"></div>
+                <div class="modal-poster-container">
+                    <img id="modalPoster" src="" alt="Poster" class="modal-poster">
+                    <!-- Verdict Meter (Universal - visible on mobile below poster) -->
+                    <div id="pcVerdictMeter" class="verdict-meter-container"></div>
+                </div>
+
+                <div class="modal-info">
+                    <h2 id="modalTitle" style="margin-bottom: 1rem;"></h2>
+                    <div class="modal-meta" style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
+                        <span class="rating-badge" id="modalRating" style="color: #ffd700;">★ N/A</span>
+                        <span id="modalYear"></span>
+                        <span id="modalRuntime"></span>
                     </div>
 
-                    <div class="modal-header-info">
-                        <h2 id="modalTitle"></h2>
-                        <div class="modal-meta">
-                            <span class="rating-badge" id="modalRating"></span>
-                            <span id="modalYear"></span>
-                            <span id="modalRuntime"></span>
+                    <!-- Tab Navigation -->
+                    <div class="modal-tabs"
+                        style="display: flex; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 0.5rem;">
+                        <button class="tab-btn active" onclick="switchTab('overview')">Overview</button>
+                        <button class="tab-btn" onclick="switchTab('cast')">Cast & Crew</button>
+                        <button class="tab-btn" onclick="switchTab('reviews')">Reviews</button>
+                        <button class="tab-btn" onclick="switchTab('similar')">Similar</button>
+                        <button class="tab-btn" onclick="switchTab('ai')">Ask AI</button>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="modal-actions" style="margin-bottom: 1.5rem;">
+                        <button class="glass-button primary" onclick="watchNow()"><i class="fas fa-play"></i> Watch
+                            Now</button>
+                        <button class="glass-button" onclick="addToWatchLater()"><i class="fas fa-clock"></i> Watch
+                            Later</button>
+                        <button class="glass-button" onclick="markAsWatched()"><i class="fas fa-check"></i>
+                            Watched</button>
+                    </div>
+
+                    <!-- Tab Content -->
+
+                    <!-- Overview Tab -->
+                    <div id="tab-overview" class="tab-content active">
+                        <p id="modalOverviewText" class="modal-overview"
+                            style="margin-bottom: 1.5rem; line-height: 1.6; color: var(--text-secondary);"></p>
+
+                        <div id="modalTrailer"></div>
+                        <div id="modalGenres"></div>
+
+                        <!-- Rating System -->
+                        <div class="rating-section" style="margin-top: 2rem;">
+                            <h3>Rate This Movie</h3>
+                            <div class="rating-buttons">
+                                <button class="rating-btn" data-rating="Pass" onclick="rateMovie('Pass')">😞
+                                    Pass</button>
+                                <button class="rating-btn" data-rating="One Time Watch"
+                                    onclick="rateMovie('One Time Watch')">😐 One-Time Watch</button>
+                                <button class="rating-btn" data-rating="Go For It" onclick="rateMovie('Go For It')">🙂
+                                    Go For It</button>
+                                <button class="rating-btn" data-rating="Perfection" onclick="rateMovie('Perfection')">🤩
+                                    Perfection</button>
+                            </div>
+                            <textarea id="reviewText" class="glass-input" placeholder="Write your review..."
+                                rows="4"></textarea>
+                            <button class="glass-button" onclick="submitReview()">Submit Review</button>
                         </div>
-                        <p id="modalOverview" style="display: none;"></p> <!-- Hidden in header, shown in tab -->
+                    </div>
 
-                        <!-- Action Buttons -->
-                        <div class="modal-actions">
-                            <button class="glass-button" onclick="markAsWatched()"><i class="fas fa-check"></i>
-                                Watched</button>
-                            <button class="glass-button" onclick="addToWatchLater()"><i class="fas fa-clock"></i> Watch
-                                Later</button>
-                            <button class="glass-button primary" onclick="watchNow()"><i class="fas fa-play"></i> Watch
-                                Now</button>
+                    <!-- Cast Tab -->
+                    <div id="tab-cast" class="tab-content" style="display: none;">
+                        <h3>Cast</h3>
+                        <div id="modalCast" class="cast-grid"></div>
+                    </div>
+
+                    <!-- Reviews Tab -->
+                    <div id="tab-reviews" class="tab-content" style="display: none;">
+                        <h3>User Reviews</h3>
+                        <div id="modalReviews"></div>
+                        <div class="add-review-section"
+                            style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--glass-border);">
+                            <h3>Add Your Review</h3>
+                            <div class="rating-select"
+                                style="margin: 1rem 0; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                                <button class="rating-btn" onclick="rateMovie('Skip')" data-rating="Skip">Skip
+                                    🔴</button>
+                                <button class="rating-btn" onclick="rateMovie('One Time Watch')"
+                                    data-rating="One Time Watch">One Time Watch 🟠</button>
+                                <button class="rating-btn" onclick="rateMovie('Go For It')" data-rating="Go For It">Go
+                                    For It 🟢</button>
+                                <button class="rating-btn" onclick="rateMovie('Perfection')"
+                                    data-rating="Perfection">Perfection 🌟</button>
+                            </div>
+                            <textarea id="reviewText" class="glass-input" rows="3"
+                                placeholder="Write your review..."></textarea>
+                            <button class="glass-button" onclick="submitReview()" style="margin-top: 1rem;">Submit
+                                Review</button>
+                        </div>
+                    </div>
+
+                    <!-- Similar Tab -->
+                    <div id="tab-similar" class="tab-content" style="display: none;">
+                        <h3>Similar Titles</h3>
+                        <div id="modalSimilar" class="similar-grid"></div>
+                    </div>
+
+                    <!-- AI Chat Tab -->
+                    <div id="tab-ai" class="tab-content" style="display: none;">
+                        <h3>Ask AI About This Movie</h3>
+                        <div id="aiChat" class="ai-chat-container"></div>
+                        <div class="ai-input-group">
+                            <input type="text" id="aiQuestion" class="glass-input"
+                                placeholder="Ask about facts, trivia, spoilers...">
+                            <button class="glass-button" onclick="askAI()"><i class="fas fa-paper-plane"></i>
+                                Ask</button>
                         </div>
                     </div>
                 </div>
-
-                <!-- Tabs -->
-                <div class="modal-tabs">
-                    <button class="tab-btn active" onclick="switchTab('overview')">Overview</button>
-                    <button class="tab-btn" onclick="switchTab('cast')">Cast & Crew</button>
-                    <button class="tab-btn" onclick="switchTab('reviews')">Reviews</button>
-                    <button class="tab-btn" onclick="switchTab('similar')">Similar</button>
-                    <button class="tab-btn" onclick="switchTab('ai')">Ask AI</button>
-                </div>
-
-                <!-- Tab Content -->
-
-                <!-- Overview Tab -->
-                <div id="tab-overview" class="tab-content active">
-                    <p id="modalOverviewText" class="modal-overview"
-                        style="margin-bottom: 1.5rem; line-height: 1.6; color: var(--text-secondary);"></p>
-
-                    <div id="modalTrailer"></div>
-                    <div id="modalGenres"></div>
-
-                    <!-- Rating System -->
-                    <div class="rating-section">
-                        <h3>Rate This Movie</h3>
-                        <div class="rating-buttons">
-                            <button class="rating-btn" data-rating="Pass" onclick="rateMovie('Pass')">😞 Pass</button>
-                            <button class="rating-btn" data-rating="One Time Watch"
-                                onclick="rateMovie('One Time Watch')">😐 One-Time Watch</button>
-                            <button class="rating-btn" data-rating="Go For It" onclick="rateMovie('Go For It')">🙂 Go
-                                For It</button>
-                            <button class="rating-btn" data-rating="Perfection" onclick="rateMovie('Perfection')">🤩
-                                Perfection</button>
-                        </div>
-                        <textarea id="reviewText" class="glass-input" placeholder="Write your review..."
-                            rows="4"></textarea>
-                        <button class="glass-button" onclick="submitReview()">Submit Review</button>
-                    </div>
-                </div>
-
-                <!-- Cast Tab -->
-                <div id="tab-cast" class="tab-content" style="display: none;">
-                    <h3>Cast</h3>
-                    <div id="modalCast" class="cast-grid"></div>
-                </div>
-
-                <!-- Reviews Tab -->
-                <div id="tab-reviews" class="tab-content" style="display: none;">
-                    <h3>User Reviews</h3>
-                    <div id="modalReviews"></div>
-                    <div class="add-review-section"
-                        style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--glass-border);">
-                        <h3>Add Your Review</h3>
-                        <div class="rating-select" style="margin: 1rem 0; display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                            <button class="rating-btn" onclick="rateMovie('Skip')" data-rating="Skip">Skip
-                                🔴</button>
-                            <button class="rating-btn" onclick="rateMovie('One Time Watch')"
-                                data-rating="One Time Watch">One Time Watch 🟠</button>
-                            <button class="rating-btn" onclick="rateMovie('Go For It')" data-rating="Go For It">Go
-                                For It 🟢</button>
-                            <button class="rating-btn" onclick="rateMovie('Perfection')"
-                                data-rating="Perfection">Perfection 🌟</button>
-                        </div>
-                        <textarea id="reviewText" class="glass-input" rows="3"
-                            placeholder="Write your review..."></textarea>
-                        <button class="glass-button" onclick="submitReview()" style="margin-top: 1rem;">Submit
-                            Review</button>
-                    </div>
-                </div>
-
-                <!-- Similar Tab -->
-                <div id="tab-similar" class="tab-content" style="display: none;">
-                    <h3>Similar Titles</h3>
-                    <div id="modalSimilar" class="media-scroller"></div>
-                </div>
-
-                <!-- AI Chat Tab -->
-                <div id="tab-ai" class="tab-content" style="display: none;">
-                    <h3>Ask AI About This Movie</h3>
-                    <div id="aiChat" class="ai-chat-container"></div>
-                    <div class="ai-input-group">
-                        <input type="text" id="aiQuestion" class="glass-input"
-                            placeholder="Ask about facts, trivia, spoilers...">
-                        <button class="glass-button" onclick="askAI()"><i class="fas fa-paper-plane"></i> Ask</button>
-                    </div>
-                </div>
-
             </div>
         </div>
     </div>
 
     <script src="public-config.js"></script>
-
+    <script type="module" src="ai.js"></script>
     <script src="view_all.js" type="module"></script>
 </body>
 

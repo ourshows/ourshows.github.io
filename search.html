@@ -8,6 +8,14 @@
     <link rel="stylesheet" href="public/style.css">
     <link rel="stylesheet" href="public/modal.css">
     <link rel="stylesheet" href="themes.css">
+
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/jpeg" href="public/logo.jpg">
+    <link rel="apple-touch-icon" href="public/logo.jpg">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <style>
         /* Info Loader Styles (Critical Path) */
         #globalLoader {
@@ -327,87 +335,7 @@
 
         </div>
 
-        <!-- Mobile-Only Search Bar -->
-        <div class="mobile-search-container" style="display: none; margin: 1.5rem 0;">
-            <div style="position: relative;">
-                <input type="text" id="mobileSearchInput" class="glass-input"
-                    placeholder="Search for movies, TV shows..."
-                    style="width: 100%; padding: 0.75rem 1rem; font-size: 16px; border-radius: 12px;">
-                <div id="mobileSearchDropdown" class="mobile-search-dropdown" style="display: none;">
-                    <!-- Dropdown results will appear here -->
-                </div>
-            </div>
-        </div>
 
-        <style>
-            /* Mobile Search Styles */
-            @media (max-width: 768px) {
-                .mobile-search-container {
-                    display: block !important;
-                }
-            }
-
-            .mobile-search-dropdown {
-                position: absolute;
-                top: 100%;
-                left: 0;
-                right: 0;
-                background: var(--glass-bg);
-                border: 1px solid var(--glass-border);
-                border-radius: 12px;
-                margin-top: 0.5rem;
-                max-height: 400px;
-                overflow-y: auto;
-                z-index: 1000;
-                backdrop-filter: blur(12px);
-                -webkit-backdrop-filter: blur(12px);
-            }
-
-            .mobile-search-item {
-                display: flex;
-                align-items: center;
-                gap: 1rem;
-                padding: 0.75rem;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-                cursor: pointer;
-                transition: background 0.2s;
-            }
-
-            .mobile-search-item:hover {
-                background: rgba(255, 255, 255, 0.05);
-            }
-
-            .mobile-search-item:last-child {
-                border-bottom: none;
-            }
-
-            .mobile-search-poster {
-                width: 50px;
-                height: 75px;
-                object-fit: cover;
-                border-radius: 6px;
-                flex-shrink: 0;
-            }
-
-            .mobile-search-info {
-                flex: 1;
-                min-width: 0;
-            }
-
-            .mobile-search-title {
-                font-weight: 600;
-                font-size: 0.9rem;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
-
-            .mobile-search-meta {
-                font-size: 0.8rem;
-                color: var(--text-secondary);
-                margin-top: 0.25rem;
-            }
-        </style>
 
         <div id="loading" style="text-align: center; margin-top: 4rem;">
             <i class="fas fa-spinner fa-spin fa-3x"></i>
@@ -609,6 +537,16 @@
         }
     </script>
     <script src="public/mobile-nav.js"></script>
+    <script type="module" src="ai.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('SW Registered!', reg.scope))
+                    .catch(err => console.log('SW Failed:', err));
+            });
+        }
+    </script>
 </body>
 
 </html>

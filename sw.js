@@ -27,9 +27,9 @@ self.addEventListener('fetch', (event) => {
     // EXCLUDE: Do not cache APK files or non-GET requests
     if (url.pathname.endsWith('.apk')) return;
 
-    // STRATEGY: Network First for HTML (Navigation)
-    // This ensures the user always gets the latest page content/skeleton
-    if (event.request.mode === 'navigate' || url.pathname.endsWith('.html') || url.pathname.endsWith('/')) {
+    // STRATEGY: Network First for HTML (Navigation) and Critical Logic
+    // This ensures the user always gets the latest page content/skeleton AND critical logic
+    if (event.request.mode === 'navigate' || url.pathname.endsWith('.html') || url.pathname.endsWith('/') || url.pathname.includes('watchanddownload.js')) {
         event.respondWith(
             fetch(event.request)
                 .then((response) => {
@@ -42,7 +42,15 @@ self.addEventListener('fetch', (event) => {
                 })
                 .catch(() => {
                     // Fallback to cache if offline
-                    return caches.match(event.request);
+                    return caches.match(event.request).then((cachedResponse) => {
+                        if (cachedResponse) {
+                            return cachedResponse;
+                        }
+                        // Fallback to index.html if the specific page is not in cache
+                        return caches.match('./index.html').then((response) => {
+                            return response || new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
+                        });
+                    });
                 })
         );
         return;

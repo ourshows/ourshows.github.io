@@ -1,3 +1,5 @@
+import { auth, db, getDocs, collection, query, orderBy, limit } from './firebase-wrapper.js';
+
 // AI Assistant with Hugging Face Integration
 // Enhanced version with conversation history and better UX
 
@@ -8,13 +10,6 @@ let conversationHistory = [];
 document.addEventListener('DOMContentLoaded', () => {
     const input = document.getElementById('aiInput');
     if (window.ourShowLoader) window.ourShowLoader.show();
-    if (!input) {
-        if (window.ourShowLoader) window.ourShowLoader.hide();
-        return;
-    }
-
-    // Focus input on load (only if standalone page, maybe not in modal to avoid annoying scroll)
-    // input.focus(); 
 
     // Load conversation history from localStorage
     const saved = localStorage.getItem('aiConversation');
@@ -35,14 +30,50 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.ourShowLoader) window.ourShowLoader.hide();
 });
 
+// Fetch User Context (History & Watchlist)
+async function fetchUserContext() {
+    if (!auth.currentUser) return "User is not logged in. Treat as a guest.";
+
+    let context = `User Profile (${auth.currentUser.displayName || 'User'}):\n`;
+
+    try {
+        // 1. Watched History (Last 10)
+        const watchedQ = query(collection(db, 'users', auth.currentUser.uid, 'watched'), orderBy('timestamp', 'desc'), limit(10));
+        const watchedSnap = await getDocs(watchedQ);
+        if (!watchedSnap.empty) {
+            const watchedTitles = watchedSnap.docs.map(d => `${d.data().movieTitle} (${d.data().rating || 'N/A'}/10)`);
+            context += `- Recently Watched: ${watchedTitles.join(', ')}\n`;
+        } else {
+            context += `- Recently Watched: None recorded.\n`;
+        }
+
+        // 2. Watchlist (Last 10)
+        const watchlistQ = query(collection(db, 'users', auth.currentUser.uid, 'watchlist'), orderBy('timestamp', 'desc'), limit(10));
+        const watchlistSnap = await getDocs(watchlistQ);
+        if (!watchlistSnap.empty) {
+            const watchlistTitles = watchlistSnap.docs.map(d => d.data().movieTitle);
+            context += `- Watchlist: ${watchlistTitles.join(', ')}\n`;
+        } else {
+            context += `- Watchlist: Empty.\n`;
+        }
+
+    } catch (e) {
+        console.error("Error fetching user context:", e);
+        context += "(Error retrieving history)\n";
+    }
+
+    return context;
+}
+
+
 // Quick prompt function
-function usePrompt(promptText) {
+window.usePrompt = function (promptText) {
     document.getElementById('aiInput').value = promptText;
     sendMessage();
 }
 
 // Main send message function
-async function sendMessage() {
+window.sendMessage = async function () {
     const input = document.getElementById('aiInput');
     const message = input.value.trim();
 
@@ -65,16 +96,19 @@ async function sendMessage() {
 
     // Disable send button
     const sendBtn = document.getElementById('sendBtn');
-    sendBtn.disabled = true;
+    if (sendBtn) sendBtn.disabled = true;
 
     try {
+        // Fetch Context dynamically
+        const userContext = await fetchUserContext();
+
         // Determine if user wants movie recommendations
         const wantsMovies = isMovieRequest(message);
 
         if (wantsMovies) {
-            await handleMovieRecommendation(message);
+            await handleMovieRecommendation(message, userContext);
         } else {
-            await handleGeneralChat(message);
+            await handleGeneralChat(message, userContext);
         }
 
     } catch (error) {
@@ -85,8 +119,8 @@ async function sendMessage() {
         );
     } finally {
         showTyping(false);
-        sendBtn.disabled = false;
-        input.focus();
+        if (sendBtn) sendBtn.disabled = false;
+        if (input) input.focus();
 
         // Save conversation
         saveConversation();
@@ -105,14 +139,9 @@ function isMovieRequest(message) {
     return keywords.some(keyword => lowerMessage.includes(keyword));
 }
 
-// Call AI API (Via Proxy)
-// Call AI API (Via Proxy or Direct Callback)
-// Call AI API (Multi-Provider Support)
-async function callAI(messages, systemPrompt, jsonMode = false) {
+// Call AI API (Via Proxy or Direct)
+window.callAI = async function (messages, systemPrompt, jsonMode = false) {
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-
-    // 0. Gemini Direct - REMOVED (User requested Groq/Llama)
-    // The key found previously was for Firebase default, not Generative AI.
 
     // 1. Priority: Client-Side Direct Call (Public Config)
     if (window.PUBLIC_CONFIG && window.PUBLIC_CONFIG.GROQ_API_KEY) {
@@ -183,7 +212,6 @@ async function callAI(messages, systemPrompt, jsonMode = false) {
     }
 
     // 3. Cloudflare Proxy
-    // If API_BASE_URL is set, use it directly (don't append /api/ai if it looks like a full worker URL)
     let url = "/api/ai";
     if (window.PUBLIC_CONFIG?.API_BASE_URL) {
         if (window.PUBLIC_CONFIG.API_BASE_URL.includes('workers.dev')) {
@@ -208,7 +236,6 @@ async function callAI(messages, systemPrompt, jsonMode = false) {
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            // If 405, it might be the wrong path or method
             throw new Error(errorData.error || `AI Proxy Error: ${response.status}`);
         }
 
@@ -222,22 +249,26 @@ async function callAI(messages, systemPrompt, jsonMode = false) {
 }
 
 // Handle movie recommendations
-async function handleMovieRecommendation(userMessage) {
-    const systemPrompt = `You are a movie recommendation engine. 
-    You MUST respond with a valid JSON object strictly matching this schema:
+async function handleMovieRecommendation(userMessage, userContext) {
+    const systemPrompt = `You are an expert Movie Recommendation Engine. 
+    You have access to the user's viewing history:
+    ${userContext}
+
+    Instructions:
+    1. Base your recommendations heavily on their 'Recently Watched' favorites (high ratings) and 'Watchlist' interests.
+    2. If they ask for something different or specific, prioritize their request but use history for style matching.
+    3. You MUST respond with a valid JSON object strictly matching this schema:
     {
-      "message": "Friendly text intro",
+      "message": "Friendly text intro explaining WHY you picked these based on their history.",
       "recommendations": [
-        { "title": "Exact Title", "year": "YYYY", "reason": "Short reason" }
+        { "title": "Exact Title", "year": "YYYY", "reason": "Connection to their history" }
       ]
     }
-    Provide 5 top-tier recommendations based on the user's request.`;
+    Provide 5 top-tier recommendations.`;
 
-    // We can send just the user request or recent history. 
-    // For recommendations, the immediate query is usually most important.
     const messages = [{ role: 'user', content: userMessage }];
 
-    const responseText = await callAI(messages, systemPrompt, true); // jsonMode = true
+    const responseText = await window.callAI(messages, systemPrompt, true); // jsonMode = true
     const data = parseAIResponse(responseText);
 
     if (data && data.recommendations && data.recommendations.length > 0) {
@@ -250,28 +281,37 @@ async function handleMovieRecommendation(userMessage) {
 
         await displayMovieCards(data.recommendations);
     } else {
-        // Fallback if JSON fails (rare with jsonMode)
         addMessageToUI("I found some movies but couldn't display them properly. " + responseText, false);
     }
 }
 
 // Handle general chat
-async function handleGeneralChat(userMessage) {
-    const systemPrompt = `You are 'OurShow AI', a witty and knowledgeable movie companion. 
-    Keep responses concise (under 3 sentences) unless asked for a deep dive. 
-    Be enthusiastic about cinema.`;
+async function handleGeneralChat(userMessage, userContext) {
+    const systemPrompt = `You are 'OurShow AI', a witty, knowledgeable, and opinionated movie buff companion.
+    
+    Context about the User:
+    ${userContext}
 
-    // Construct conversation context (last 6 messages max to save tokens)
+    Guidelines:
+    - Use their history to make personalized references (e.g., "Since you asked about X, and I know you loved Y...").
+    - If they haven't watched much, be encouraging.
+    - Keep responses concise (under 3 sentences) unless asked for a deep dive. 
+    - Be enthusiastic about cinema.`;
+
+    // Construct conversation context (last 6 messages max)
     const context = conversationHistory.slice(-6).map(msg => ({
         role: msg.role,
         content: msg.content
     }));
 
-    // Add current message if not already in history (it was added to history in sendMessage before calling this, but let's be safe)
-    // Actually sendMessage adds it to history array global BEFORE calling this. 
-    // So context includes the latest user message.
+    // Add current message acts as the trigger, so we don't need to append it again if we rely on ai.js callAI to just take messages.
+    // However, our callAI takes 'messages' array. 
+    // We should ensure the latest user message is the last one in the array sent to API.
 
-    const responseText = await callAI(context, systemPrompt, false);
+    // Check if the last message in context is the current one. 
+    // In sendMessage, we pushed to conversationHistory BEFORE calling this. So yes.
+
+    const responseText = await window.callAI(context, systemPrompt, false);
 
     addMessageToUI(responseText, false);
 
@@ -284,19 +324,13 @@ async function handleGeneralChat(userMessage) {
 // Parse AI response (try to extract JSON if present)
 function parseAIResponse(text) {
     try {
-        // Remove markdown code blocks
         let cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-
-        // Try to find JSON in the response
         const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
             return JSON.parse(jsonMatch[0]);
         }
-
-        // If no JSON found, return as text
         return { message: cleaned };
     } catch (e) {
-        // If parsing fails, return as text
         return { message: text };
     }
 }
@@ -305,15 +339,12 @@ function parseAIResponse(text) {
 async function displayMovieCards(recommendations) {
     const chatContainer = document.getElementById('chatContainer');
 
-    // Create movie grid container
     const movieGrid = document.createElement('div');
     movieGrid.className = 'movie-grid';
     movieGrid.style.animation = 'fadeInUp 0.5s ease-out';
 
     for (const rec of recommendations) {
-        // Search TMDB for the movie
         const tmdbData = await searchTMDB(rec.title, rec.year);
-
         const card = document.createElement('div');
         card.className = 'movie-card-mini';
 
@@ -352,63 +383,29 @@ async function displayMovieCards(recommendations) {
 
 // Search TMDB
 async function searchTMDB(query, year) {
-    console.log(`[AI] Searching TMDB for: ${query} (${year})`);
+    const config = window.PUBLIC_CONFIG || window.APP_CONFIG;
+    if (!config) return null;
 
-    // 1. Check Public Config
-    if (window.PUBLIC_CONFIG && window.PUBLIC_CONFIG.TMDB_KEY) {
-        console.log('[AI] Using Public Config Key');
+    const apiKey = config.TMDB_API_KEY || config.TMDB_KEY;
+    if (!apiKey) return null;
 
-        const url = new URL(`${window.PUBLIC_CONFIG.TMDB_BASE_URL}/search/multi`);
-        url.searchParams.append('api_key', window.PUBLIC_CONFIG.TMDB_KEY);
-        url.searchParams.append('query', query);
-        if (year) url.searchParams.append('year', year);
+    const baseUrl = config.TMDB_BASE_URL || "https://api.themoviedb.org/3";
+    const url = new URL(`${baseUrl}/search/multi`);
 
-        try {
-            const res = await fetch(url);
-            if (!res.ok) return null;
-            const data = await res.json();
-            return data.results && data.results[0] ? data.results[0] : null;
-        } catch (e) { return null; }
-    }
-
-    // 2. Check App Config (Local/Dev)
-    if (window.APP_CONFIG && window.APP_CONFIG.TMDB_API_KEY) {
-        console.log('[AI] Using APP_CONFIG Key');
-        const baseUrl = window.APP_CONFIG.TMDB_BASE_URL || "https://api.themoviedb.org/3";
-        const url = new URL(`${baseUrl}/search/multi`);
-        url.searchParams.append('api_key', window.APP_CONFIG.TMDB_API_KEY);
-        url.searchParams.append('query', query);
-        if (year) url.searchParams.append('year', year);
-
-        try {
-            const res = await fetch(url);
-            if (!res.ok) {
-                console.error('[AI] TMDB Fetch Failed (Local):', res.status);
-                return null;
-            }
-            const data = await res.json();
-            const result = data.results && data.results[0] ? data.results[0] : null;
-            console.log('[AI] Search Result (Local):', result ? result.title || result.name : 'None found');
-            return result;
-        } catch (e) {
-            console.error('[AI] TMDB Fetch Exception (Local):', e);
-            return null;
-        }
-    }
-
-    // Proxy fallback
-    const url = new URL('/api/tmdb', window.location.origin);
-    url.searchParams.append('endpoint', '/search/multi');
+    url.searchParams.append('api_key', apiKey);
     url.searchParams.append('query', query);
+    url.searchParams.append('include_adult', 'false');
     if (year) url.searchParams.append('year', year);
 
     try {
         const res = await fetch(url);
         if (!res.ok) return null;
         const data = await res.json();
+
+        // Prioritize exact matches if possible, but taking the first result is usually fine for AI context
         return data.results && data.results[0] ? data.results[0] : null;
-    } catch (error) {
-        console.error('TMDB search error:', error);
+    } catch (e) {
+        console.error("TMDB Search Error:", e);
         return null;
     }
 }
@@ -416,6 +413,7 @@ async function searchTMDB(query, year) {
 // Add message to UI
 function addMessageToUI(content, isUser) {
     const chatContainer = document.getElementById('chatContainer');
+    if (!chatContainer) return;
 
     const messageDiv = document.createElement('div');
     messageDiv.className = `chat-message ${isUser ? 'user' : ''}`;
@@ -431,7 +429,6 @@ function addMessageToUI(content, isUser) {
     messageDiv.appendChild(avatar);
     messageDiv.appendChild(messageContent);
 
-    // Insert before typing indicator
     const typingIndicator = document.getElementById('typingIndicator');
     chatContainer.insertBefore(messageDiv, typingIndicator);
 
@@ -441,23 +438,24 @@ function addMessageToUI(content, isUser) {
 // Show/hide typing indicator
 function showTyping(show) {
     const indicator = document.getElementById('typingIndicator');
-    if (show) {
-        indicator.classList.add('active');
-    } else {
-        indicator.classList.remove('active');
+    if (indicator) {
+        if (show) indicator.classList.add('active');
+        else indicator.classList.remove('active');
+        scrollToBottom();
     }
-    scrollToBottom();
 }
 
 // Scroll chat to bottom
 function scrollToBottom() {
     const chatContainer = document.getElementById('chatContainer');
-    setTimeout(() => {
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-    }, 100);
+    if (chatContainer) {
+        setTimeout(() => {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }, 100);
+    }
 }
 
-// Save conversation to localStorage
+// Save conversation
 function saveConversation() {
     try {
         localStorage.setItem('aiConversation', JSON.stringify(conversationHistory));
@@ -467,28 +465,17 @@ function saveConversation() {
 }
 
 // Clear conversation
-// Clear conversation
-function clearConversation() {
-    console.log('[AI] Clearing conversation...');
-
-    // Reset state
+window.clearConversation = function () {
     conversationHistory = [];
     localStorage.removeItem('aiConversation');
-
-    // Clear UI
     const chatContainer = document.getElementById('chatContainer');
     if (!chatContainer) return;
-
-    // Remove all chat messages except the first one (Welcome)
-    // And ensure we don't remove the typing indicator
     const contentToRemove = chatContainer.querySelectorAll('.chat-message:not(:first-child), .movie-grid');
     contentToRemove.forEach(el => el.remove());
-
-    console.log('[AI] Chat cleared.');
 }
 
 // Modal functions
-function openAIModal() {
+window.openAIModal = function () {
     const modal = document.getElementById('aiModal');
     if (modal) {
         modal.style.display = 'block';
@@ -497,12 +484,11 @@ function openAIModal() {
             if (input) input.focus();
         }, 100);
     } else {
-        // Fallback if modal missing (e.g. on other pages) -> redirect
         window.location.href = 'ai.html';
     }
 }
 
-function closeAIModal() {
+window.closeAIModal = function () {
     const modal = document.getElementById('aiModal');
     if (modal) modal.style.display = 'none';
 }
@@ -514,11 +500,3 @@ window.addEventListener('click', (e) => {
         modal.style.display = 'none';
     }
 });
-
-// Expose functions to window
-window.usePrompt = usePrompt;
-window.sendMessage = sendMessage;
-window.clearConversation = clearConversation;
-window.openAIModal = openAIModal;
-window.closeAIModal = closeAIModal;
-window.callAI = callAI;

@@ -418,7 +418,7 @@ function loadCast(credits) {
     }
     const imgBase = (window.PUBLIC_CONFIG && window.PUBLIC_CONFIG.TMDB_IMAGE_SMALL_URL) || "https://image.tmdb.org/t/p/w500";
     container.innerHTML = credits.cast.slice(0, 10).map(person => `
-        <div class="cast-card" style="min-width: 100px;">
+        <div class="cast-card" style="min-width: 100px; cursor: pointer;" onclick="window.location.href='cast.html?id=${person.id}'">
             <img src="${person.profile_path ? imgBase + person.profile_path : 'https://via.placeholder.com/150x225?text=No+Image'}" 
                 alt="${person.name}" style="width:100%; border-radius:8px;">
             <div style="font-weight: 600; font-size: 0.9rem; margin-top:0.5rem;">${person.name}</div>
@@ -650,11 +650,75 @@ function watchNow() {
     }
 }
 
-function askAI() {
-    const q = document.getElementById('aiQuestion').value;
-    if (!q) return;
-    const chat = document.getElementById('aiChat');
-    chat.innerHTML += `<div style="margin-bottom:0.5rem;"><strong>You:</strong> ${q}</div>`;
-    chat.innerHTML += `<div style="margin-bottom:0.5rem; color:var(--accent-color);"><strong>AI:</strong> That's a great question about ${currentMovieData.title}! (AI Connection Placeholder)</div>`;
-    document.getElementById('aiQuestion').value = '';
+async function askAI() {
+    const questionInput = document.getElementById('aiQuestion');
+    const question = questionInput.value.trim();
+    if (!question) return;
+
+    const chatContainer = document.getElementById('aiChat');
+
+    // Add User Message
+    chatContainer.innerHTML += `
+        <div class="ai-message user" style="text-align: right; margin-bottom: 0.5rem;">
+            <div style="background: var(--primary-color); display: inline-block; padding: 0.5rem 1rem; border-radius: 12px 12px 0 12px;">${question}</div>
+        </div>`;
+
+    questionInput.value = '';
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+
+    // Show Loading
+    const loadingId = 'ai-loading-' + Date.now();
+    chatContainer.innerHTML += `
+        <div id="${loadingId}" class="ai-message ai" style="margin-bottom: 0.5rem;">
+             <div style="background: rgba(255,255,255,0.1); display: inline-block; padding: 0.5rem 1rem; border-radius: 12px 12px 12px 0;">
+                <i class="fas fa-circle-notch fa-spin"></i> Thinking...
+             </div>
+        </div>`;
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+
+    try {
+        const movieContext = `Movie: ${currentMovieData.title || currentMovieData.name} (${(currentMovieData.release_date || currentMovieData.first_air_date || '').split('-')[0]}). 
+        Overview: ${currentMovieData.overview}. 
+        Rating: ${currentMovieData.vote_average}.`;
+
+        const systemPrompt = `You are an intelligent movie assistant. The user is asking about the following movie:
+        ${movieContext}
+        Keep your answer concise, engaging, and relevant to this specific movie. Avoid spoilers unless asked.`;
+
+        const messages = [{ role: 'user', content: question }];
+
+        // Use window.callAI from ai.js if available, else simulated response
+        let reply = "I'm sorry, I can't connect to the analytics engine right now.";
+
+        if (window.callAI) {
+            reply = await window.callAI(messages, systemPrompt);
+        } else {
+            // Fallback if ai.js failed to load
+            reply = "AI System Offline. Please check your connection.";
+            console.error("ai.js not loaded or callAI not found");
+        }
+
+        // Remove loading
+        const loader = document.getElementById(loadingId);
+        if (loader) loader.remove();
+
+        // Add AI Response
+        chatContainer.innerHTML += `
+            <div class="ai-message ai" style="margin-bottom: 0.5rem;">
+                <div style="background: rgba(255,255,255,0.1); display: inline-block; padding: 0.5rem 1rem; border-radius: 12px 12px 12px 0;">
+                    <strong>AI:</strong> ${reply}
+                </div>
+            </div>`;
+
+    } catch (error) {
+        const loader = document.getElementById(loadingId);
+        if (loader) loader.remove();
+
+        chatContainer.innerHTML += `
+            <div class="ai-message ai error" style="margin-bottom: 0.5rem;">
+                <div style="color: #ff6b6b;">Error: ${error.message || "Something went wrong."}</div>
+            </div>`;
+    }
+
+    chatContainer.scrollTop = chatContainer.scrollHeight;
 }

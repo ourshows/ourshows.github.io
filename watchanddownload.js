@@ -116,6 +116,7 @@ function renderStreamingLinks(data) {
     const originalLang = data.original_language;
     const originCountries = data.origin_country || (data.production_countries ? data.production_countries.map(c => c.iso_3166_1) : []);
     const genres = data.genres ? data.genres.map(g => g.name.toLowerCase()) : [];
+    const title = data.title || data.name || '';
 
     // Categories
     const isNepali = originalLang === 'ne' || originCountries.includes('NP');
@@ -136,9 +137,7 @@ function renderStreamingLinks(data) {
         return;
     }
 
-    let linkHTML = '';
-
-    // Helper to create link button
+    // --- Helper to create link button ---
     const createLink = (url, label, subLabel, icon, colorStart, colorEnd) => `
         <a href="${url}" target="_blank" class="action-btn"
             style="background: linear-gradient(135deg, ${colorStart}, ${colorEnd}); padding: 1rem; border-radius: 10px;">
@@ -147,45 +146,97 @@ function renderStreamingLinks(data) {
         </a>
     `;
 
-    // 1. Hollywood / International Links
+    // --- Define ALL Sources ---
+    const allSources = {
+        hollywood: [
+            { url: 'https://netmirror.app/', label: 'NetMirror', sub: 'Netflix & Prime Free', icon: 'fa-tv', cs: '#e50914', ce: '#b20710' },
+            { url: 'https://cineb.rs/', label: 'Cineb.gg', sub: 'Hollywood & Series', icon: 'fa-play-circle', cs: '#3b82f6', ce: '#2563eb' },
+            { url: 'https://katmoviehd.pictures/', label: 'KatMovieHD', sub: 'Download Quality', icon: 'fa-film', cs: '#ef4444', ce: '#dc2626' }
+        ],
+        desi: [
+            { url: 'https://moviesbaba.net/', label: 'MoviesBaba', sub: 'Desi Movies & Web Series', icon: 'fa-star', cs: '#f59e0b', ce: '#d97706' },
+            { url: 'https://desicinema.pk/', label: 'DesiCinema', sub: 'Bollywood & Punjabi', icon: 'fa-star', cs: '#f59e0b', ce: '#d97706' },
+            { url: 'https://netmirror.app/', label: 'NetMirror', sub: 'Netflix & Prime Free', icon: 'fa-tv', cs: '#e50914', ce: '#b20710' }
+        ],
+        anime: [
+            { url: 'https://pikahd.eu/', label: 'PikaHD', sub: 'Best for Anime', icon: 'fa-dragon', cs: '#8b5cf6', ce: '#7c3aed' }
+        ],
+        drama: [
+            { url: 'https://katdrama.net/', label: 'KatDrama', sub: 'Drama Series', icon: 'fa-heart', cs: '#ec4899', ce: '#db2777' },
+            { url: 'https://kisskh.co/List?type=History', label: 'KissKH', sub: 'Asian Drama', icon: 'fa-heart', cs: '#d946ef', ce: '#c026d3' },
+            { url: 'https://kissasian.com.vc/', label: 'KissAsian', sub: 'Asian Drama', icon: 'fa-heart', cs: '#be185d', ce: '#9d174d' },
+            { url: 'https://netmirror.app/', label: 'NetMirror', sub: 'K-Dramas on Netflix', icon: 'fa-tv', cs: '#e50914', ce: '#b20710' }
+        ]
+    };
+
+    // --- Build Recommended Links (Top Section) ---
+    let recommendedHTML = '';
+
+    // Logic for what to show in "Top recommendations"
     if (isHollywood) {
-        linkHTML += createLink('https://netmirror.app/', 'NetMirror', 'Netflix & Prime Free', 'fa-tv', '#e50914', '#b20710');
-        linkHTML += createLink('https://katmoviehd.pictures/', 'Hollywood', 'KatMovieHD', 'fa-film', '#ef4444', '#dc2626');
+        recommendedHTML += createLink(allSources.hollywood[0].url, allSources.hollywood[0].label, allSources.hollywood[0].sub, allSources.hollywood[0].icon, allSources.hollywood[0].cs, allSources.hollywood[0].ce);
+        recommendedHTML += createLink(allSources.hollywood[1].url, allSources.hollywood[1].label, allSources.hollywood[1].sub, allSources.hollywood[1].icon, allSources.hollywood[1].cs, allSources.hollywood[1].ce);
+        // Showing NetMirror and Cineb as top picks
+    } else if (isDesi) {
+        recommendedHTML += createLink(allSources.desi[0].url, allSources.desi[0].label, allSources.desi[0].sub, allSources.desi[0].icon, allSources.desi[0].cs, allSources.desi[0].ce);
+        recommendedHTML += createLink(allSources.desi[1].url, allSources.desi[1].label, allSources.desi[1].sub, allSources.desi[1].icon, allSources.desi[1].cs, allSources.desi[1].ce);
+    } else if (isAnime) {
+        recommendedHTML += createLink(allSources.anime[0].url, allSources.anime[0].label, allSources.anime[0].sub, allSources.anime[0].icon, allSources.anime[0].cs, allSources.anime[0].ce);
+    } else if (isAsianDrama) {
+        recommendedHTML += createLink(allSources.drama[0].url, allSources.drama[0].label, allSources.drama[0].sub, allSources.drama[0].icon, allSources.drama[0].cs, allSources.drama[0].ce);
+        recommendedHTML += createLink(allSources.drama[3].url, allSources.drama[3].label, allSources.drama[3].sub, allSources.drama[3].icon, allSources.drama[3].cs, allSources.drama[3].ce); // NetMirror
     }
 
-    // 2. Desi Links
-    if (isDesi) {
-        linkHTML += createLink('https://moviesbaba.net/', 'Desi Content', 'MoviesBaba', 'fa-star', '#f59e0b', '#d97706');
-        linkHTML += createLink('https://desicinema.pk/', 'Desi Content', 'DesiCinema', 'fa-star', '#f59e0b', '#d97706');
-        // Optional: Show NetMirror for Desi too if needed, but strictly requested mostly for Hollywood/Stranger Things context.
-        // Adding NetMirror as backup for major Indian content on Netflix
-        linkHTML += createLink('https://netmirror.app/', 'NetMirror', 'Netflix & Prime Free', 'fa-tv', '#e50914', '#b20710');
-    }
-
-    // 3. Anime Links
-    if (isAnime) {
-        linkHTML += createLink('https://pikahd.eu/', 'Anime Only', 'PikaHD', 'fa-dragon', '#8b5cf6', '#7c3aed');
-    }
-
-    // 4. Asian Drama Links
-    if (isAsianDrama) {
-        linkHTML += createLink('https://katdrama.net/', 'Drama Series', 'KatDrama', 'fa-heart', '#ec4899', '#db2777');
-        linkHTML += createLink('https://kisskh.co/List?type=History', 'KissKH', 'Asian Drama', 'fa-heart', '#d946ef', '#c026d3');
-        linkHTML += createLink('https://kissasian.com.vc/', 'KissAsian', 'Asian Drama', 'fa-heart', '#be185d', '#9d174d');
-        linkHTML += createLink('https://netmirror.app/', 'NetMirror', 'K-Dramas on Netflix', 'fa-tv', '#e50914', '#b20710');
-    }
-
-    // Render
-    if (linkHTML) {
-        container.innerHTML = `
-            <h4 style="font-size: 1rem; color: #94a3b8; margin-bottom: 1rem; font-weight: 500;">
-                <i class="fas fa-globe"></i> Streaming Options
-            </h4>
+    // --- Build "All Sources" Section (Hidden by Default) ---
+    const generateSection = (title, sourceList) => `
+        <div style="margin-top: 1.5rem;">
+            <h5 style="color: #cbd5e1; font-size: 0.9rem; margin-bottom: 0.8rem; border-left: 3px solid var(--primary-color); padding-left: 0.8rem;">${title}</h5>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem;">
-                ${linkHTML}
+                ${sourceList.map(s => createLink(s.url, s.label, s.sub, s.icon, s.cs, s.ce)).join('')}
             </div>
-        `;
-    } else {
-        container.innerHTML = '<p style="color: #64748b;">No specific streaming links supported for this content type.</p>';
+        </div>
+    `;
+
+    const allSourcesHTML = `
+        <div id="allSourcesContainer" style="display: none; margin-top: 2rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem;">
+            ${generateSection('Hollywood & International', allSources.hollywood)}
+            ${generateSection('Indian & Desi Web Series', allSources.desi)}
+            ${generateSection('Anime & Animation', allSources.anime)}
+            ${generateSection('Asian Dramas (K-Drama, C-Drama)', allSources.drama)}
+        </div>
+    `;
+
+    // --- Combine & Render ---
+    container.innerHTML = `
+        <h4 style="font-size: 1rem; color: #94a3b8; margin-bottom: 1rem; font-weight: 500;">
+            <i class="fas fa-globe"></i> Streaming Options
+        </h4>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem;">
+            ${recommendedHTML}
+        </div>
+
+        <button id="btnShowAllSources" style="
+            display: block; width: 100%; margin-top: 1.5rem; background: rgba(255,255,255,0.08); 
+            border: 1px solid rgba(255,255,255,0.1); color: #e2e8f0; padding: 0.8rem; border-radius: 8px; 
+            cursor: pointer; font-size: 0.9rem; transition: background 0.2s;">
+            <i class="fas fa-chevron-down"></i> Show All Sources
+        </button>
+
+        ${allSourcesHTML}
+    `;
+
+    // --- Add Event Listener for Toggle ---
+    const btnToggle = document.getElementById('btnShowAllSources');
+    const allContainer = document.getElementById('allSourcesContainer');
+
+    if (btnToggle && allContainer) {
+        btnToggle.addEventListener('click', () => {
+            const isHidden = allContainer.style.display === 'none';
+            allContainer.style.display = isHidden ? 'block' : 'none';
+            btnToggle.innerHTML = isHidden
+                ? '<i class="fas fa-chevron-up"></i> Hide All Sources'
+                : '<i class="fas fa-chevron-down"></i> Show All Sources';
+            btnToggle.style.background = isHidden ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.08)';
+        });
     }
 }
