@@ -14,6 +14,7 @@
     <link rel="icon" type="image/jpeg" href="public/logo.jpg">
     <link rel="apple-touch-icon" href="public/logo.jpg">
     <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <style>
@@ -309,6 +310,18 @@
                             Again</button>
                         <button class="glass-button danger" onclick="removeFromWatched()"><i class="fas fa-trash"></i>
                             Remove</button>
+                    </div>
+
+                    <div id="seasonsInputContainer"
+                        style="margin-top: 1rem; display: none; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                        <label
+                            style="display: block; margin-bottom: 0.5rem; font-size: 0.9rem; color: var(--text-secondary);">Seasons
+                            Watched:</label>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <input type="number" id="customSeasonsInput" class="glass-input" style="width: 80px;"
+                                min="1" placeholder="All">
+                            <button class="glass-button" onclick="updateWatchedCount()">Update</button>
+                        </div>
                     </div>
                 </div>
             </div>

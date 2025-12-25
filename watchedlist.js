@@ -400,6 +400,42 @@ function renderCards(items) {
 
 // Modal Logic
 let currentItemToRemove = null;
+let currentItemToUpdate = null; // Store for updating counts
+
+window.updateWatchedCount = async function () {
+    if (!currentUser || !currentItemToUpdate) return;
+
+    const newVal = document.getElementById('customSeasonsInput').value;
+    const seasons = newVal ? parseInt(newVal) : null;
+
+    if (newVal && (isNaN(seasons) || seasons < 1)) {
+        alert("Please enter a valid number of seasons.");
+        return;
+    }
+
+    try {
+        const updateData = {
+            customSeasons: seasons
+        };
+
+        // Use merge: true implicitly by using setDoc with existing ID or updateDoc? 
+        // We imported setDoc. Let's use setDoc with merge.
+        // Wait, we need to import setDoc with merge or just update the field.
+        // Actually, we can use setDoc with { merge: true } but we need to check imports.
+        // We imported setDoc. We can just overwrite with existing data + change? No, safer to merge.
+        // Let's re-import 'updateDoc' if possible, or just use setDoc with merge if supported by wrapper.
+        // Wrapper exports setDoc. Usually setDoc(ref, data, {merge:true}).
+
+        await setDoc(doc(db, 'users', currentUser.uid, 'watched', currentItemToUpdate.id), updateData, { merge: true });
+
+        alert("Watch stats updated!");
+        loadWatchedList(currentUser.uid); // Refresh
+        closeModal();
+    } catch (e) {
+        console.error("Error updating stats:", e);
+        alert("Failed to update.");
+    }
+}
 
 function openLocalModal(item) {
     const modal = document.getElementById('movieModal');
@@ -416,11 +452,24 @@ function openLocalModal(item) {
     document.getElementById('modalOverview').textContent = 'Watched on: ' + (item.timestamp ? new Date(item.timestamp.seconds * 1000).toLocaleDateString() : 'Unknown date');
 
     currentItemToRemove = item.id;
+    currentItemToUpdate = item; // Store full item
+
+    // Setup input for TV
+    const inputContainer = document.getElementById('seasonsInputContainer');
+    if (item.mediaType === 'tv') {
+        inputContainer.style.display = 'block';
+        document.getElementById('customSeasonsInput').value = item.customSeasons || '';
+        document.getElementById('customSeasonsInput').placeholder = 'All';
+    } else {
+        inputContainer.style.display = 'none';
+    }
 
     // Setup Watch Now button
     const watchBtn = document.querySelector('#movieModal .glass-button.primary');
     if (watchBtn) watchBtn.onclick = () => window.location.href = `watchanddownload.html?id=${item.movieId}&type=${item.mediaType || 'movie'}`;
 
+    modal.style.display = 'flex'; // Changed to flex for centering if needed, or keep block logic from CSS
+    // Check original
     modal.style.display = 'block';
     document.body.style.overflow = 'hidden';
 }

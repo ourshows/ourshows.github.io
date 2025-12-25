@@ -1,4 +1,4 @@
-import { auth, db, addDoc, setDoc, doc, serverTimestamp, collection, onAuthStateChanged, query, where, orderBy, getDocs } from './firebase-wrapper.js';
+import { auth, db, addDoc, setDoc, doc, getDoc, serverTimestamp, collection, onAuthStateChanged, query, where, orderBy, getDocs } from './firebase-wrapper.js';
 
 let currentPage = 1;
 let currentCategory = '';
@@ -66,6 +66,9 @@ window.watchNow = watchNow;
 window.askAI = askAI;
 window.openMovieModal = openMovieModal;
 window.toggleReview = toggleReview;
+window.openAddToCollectionModal = openAddToCollectionModal;
+window.closeAddToCollectionModal = closeAddToCollectionModal;
+window.addToCollectionConfirm = addToCollectionConfirm;
 
 // Toggle review read more/less
 // Toggle review read more/less
@@ -316,6 +319,50 @@ async function openMovieModal(id, type = 'movie') {
     const verdict = calculateVerdict(details);
     // Render Gauge (Text Only)
     renderVerdictMeter(details, verdict);
+
+    // Reset Buttons
+    const watchLaterBtn = document.getElementById('modalWatchLaterBtn');
+    const watchedBtn = document.getElementById('modalWatchedBtn');
+
+    if (watchLaterBtn) {
+        watchLaterBtn.style.background = 'rgba(255, 255, 255, 0.1)';
+        watchLaterBtn.style.color = 'white';
+        watchLaterBtn.innerHTML = '<i class="fas fa-clock"></i> Watch Later';
+        watchLaterBtn.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+    }
+    if (watchedBtn) {
+        watchedBtn.style.background = 'rgba(255, 255, 255, 0.1)';
+        watchedBtn.style.color = 'white';
+        watchedBtn.innerHTML = '<i class="fas fa-check"></i> Watched';
+        watchedBtn.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+    }
+
+    // Check Persistent State
+    if (currentUser) {
+        try {
+            const watchedDoc = await getDoc(doc(db, 'users', currentUser.uid, 'watched', String(id)));
+            if (watchedDoc.exists()) {
+                if (watchedBtn) {
+                    watchedBtn.style.background = '#22c55e';
+                    watchedBtn.style.color = '#fff';
+                    watchedBtn.innerHTML = '<i class="fas fa-check"></i> Watched';
+                    watchedBtn.style.borderColor = '#22c55e';
+                }
+            }
+
+            const watchlistDoc = await getDoc(doc(db, 'users', currentUser.uid, 'watchlist', String(id)));
+            if (watchlistDoc.exists()) {
+                if (watchLaterBtn) {
+                    watchLaterBtn.style.background = '#eab308';
+                    watchLaterBtn.style.color = '#000';
+                    watchLaterBtn.innerHTML = '<i class="fas fa-check"></i> Added';
+                    watchLaterBtn.style.borderColor = '#eab308';
+                }
+            }
+        } catch (e) {
+            console.error("Error checking item state:", e);
+        }
+    }
 }
 
 function closeModal() {
@@ -630,6 +677,13 @@ async function markAsWatched() {
             timestamp: serverTimestamp()
         });
         alert('Added to watched list!');
+        const btn = document.getElementById('modalWatchedBtn');
+        if (btn) {
+            btn.style.background = '#22c55e'; // Green
+            btn.style.color = '#fff';
+            btn.innerHTML = '<i class="fas fa-check"></i> Watched';
+            btn.style.borderColor = '#22c55e';
+        }
     } catch (error) {
         console.error('Error marking as watched:', error);
         alert('Failed to add to watched list. Please try again.');
@@ -652,6 +706,13 @@ async function addToWatchLater() {
             timestamp: serverTimestamp()
         });
         alert('Added to watch later!');
+        const btn = document.getElementById('modalWatchLaterBtn');
+        if (btn) {
+            btn.style.background = '#eab308'; // Yellow
+            btn.style.color = '#000';
+            btn.innerHTML = '<i class="fas fa-check"></i> Added';
+            btn.style.borderColor = '#eab308';
+        }
     } catch (error) {
         console.error('Error adding to watch later:', error);
         alert('Failed to add to watch later. Please try again.');
@@ -738,4 +799,58 @@ async function askAI() {
     }
 
     chatContainer.scrollTop = chatContainer.scrollHeight;
+}
+
+// --- Collections ---
+async function openAddToCollectionModal() {
+    if (!currentUser) { alert('Please log in.'); window.location.href = 'login.html'; return; }
+    const modal = document.getElementById('addToCollectionModal');
+    const list = document.getElementById('userCollectionsList');
+    if (modal) modal.style.display = 'block';
+
+    if (list) list.innerHTML = '<div>Loading...</div>';
+
+    try {
+        const snap = await getDocs(collection(db, 'users', currentUser.uid, 'custom_collections'));
+        if (list) list.innerHTML = '';
+        if (snap.empty) {
+            list.innerHTML = '<div style="padding:1rem;">No custom collections. <a href="collection.html">Create one</a></div>';
+            return;
+        }
+        snap.forEach(doc => {
+            const data = doc.data();
+            const btn = document.createElement('button');
+            btn.className = 'glass-button';
+            btn.style.textAlign = 'left';
+            btn.innerHTML = `<i class="fas fa-folder"></i> ${data.name}`;
+            btn.onclick = () => addToCollectionConfirm(doc.id);
+            list.appendChild(btn);
+        });
+    } catch (err) {
+        console.error("Error loading collections:", err);
+        list.innerHTML = '<div style="color:red;">Error loading collections.</div>';
+    }
+}
+
+async function addToCollectionConfirm(collectionId) {
+    if (!currentUser || !currentMovieId) return;
+    try {
+        await addDoc(collection(db, 'users', currentUser.uid, 'custom_collections', collectionId, 'items'), {
+            movieId: currentMovieId,
+            movieTitle: currentMovieData.title || currentMovieData.name,
+            posterPath: currentMovieData.poster_path,
+            rating: currentMovieData.vote_average,
+            mediaType: currentMovieData.media_type || 'movie',
+            addedAt: serverTimestamp()
+        });
+        alert('Added to collection!');
+        document.getElementById('addToCollectionModal').style.display = 'none';
+    } catch (err) {
+        console.error("Error adding to collection:", err);
+        alert('Failed to add to collection.');
+    }
+}
+
+function closeAddToCollectionModal() {
+    document.getElementById('addToCollectionModal').style.display = 'none';
 }

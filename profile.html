@@ -13,6 +13,7 @@
     <link rel="icon" type="image/jpeg" href="public/logo.jpg">
     <link rel="apple-touch-icon" href="public/logo.jpg">
     <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <style>
@@ -541,7 +542,12 @@
                     </p>
                 </div>
 
-                <div class="action-buttons" style="justify-content: center; margin-top: 1.5rem;">
+                <div class="action-buttons"
+                    style="justify-content: center; margin-top: 1.5rem; display:flex; flex-direction:column; gap:0.5rem;">
+                    <button class="glass-button" onclick="window.location.href='leaderboard.html'"
+                        style="width: 100%; border-color: #ffd700; color: #ffd700;">
+                        <i class="fas fa-crown"></i> Leaderboard
+                    </button>
                     <button class="logout-btn" onclick="logout()"
                         style="width: 100%; background: rgba(231, 76, 60, 0.1); border: 1px solid #e74c3c; color: #e74c3c;">
                         <i class="fas fa-sign-out-alt"></i> Logout
@@ -605,8 +611,6 @@
                     </div>
                 </div>
             </div>
-
-
 
             <!-- Badges -->
             <section class="badges-section">

@@ -14,6 +14,7 @@
     <link rel="icon" type="image/jpeg" href="public/logo.jpg">
     <link rel="apple-touch-icon" href="public/logo.jpg">
     <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <style>
@@ -512,7 +513,7 @@
     <script src="firebase-config.js" type="module"></script>
     <script src="auth.js"></script>
     <script src="ai.js" type="module"></script>
-    <script src="search.js" type="module"></script>
+    <script src="search.js?v=2" type="module"></script>
 
     <script>
         // Simple Theme & Mobile Menu (if not imported centrally)
@@ -537,7 +538,7 @@
         }
     </script>
     <script src="public/mobile-nav.js"></script>
-    <script type="module" src="ai.js"></script>
+
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {

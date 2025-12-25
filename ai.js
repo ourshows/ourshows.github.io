@@ -37,18 +37,21 @@ async function fetchUserContext() {
     let context = `User Profile (${auth.currentUser.displayName || 'User'}):\n`;
 
     try {
-        // 1. Watched History (Last 10)
-        const watchedQ = query(collection(db, 'users', auth.currentUser.uid, 'watched'), orderBy('timestamp', 'desc'), limit(10));
+        // 1. Watched History (Last 50)
+        const watchedQ = query(collection(db, 'users', auth.currentUser.uid, 'watched'), orderBy('timestamp', 'desc'), limit(50));
         const watchedSnap = await getDocs(watchedQ);
         if (!watchedSnap.empty) {
-            const watchedTitles = watchedSnap.docs.map(d => `${d.data().movieTitle} (${d.data().rating || 'N/A'}/10)`);
+            const watchedTitles = watchedSnap.docs.map(d => {
+                const data = d.data();
+                return `${data.movieTitle} [${data.mediaType || 'movie'}]`;
+            });
             context += `- Recently Watched: ${watchedTitles.join(', ')}\n`;
         } else {
             context += `- Recently Watched: None recorded.\n`;
         }
 
-        // 2. Watchlist (Last 10)
-        const watchlistQ = query(collection(db, 'users', auth.currentUser.uid, 'watchlist'), orderBy('timestamp', 'desc'), limit(10));
+        // 2. Watchlist (Last 50)
+        const watchlistQ = query(collection(db, 'users', auth.currentUser.uid, 'watchlist'), orderBy('timestamp', 'desc'), limit(50));
         const watchlistSnap = await getDocs(watchlistQ);
         if (!watchlistSnap.empty) {
             const watchlistTitles = watchlistSnap.docs.map(d => d.data().movieTitle);
@@ -129,13 +132,18 @@ window.sendMessage = async function () {
 
 // Check if message is requesting movie recommendations
 function isMovieRequest(message) {
+    const lowerMessage = message.toLowerCase();
+
+    // Explicitly exclude history/list requests so they go to General Chat (Text List)
+    const historyKeywords = ['history', 'what i watched', 'my list', 'watched list', 'have i watched'];
+    if (historyKeywords.some(k => lowerMessage.includes(k))) return false;
+
     const keywords = [
         'recommend', 'suggest', 'movie', 'film', 'show', 'series',
         'watch', 'looking for', 'want to see', 'similar to',
         'like', 'genre', 'trending', 'popular', 'best'
     ];
 
-    const lowerMessage = message.toLowerCase();
     return keywords.some(keyword => lowerMessage.includes(keyword));
 }
 
@@ -257,7 +265,9 @@ async function handleMovieRecommendation(userMessage, userContext) {
     Instructions:
     1. Base your recommendations heavily on their 'Recently Watched' favorites (high ratings) and 'Watchlist' interests.
     2. If they ask for something different or specific, prioritize their request but use history for style matching.
-    3. You MUST respond with a valid JSON object strictly matching this schema:
+    3. IMPORTANT: Do NOT recommend any title that appears in the 'Recently Watched' or 'Watchlist' sections above. The user has already seen them.
+    4. If the user asks to "list my watched history" or similar, YOU CAN AND SHOULD list the movies from the context provided.
+    5. You MUST respond with a valid JSON object strictly matching this schema:
     {
       "message": "Friendly text intro explaining WHY you picked these based on their history.",
       "recommendations": [
@@ -293,9 +303,13 @@ async function handleGeneralChat(userMessage, userContext) {
     ${userContext}
 
     Guidelines:
+
     - Use their history to make personalized references (e.g., "Since you asked about X, and I know you loved Y...").
+    - If the user asks to list their watched video/history, you CAN do so using the context provided.
+    - IMPORTANT: When listing history, use a clean numbered format (e.g., "1. Title\n2. Title"). Do NOT include ratings or extra text unless asked.
+    - If the user asks for "only movies" or "only series", filter the history context using the [movie] or [tv] tags provided.
     - If they haven't watched much, be encouraging.
-    - Keep responses concise (under 3 sentences) unless asked for a deep dive. 
+    - Keep responses concise (under 3 sentences) unless asked for a deep dive or a list. 
     - Be enthusiastic about cinema.`;
 
     // Construct conversation context (last 6 messages max)

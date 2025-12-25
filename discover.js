@@ -1,5 +1,5 @@
 
-import { auth, db, addDoc, setDoc, doc, serverTimestamp, collection, onAuthStateChanged, getDocs, query, where, orderBy } from './firebase-wrapper.js';
+import { auth, db, addDoc, setDoc, doc, getDoc, deleteDoc, serverTimestamp, collection, onAuthStateChanged, getDocs, query, where, orderBy } from './firebase-wrapper.js';
 
 // 1. Configuration & State
 const appState = {
@@ -300,7 +300,52 @@ async function openMovieModal(id, type = 'movie') {
     renderVerdictMeter(details, verdict);
 
     // Switch to Overview tab by default
+    // Switch to Overview tab by default
     switchTab('overview');
+
+    // Reset Buttons
+    const watchLaterBtn = document.getElementById('modalWatchLaterBtn');
+    const watchedBtn = document.getElementById('modalWatchedBtn');
+
+    if (watchLaterBtn) {
+        watchLaterBtn.style.background = 'rgba(255, 255, 255, 0.1)';
+        watchLaterBtn.style.color = 'white';
+        watchLaterBtn.innerHTML = '<i class="fas fa-plus"></i> My List';
+        watchLaterBtn.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+    }
+    if (watchedBtn) {
+        watchedBtn.style.background = 'rgba(255, 255, 255, 0.1)';
+        watchedBtn.style.color = 'white';
+        watchedBtn.innerHTML = '<i class="fas fa-check"></i> Mark Watched';
+        watchedBtn.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+    }
+
+    // Check Persistent State
+    if (currentUser) {
+        try {
+            const watchedDoc = await getDoc(doc(db, 'users', currentUser.uid, 'watched', String(id)));
+            if (watchedDoc.exists()) {
+                if (watchedBtn) {
+                    watchedBtn.style.background = '#22c55e';
+                    watchedBtn.style.color = '#fff';
+                    watchedBtn.innerHTML = '<i class="fas fa-check"></i> Watched';
+                    watchedBtn.style.borderColor = '#22c55e';
+                }
+            }
+
+            const watchlistDoc = await getDoc(doc(db, 'users', currentUser.uid, 'watchlist', String(id)));
+            if (watchlistDoc.exists()) {
+                if (watchLaterBtn) {
+                    watchLaterBtn.style.background = '#eab308';
+                    watchLaterBtn.style.color = '#000';
+                    watchLaterBtn.innerHTML = '<i class="fas fa-check"></i> Added';
+                    watchLaterBtn.style.borderColor = '#eab308';
+                }
+            }
+        } catch (e) {
+            console.error("Error checking item state:", e);
+        }
+    }
 }
 
 // --- VERDICT SYSTEMS ---
@@ -625,7 +670,14 @@ async function markAsWatched() {
             mediaType: currentMovieData.media_type || 'movie',
             timestamp: serverTimestamp()
         });
-        alert('Added to Watched List');
+        // UI Feedback
+        const btn = document.getElementById('modalWatchedBtn');
+        if (btn) {
+            btn.style.background = '#22c55e';
+            btn.style.color = '#fff';
+            btn.innerHTML = '<i class="fas fa-check"></i> Watched';
+            btn.style.borderColor = '#22c55e';
+        }
     } catch (e) { console.error(e); alert('Error adding to watched'); }
 }
 
@@ -640,7 +692,14 @@ async function addToWatchLater() {
             mediaType: currentMovieData.media_type || 'movie',
             timestamp: serverTimestamp()
         });
-        alert('Added to Watchlist');
+        // UI Feedback
+        const btn = document.getElementById('modalWatchLaterBtn');
+        if (btn) {
+            btn.style.background = '#eab308';
+            btn.style.color = '#000';
+            btn.innerHTML = '<i class="fas fa-check"></i> Added';
+            btn.style.borderColor = '#eab308';
+        }
     } catch (e) { console.error(e); alert('Error adding to watchlist'); }
 }
 

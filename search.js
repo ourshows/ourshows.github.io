@@ -1,4 +1,4 @@
-import { auth, db, onAuthStateChanged, collection, addDoc, getDocs, doc, setDoc, serverTimestamp, query, where, orderBy } from './firebase-wrapper.js';
+import { auth, db, onAuthStateChanged, collection, addDoc, getDocs, getDoc, deleteDoc, doc, setDoc, serverTimestamp, query, where, orderBy } from './firebase-wrapper.js';
 
 // Global variables
 let currentMovieId = null;
@@ -90,12 +90,42 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Handle Nav Search (redirects to search page)
     const navInput = document.getElementById('navSearchInput');
     if (navInput) {
-        navInput.addEventListener('keypress', (e) => {
+        console.log("Search listener attaching to:", navInput);
+
+        // Remove old listeners by cloning (simple reset)
+        const newNavInput = navInput.cloneNode(true);
+        navInput.parentNode.replaceChild(newNavInput, navInput);
+
+        newNavInput.addEventListener('keypress', async (e) => {
             if (e.key === 'Enter') {
-                const newQuery = navInput.value.trim();
-                if (newQuery) window.location.href = `search.html?q=${encodeURIComponent(newQuery)}`;
+                const newQuery = newNavInput.value.trim();
+                console.log("Search Enter pressed:", newQuery);
+                if (newQuery) {
+                    // Update URL without full reload if possible, for smoother UX
+                    const newUrl = `search.html?q=${encodeURIComponent(newQuery)}`;
+                    window.history.pushState({ path: newUrl }, '', newUrl);
+
+                    // Manually trigger search logic
+                    const queryDisplay = document.getElementById('queryDisplay');
+                    if (queryDisplay) queryDisplay.textContent = newQuery;
+                    await performSearch(newQuery);
+                }
             }
         });
+
+        // Handle Back/Forward buttons
+        window.addEventListener('popstate', async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const query = urlParams.get('q');
+            if (query) {
+                const queryDisplay = document.getElementById('queryDisplay');
+                if (queryDisplay) queryDisplay.textContent = query;
+                await performSearch(query);
+            }
+        });
+
+    } else {
+        console.error("navSearchInput not found!");
     }
 
     // Handle Mobile Search with Dropdown
@@ -422,11 +452,20 @@ async function openMovieModal(id, type = 'movie') {
     }
 
     // Check Persistent State
+    // Wait for auth to settle if not ready
+    if (!currentUser) await new Promise(r => setTimeout(r, 500)); // Simple wait, ideally use promise
+
+    console.log("Checking persistent state for:", id, "User:", currentUser ? currentUser.uid : "No User");
     if (currentUser) {
+
         try {
-            const watchedDoc = await getDoc(doc(db, 'users', currentUser.uid, 'watched', String(id)));
+            const watchedPath = doc(db, 'users', currentUser.uid, 'watched', String(id));
+            const watchedDoc = await getDoc(watchedPath);
+            console.log("Watched Document Path:", watchedPath.path, "Exists:", watchedDoc.exists());
+
             if (watchedDoc.exists()) {
                 if (watchedBtn) {
+
                     watchedBtn.style.background = '#22c55e';
                     watchedBtn.style.color = '#fff';
                     watchedBtn.innerHTML = '<i class="fas fa-check"></i> Watched';
@@ -450,6 +489,8 @@ async function openMovieModal(id, type = 'movie') {
 
     // Switch to Overview tab by default
     switchTab('overview');
+
+
 }
 
 // --- VERDICT SYSTEMS ---
@@ -573,6 +614,7 @@ async function markAsWatched() {
                 genres: currentMovieData.genres || [],
                 timestamp: serverTimestamp()
             });
+            alert('Added to Watched List');
             if (btn) {
                 btn.style.background = '#22c55e'; // Green
                 btn.style.color = '#fff';
@@ -582,6 +624,7 @@ async function markAsWatched() {
         }
     } catch (error) {
         console.error('Error toggling watched status:', error);
+        alert('Error adding to watched');
     }
 }
 
@@ -616,6 +659,7 @@ async function addToWatchLater() {
                 genres: currentMovieData.genres || [],
                 timestamp: serverTimestamp()
             });
+            alert('Added to Watchlist');
             if (btn) {
                 btn.style.background = '#eab308'; // Yellow
                 btn.style.color = '#000';
@@ -625,6 +669,7 @@ async function addToWatchLater() {
         }
     } catch (error) {
         console.error('Error toggling watch later status:', error);
+        alert('Error adding to watchlist');
     }
 }
 
@@ -717,47 +762,51 @@ window.closeAddToCollectionModal = function () {
 }
 
 
+
 // --- AI Features ---
-async function askAI() {
-    const questionInput = document.getElementById('aiQuestion');
-    const question = questionInput.value.trim();
-    if (!question) return;
+// askAI is now attached to window, we ensure it's defined only once.
+if (!window.askAI) {
+    window.askAI = async function () {
+        const questionInput = document.getElementById('aiQuestion');
 
-    const chatContainer = document.getElementById('aiChat');
-    const userMsg = document.createElement('div');
-    userMsg.className = 'ai-message user';
-    userMsg.innerHTML = `<p>${question}</p>`;
-    chatContainer.appendChild(userMsg);
-    questionInput.value = '';
-    chatContainer.scrollTop = chatContainer.scrollHeight;
+        const question = questionInput.value.trim();
+        if (!question) return;
 
-    if (!window.callAI) {
-        const errorMsg = document.createElement('div');
-        errorMsg.className = 'ai-message ai';
-        errorMsg.innerHTML = '<p>AI unavailable.</p>';
-        chatContainer.appendChild(errorMsg);
-        return;
-    }
-
-    const movieTitle = currentMovieData.title || currentMovieData.name;
-    const movieYear = (currentMovieData.release_date || currentMovieData.first_air_date || '').split('-')[0];
-    const systemPrompt = `You are a helper for "${movieTitle}" (${movieYear}). Answer concisely.`;
-
-    try {
-        const response = await window.callAI([{ role: 'user', content: question }], systemPrompt, false);
-        const aiMsg = document.createElement('div');
-        aiMsg.className = 'ai-message ai';
-        aiMsg.innerHTML = `<p>${response}</p>`;
-        chatContainer.appendChild(aiMsg);
+        const chatContainer = document.getElementById('aiChat');
+        const userMsg = document.createElement('div');
+        userMsg.className = 'ai-message user';
+        userMsg.innerHTML = `<p>${question}</p>`;
+        chatContainer.appendChild(userMsg);
+        questionInput.value = '';
         chatContainer.scrollTop = chatContainer.scrollHeight;
-    } catch (error) {
-        const aiMsg = document.createElement('div');
-        aiMsg.className = 'ai-message ai';
-        aiMsg.innerHTML = '<p>Error occurred.</p>';
-        chatContainer.appendChild(aiMsg);
+
+        if (!window.callAI) {
+            const errorMsg = document.createElement('div');
+            errorMsg.className = 'ai-message ai';
+            errorMsg.innerHTML = '<p>AI unavailable.</p>';
+            chatContainer.appendChild(errorMsg);
+            return;
+        }
+
+        const movieTitle = currentMovieData.title || currentMovieData.name;
+        const movieYear = (currentMovieData.release_date || currentMovieData.first_air_date || '').split('-')[0];
+        const systemPrompt = `You are a helper for "${movieTitle}" (${movieYear}). Answer concisely.`;
+
+        try {
+            const response = await window.callAI([{ role: 'user', content: question }], systemPrompt, false);
+            const aiMsg = document.createElement('div');
+            aiMsg.className = 'ai-message ai';
+            aiMsg.innerHTML = `<p>${response}</p>`;
+            chatContainer.appendChild(aiMsg);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        } catch (error) {
+            const aiMsg = document.createElement('div');
+            aiMsg.className = 'ai-message ai';
+            aiMsg.innerHTML = '<p>Error occurred.</p>';
+            chatContainer.appendChild(aiMsg);
+        }
     }
 }
-
 
 // --- Helper Loaders ---
 function loadTrailer(videos) {
@@ -1028,3 +1077,8 @@ async function askAI() {
 
     chatContainer.scrollTop = chatContainer.scrollHeight;
 }
+// Expose to window safely
+if (!window.openMovieModal) window.openMovieModal = openMovieModal;
+
+
+

@@ -1,5 +1,5 @@
 
-import { db, auth, getDocs, collection, updateProfile } from '../firebase-wrapper.js';
+import { db, auth, getDocs, collection, updateProfile, setDoc, doc, query, orderBy, limit, where } from '../firebase-wrapper.js';
 
 // --- Shared Stats Logic ---
 export async function fetchUserStats(userId) {
@@ -10,7 +10,35 @@ export async function fetchUserStats(userId) {
         const snap = await getDocs(watchedRef);
         const watchedItems = [];
         snap.forEach(doc => watchedItems.push(doc.data()));
-        return calculateStatsFromItems(watchedItems);
+
+        const stats = calculateStatsFromItems(watchedItems);
+
+        // PERSIST STATS for Leaderboard (Self-healing)
+        // We only update if we have data to avoid overwriting with zeros if fetch failed (though we have try/catch)
+        if (stats) {
+            const userRef = doc(db, 'users', userId);
+            // We use setDoc with merge: true to avoid deleting other user data
+            // We also save displayName/photoURL for the leaderboard display
+            try {
+                const user = auth.currentUser;
+                setDoc(userRef, {
+                    stats: {
+                        totalMovies: stats.totalMovies,
+                        totalSeries: stats.totalSeries,
+                        totalHours: stats.totalHours,
+                        level: stats.level.currentLevel,
+                        levelTitle: stats.level.title
+                    },
+                    displayName: user ? (user.displayName || 'Anonymous') : 'Anonymous',
+                    photoURL: user ? user.photoURL : null,
+                    lastStatsUpdate: new Date()
+                }, { merge: true }); // Async update, don't await
+            } catch (err) {
+                console.warn("Failed to persist stats for leaderboard:", err);
+            }
+        }
+
+        return stats;
     } catch (e) {
         console.error("Error fetching stats:", e);
         return null;
@@ -189,4 +217,35 @@ export async function updateUserProfile(displayName, photoURL) {
         displayName: user.displayName,
         photoURL: user.photoURL
     };
+}
+
+// --- Leaderboard Logic ---
+export async function fetchLeaderboard(metric = 'totalHours', limitCount = 10) {
+    try {
+        const usersRef = collection(db, 'users');
+        // Note: Field path for stats is 'stats.totalHours' etc.
+        const q = query(
+            usersRef,
+            orderBy(`stats.${metric}`, 'desc'),
+            limit(limitCount)
+        );
+
+        const snap = await getDocs(q);
+        const leaders = [];
+        snap.forEach(doc => {
+            const data = doc.data();
+            if (data.stats) {
+                leaders.push({
+                    id: doc.id,
+                    name: data.displayName || 'Anonymous',
+                    photo: data.photoURL,
+                    stats: data.stats
+                });
+            }
+        });
+        return leaders;
+    } catch (err) {
+        console.error("Error fetching leaderboard:", err);
+        return [];
+    }
 }

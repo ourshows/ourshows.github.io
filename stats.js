@@ -109,7 +109,15 @@ async function calculateStats() {
             } else if (type === 'tv') {
                 totalSeries++;
                 const avgRuntime = (details.episode_run_time && details.episode_run_time[0]) || 45;
-                const episodes = details.number_of_episodes || 12;
+                let episodes = details.number_of_episodes || 12;
+
+                // Handle Custom Progress
+                if (item.customSeasons) {
+                    const totalSeasons = details.number_of_seasons || 1;
+                    const avgEpPerSeason = episodes / totalSeasons;
+                    episodes = Math.round(avgEpPerSeason * item.customSeasons);
+                }
+
                 seriesMinutes += (avgRuntime * episodes);
             }
         } else {

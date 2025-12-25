@@ -162,6 +162,8 @@
                             Later</button>
                         <button class="glass-button" onclick="markAsWatched()"><i class="fas fa-check"></i>
                             Watched</button>
+                        <button class="glass-button" onclick="openAddToCollectionModal()"><i
+                                class="fas fa-bookmark"></i> Collection</button>
                     </div>
 
                     <!-- Tab Content -->
@@ -241,6 +243,21 @@
                                 Ask</button>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add To Collection Modal -->
+    <div id="addToCollectionModal" class="modal" style="display: none;">
+        <div class="modal-content glass-panel" style="max-width: 400px;">
+            <span class="close-modal" onclick="closeAddToCollectionModal()">&times;</span>
+            <div class="modal-body">
+                <h3 style="margin-bottom: 1rem;">Add to Collection</h3>
+                <div id="userCollectionsList"
+                    style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 300px; overflow-y: auto;">
+                    <!-- Copied from main.js logic -->
+                    <div style="padding: 1rem; text-align: center;">Loading...</div>
                 </div>
             </div>
         </div>
