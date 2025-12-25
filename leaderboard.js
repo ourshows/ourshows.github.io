@@ -1,5 +1,4 @@
-import { auth, onAuthStateChanged } from './firebase-wrapper.js';
-import { fetchLeaderboard, fetchUserStats } from './public/profile-logic.js';
+import { fetchLeaderboard, fetchUserStats } from './public/profile-logic.js?v=2';
 
 let currentUser = null;
 
