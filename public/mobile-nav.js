@@ -146,7 +146,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 themeBtn.innerHTML = newTheme === 'light' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
             });
 
-            // C. Profile Button
+            // C. News Button
+            const newsBtn = document.createElement('a');
+            newsBtn.href = 'news.html';
+            newsBtn.className = 'mobile-profile-btn';
+            newsBtn.innerHTML = '<i class="fas fa-newspaper"></i>';
+            newsBtn.style.marginRight = '0.8rem'; // Spacing
+
+            // D. Profile Button
             const profileBtn = document.createElement('a');
             profileBtn.href = 'profile.html';
             profileBtn.className = 'mobile-profile-btn'; // Changed class to match styles
@@ -155,6 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Append All
             mobileActions.appendChild(searchContainer);
             mobileActions.appendChild(themeBtn);
+            mobileActions.appendChild(newsBtn);
             mobileActions.appendChild(profileBtn);
 
             navContent.style.justifyContent = 'space-between';

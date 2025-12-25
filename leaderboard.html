@@ -281,5 +281,50 @@
                 font-size: 1rem;
             }
         }
+    </style>
 
-        </head><body>< !-- Navbar --><nav class="navbar" id="navbar"><div class="container nav-content"><a href="index.html" class="logo">OurShow</a><div class="nav-right"><ul class="nav-links" id="navLinks"><li><a href="index.html" class="nav-link"><i class="fas fa-home"></i>Home</a></li><li><a href="discover.html" class="nav-link"><i class="fas fa-compass"></i>Discover</a></li><li><a href="collection.html" class="nav-link"><i class="fas fa-bookmark"></i>Collections</a></li><li><a href="communitychat.html" class="nav-link"><i class="fas fa-comments"></i>Chat</a></li></ul><div class="nav-actions"><a href="profile.html" class="auth-btn"><i class="fas fa-user"></i>Profile</a></div></div></div></nav><div class="leaderboard-container"><div class="leaderboard-header"><h1>Hall of Fame</h1><p style="color: var(--text-secondary);">Top watchers in the OurShow community</p></div><div class="filters"><button class="filter-btn active" onclick="loadLeaderboard('totalHours', this)">Total Hours</button><button class="filter-btn" onclick="loadLeaderboard('totalMovies', this)">Movies Watched</button><button class="filter-btn" onclick="loadLeaderboard('totalSeries', this)">Series Watched</button></div>< !-- Podium (Top 3) --><div class="podium" id="podiumArea" style="display:none;"></div>< !-- List --><div class="list-wrapper"><div class="list-header"><span>Rank</span><span>User</span><span style="text-align: right;" id="statLabel">Hours</span></div><div id="leaderboardList"><div style="padding: 3rem; text-align: center;"><i class="fas fa-circle-notch fa-spin" style="font-size: 2rem; color: var(--primary-color);"></i></div></div></div></div><script type="module" src="leaderboard.js"></script><script src="public/mobile-nav.js"></script></body></html>
+</head>
+
+<body>
+    < !-- Navbar -->
+        <nav class="navbar" id="navbar">
+            <div class="container nav-content"><a href="index.html" class="logo">OurShow</a>
+                <div class="nav-right">
+                    <ul class="nav-links" id="navLinks">
+                        <li><a href="index.html" class="nav-link"><i class="fas fa-home"></i>Home</a></li>
+                        <li><a href="discover.html" class="nav-link"><i class="fas fa-compass"></i>Discover</a></li>
+                        <li><a href="collection.html" class="nav-link"><i class="fas fa-bookmark"></i>Collections</a>
+                        </li>
+                        <li><a href="communitychat.html" class="nav-link"><i class="fas fa-comments"></i>Chat</a></li>
+                    </ul>
+                    <div class="nav-actions"><a href="profile.html" class="auth-btn"><i
+                                class="fas fa-user"></i>Profile</a></div>
+                </div>
+            </div>
+        </nav>
+        <div class="leaderboard-container">
+            <div class="leaderboard-header">
+                <h1>Hall of Fame</h1>
+                <p style="color: var(--text-secondary);">Top watchers in the OurShow community</p>
+            </div>
+            <div class="filters"><button class="filter-btn active" onclick="loadLeaderboard('totalHours', this)">Total
+                    Hours</button><button class="filter-btn" onclick="loadLeaderboard('totalMovies', this)">Movies
+                    Watched</button><button class="filter-btn" onclick="loadLeaderboard('totalSeries', this)">Series
+                    Watched</button></div>
+            < !-- Podium (Top 3) -->
+                <div class="podium" id="podiumArea" style="display:none;"></div>
+                < !-- List -->
+                    <div class="list-wrapper">
+                        <div class="list-header"><span>Rank</span><span>User</span><span style="text-align: right;"
+                                id="statLabel">Hours</span></div>
+                        <div id="leaderboardList">
+                            <div style="padding: 3rem; text-align: center;"><i class="fas fa-circle-notch fa-spin"
+                                    style="font-size: 2rem; color: var(--primary-color);"></i></div>
+                        </div>
+                    </div>
+        </div>
+        <script type="module" src="leaderboard.js"></script>
+        <script src="public/mobile-nav.js"></script>
+</body>
+
+</html>

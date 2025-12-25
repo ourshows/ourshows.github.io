@@ -118,6 +118,53 @@ exports.tmdbProxy = functions.https.onRequest(async (req, res) => {
         console.error("TMDB Proxy Error:", error);
         res.status(500).json({ error: error.message });
     }
+} catch (error) {
+    console.error("TMDB Proxy Error:", error);
+    res.status(500).json({ error: error.message });
+}
+});
+
+/**
+ * Proxy for NewsAPI
+ * Expects: page, pageSize, q (query)
+ */
+exports.newsProxy = functions.https.onRequest(async (req, res) => {
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.set("Access-Control-Allow-Headers", "Content-Type");
+
+    if (req.method === "OPTIONS") {
+        res.status(204).send("");
+        return;
+    }
+
+    // Run: firebase functions:config:set newsapi.key="YOUR_KEY"
+    const NEWS_API_KEY = functions.config().newsapi?.key || "bf9a1353cc9c4de4ba5d58d9405d45d8"; // Fallback demo key (often rate limited, user should replace)
+
+    if (!NEWS_API_KEY) {
+        res.status(500).json({ error: "Server configuration error: NewsAPI Key missing." });
+        return;
+    }
+
+    const { page = 1, pageSize = 12, q = 'movies' } = req.query;
+
+    // NewsAPI URL
+    // We use 'everything' endpoint for broader search
+    const url = `https://newsapi.org/v2/everything?q=${encodeURIComponent(q)}&language=en&sortBy=publishedAt&page=${page}&pageSize=${pageSize}&apiKey=${NEWS_API_KEY}`;
+
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            const errText = await response.text();
+            console.error("NewsAPI Error:", errText);
+            throw new Error(`NewsAPI Error: ${response.status}`);
+        }
+        const data = await response.json();
+        res.status(200).json(data);
+    } catch (error) {
+        console.error("News Proxy Error:", error);
+        res.status(500).json({ error: error.message });
+    }
 });
 
 // Keep legacy export name alias if needed, or we just update firebase.json rewrites
