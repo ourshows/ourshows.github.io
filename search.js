@@ -124,94 +124,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-    } else {
-        console.error("navSearchInput not found!");
-    }
+        // Mobile search is handled by mobile-nav.js globally
 
-    // Handle Mobile Search with Dropdown
-    const mobileInput = document.getElementById('mobileSearchInput');
-    const mobileDropdown = document.getElementById('mobileSearchDropdown');
-    let mobileSearchTimeout;
+    } // End if (navInput)
 
-    if (mobileInput && mobileDropdown) {
-        mobileInput.addEventListener('input', (e) => {
-            clearTimeout(mobileSearchTimeout);
-            const query = e.target.value.trim();
-
-            if (query.length < 2) {
-                mobileDropdown.style.display = 'none';
-                return;
-            }
-
-            mobileSearchTimeout = setTimeout(async () => {
-                try {
-                    const data = await fetchTMDB('/search/multi', { query: query });
-                    if (data && data.results && data.results.length > 0) {
-                        const validResults = data.results
-                            .filter(item => (item.media_type === 'movie' || item.media_type === 'tv') && item.poster_path)
-                            .slice(0, 5);
-
-                        if (validResults.length > 0) {
-                            mobileDropdown.innerHTML = validResults.map(item => {
-                                const title = item.title || item.name;
-                                const year = (item.release_date || item.first_air_date || '').split('-')[0];
-                                const type = item.media_type === 'tv' ? 'TV Show' : 'Movie';
-                                const poster = window.APP_CONFIG.TMDB_IMAGE_SMALL_URL + item.poster_path;
-
-                                return `
-                                    <div class="mobile-search-item" data-id="${item.id}" data-type="${item.media_type}">
-                                        <img src="${poster}" class="mobile-search-poster" alt="${title}">
-                                        <div class="mobile-search-info">
-                                            <div class="mobile-search-title">${title}</div>
-                                            <div class="mobile-search-meta">${year} • ${type}</div>
-                                        </div>
-                                    </div>
-                                `;
-                            }).join('');
-
-                            // Add click handlers
-                            mobileDropdown.querySelectorAll('.mobile-search-item').forEach(item => {
-                                item.addEventListener('click', () => {
-                                    const id = item.getAttribute('data-id');
-                                    const type = item.getAttribute('data-type');
-                                    mobileDropdown.style.display = 'none';
-                                    mobileInput.value = '';
-                                    openMovieModal(id, type);
-                                });
-                            });
-
-                            mobileDropdown.style.display = 'block';
-                        } else {
-                            mobileDropdown.style.display = 'none';
-                        }
-                    } else {
-                        mobileDropdown.style.display = 'none';
-                    }
-                } catch (error) {
-                    console.error('Mobile search error:', error);
-                    mobileDropdown.style.display = 'none';
-                }
-            }, 300);
-        });
-
-        // Handle Enter key
-        mobileInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                const query = mobileInput.value.trim();
-                if (query) {
-                    mobileDropdown.style.display = 'none';
-                    window.location.href = `search.html?q=${encodeURIComponent(query)}`;
-                }
-            }
-        });
-
-        // Close dropdown when clicking outside
-        document.addEventListener('click', (e) => {
-            if (!mobileInput.contains(e.target) && !mobileDropdown.contains(e.target)) {
-                mobileDropdown.style.display = 'none';
-            }
-        });
-    }
 });
 
 
@@ -1005,80 +921,7 @@ window.addToCollectionConfirm = addToCollectionConfirm;
 window.closeAddToCollectionModal = closeAddToCollectionModal;
 window.rateMovie = rateMovie;
 window.submitReview = submitReview;
-async function askAI() {
-    const questionInput = document.getElementById('aiQuestion');
-    const question = questionInput.value.trim();
-    if (!question) return;
-
-    const chatContainer = document.getElementById('aiChat');
-
-    // Add User Message
-    chatContainer.innerHTML += `
-        <div class="ai-message user" style="text-align: right; margin-bottom: 0.5rem;">
-            <div style="background: var(--primary-color); display: inline-block; padding: 0.5rem 1rem; border-radius: 12px 12px 0 12px;">${question}</div>
-        </div>`;
-
-    questionInput.value = '';
-    chatContainer.scrollTop = chatContainer.scrollHeight;
-
-    // Show Loading
-    const loadingId = 'ai-loading-' + Date.now();
-    chatContainer.innerHTML += `
-        <div id="${loadingId}" class="ai-message ai" style="margin-bottom: 0.5rem;">
-             <div style="background: rgba(255,255,255,0.1); display: inline-block; padding: 0.5rem 1rem; border-radius: 12px 12px 12px 0;">
-                <i class="fas fa-circle-notch fa-spin"></i> Thinking...
-             </div>
-        </div>`;
-    chatContainer.scrollTop = chatContainer.scrollHeight;
-
-    try {
-        const movieContext = `Movie: ${currentMovieData.title || currentMovieData.name} (${(currentMovieData.release_date || currentMovieData.first_air_date || '').split('-')[0]}). 
-        Overview: ${currentMovieData.overview}. 
-        Rating: ${currentMovieData.vote_average}.`;
-
-        const systemPrompt = `You are an intelligent movie assistant. The user is asking about the following movie:
-        ${movieContext}
-        Keep your answer concise, engaging, and relevant to this specific movie. Avoid spoilers unless asked.`;
-
-        const messages = [{ role: 'user', content: question }];
-
-        // Use window.callAI from ai.js if available, else simulated response
-        let reply = "I'm sorry, I can't connect to the analytics engine right now.";
-
-        if (window.callAI) {
-            reply = await window.callAI(messages, systemPrompt);
-        } else {
-            // Fallback if ai.js failed to load
-            reply = "AI System Offline. Please check your connection.";
-            console.error("ai.js not loaded or callAI not found");
-        }
-
-        // Remove loading
-        const loader = document.getElementById(loadingId);
-        if (loader) loader.remove();
-
-        // Add AI Response
-        chatContainer.innerHTML += `
-            <div class="ai-message ai" style="margin-bottom: 0.5rem;">
-                <div style="background: rgba(255,255,255,0.1); display: inline-block; padding: 0.5rem 1rem; border-radius: 12px 12px 12px 0;">
-                    <strong>AI:</strong> ${reply}
-                </div>
-            </div>`;
-
-    } catch (error) {
-        const loader = document.getElementById(loadingId);
-        if (loader) loader.remove();
-
-        chatContainer.innerHTML += `
-            <div class="ai-message ai error" style="margin-bottom: 0.5rem;">
-                <div style="color: #ff6b6b;">Error: ${error.message || "Something went wrong."}</div>
-            </div>`;
-    }
-
-    chatContainer.scrollTop = chatContainer.scrollHeight;
-}
-// Expose to window safely
-if (!window.openMovieModal) window.openMovieModal = openMovieModal;
+// No redundant askAI here
 
 
 
