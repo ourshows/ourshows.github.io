@@ -27,7 +27,7 @@
 
         .news-header {
             text-align: center;
-            margin-bottom: 3rem;
+            margin-bottom: 2rem;
         }
 
         .news-header h1 {
@@ -40,6 +40,106 @@
             color: transparent;
         }
 
+        /* --- Tabs --- */
+        .tabs-container {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 3rem;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            color: var(--text-secondary);
+            padding: 0.8rem 2rem;
+            border-radius: 99px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .tab-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+        }
+
+        /* --- Sections View Management --- */
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* --- Section Styling --- */
+        .section-header {
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .section-header h2 {
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+        }
+
+        .section-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chip {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            color: var(--text-secondary);
+            padding: 0.5rem 1.2rem;
+            border-radius: 99px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+        }
+
+        .chip:hover,
+        .chip.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        /* News Grid */
         .news-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -132,36 +232,107 @@
             background: var(--primary-color);
         }
 
+        /* Coming Soon Layout (Grid instead of Scroller for dedicated page) */
+        .coming-soon-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 2rem;
+        }
+
+        .upcoming-card {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: transform 0.3s;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .upcoming-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .upcoming-poster {
+            width: 100%;
+            aspect-ratio: 2/3;
+            object-fit: cover;
+        }
+
+        .release-tag {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #ff6b6b;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+        }
+
+        .upcoming-date {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px;
+            text-align: center;
+            font-size: 0.95rem;
+            font-weight: 600;
+            backdrop-filter: blur(4px);
+        }
+
+        .search-container {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .search-container input {
+            flex: 1;
+            padding: 1rem;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+            background: var(--glass-bg);
+            color: white;
+            outline: none;
+        }
+
+        .search-container button {
+            padding: 0 1.5rem;
+            border-radius: 12px;
+            background: var(--primary-color);
+            border: none;
+            color: white;
+            cursor: pointer;
+        }
+
         .loader-container {
             grid-column: 1 / -1;
             text-align: center;
             padding: 3rem;
-        }
-
-        /* Standard property for compatibility */
-        .news-title,
-        .news-desc {
-            line-clamp: 3;
+            color: var(--text-secondary);
         }
 
         @media (max-width: 600px) {
-            .news-container {
-                margin-top: 5rem;
-                padding: 0 1rem;
+            .tabs-container {
+                gap: 0.5rem;
+            }
+
+            .tab-btn {
+                padding: 0.6rem 1.2rem;
+                font-size: 0.9rem;
             }
 
             .news-header h1 {
-                font-size: 2rem;
+                font-size: 2.2rem;
             }
 
-            .news-grid {
-                grid-template-columns: 1fr;
-                /* Stack vertically on mobile */
-                gap: 1.5rem;
-            }
-
-            .news-image {
-                height: 180px;
+            .coming-soon-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1rem;
             }
         }
     </style>
@@ -188,21 +359,79 @@
     </nav>
 
     <div class="news-container">
+
         <div class="news-header">
-            <h1>Latest Headlines</h1>
-            <p style="color: var(--text-secondary);">Updates from the world of Cinema & TV</p>
+            <h1>Cinema Center</h1>
+            <p style="color: var(--text-secondary);">Your Hub for Everything Movies</p>
         </div>
 
-        <div class="news-grid" id="newsGrid">
-            <div class="loader-container">
-                <i class="fas fa-circle-notch fa-spin" style="font-size: 2rem; color: var(--primary-color);"></i>
-                <p style="margin-top: 1rem; color: var(--text-secondary);">Fetching latest news...</p>
+        <!-- MAIN NAVIGATION TABS -->
+        <div class="tabs-container">
+            <button class="tab-btn active" onclick="switchTab('upcoming')">
+                <i class="fas fa-calendar-alt"></i> Coming Soon
+            </button>
+            <button class="tab-btn" onclick="switchTab('headlines')">
+                <i class="fas fa-globe"></i> Headlines
+            </button>
+        </div>
+
+        <!-- TAB 1: COMING SOON -->
+        <div id="tab-upcoming" class="tab-content active">
+            <div class="section-header">
+                <h2>Upcoming Releases</h2>
+                <div class="section-controls">
+                    <button class="chip active" onclick="loadUpcoming('week', this)">This Week</button>
+                    <button class="chip" onclick="loadUpcoming('this_month', this)">This Month</button>
+                    <button class="chip" onclick="loadUpcoming('next_month', this)">Next Month</button>
+                </div>
+            </div>
+            <div class="coming-soon-grid" id="upcomingGrid">
+                <!-- Posters grid -->
             </div>
         </div>
+
+        <!-- TAB 2: HEADLINES -->
+        <div id="tab-headlines" class="tab-content">
+            <div class="section-header">
+                <h2>Industry News</h2>
+                <div class="section-controls">
+                    <button class="chip active" onclick="loadGeneralNews('global', this)">Global</button>
+                    <button class="chip" onclick="loadGeneralNews('nepal', this)">🇳🇵 Nepal</button>
+                    <button class="chip" onclick="loadGeneralNews('bollywood', this)">Bollywood</button>
+                </div>
+            </div>
+
+            <div class="search-container">
+                <input type="text" id="newsSearchInput" placeholder="Search news topics...">
+                <button id="newsSearchBtn"><i class="fas fa-search"></i></button>
+            </div>
+
+            <div class="news-grid" id="generalNewsGrid">
+                <!-- Articles -->
+            </div>
+        </div>
+
     </div>
 
     <script type="module" src="news.js"></script>
     <script src="public/mobile-nav.js"></script>
+
+    <script>
+        // Tab Switcher Helper (Inline for speed)
+        window.switchTab = function (tabName) {
+            // Buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                if (btn.getAttribute('onclick').includes(tabName)) btn.classList.add('active');
+                else btn.classList.remove('active');
+            });
+
+            // Content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById('tab-' + tabName).classList.add('active');
+        }
+    </script>
 </body>
 
 </html>

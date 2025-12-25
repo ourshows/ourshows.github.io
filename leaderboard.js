@@ -1,5 +1,5 @@
 import { auth, onAuthStateChanged } from './firebase-wrapper.js';
-import { fetchLeaderboard } from './public/profile-logic.js';
+import { fetchLeaderboard, fetchUserStats } from './public/profile-logic.js';
 
 let currentUser = null;
 
@@ -28,7 +28,17 @@ window.loadLeaderboard = async function (metric, btn) {
     // Hide podium during load
     podiumArea.style.display = 'none';
 
-    const leaders = await fetchLeaderboard(metric, 50);
+    // Self-Healing: Ensure CURRENT user's stats are up to date and persisted so they appear in the list using fetchUserStats
+    if (currentUser) {
+        try {
+            await fetchUserStats(currentUser.uid);
+        } catch (e) {
+            console.warn("Could not sync my stats:", e);
+        }
+    }
+
+    // Increased limit to 100 to show more users
+    const leaders = await fetchLeaderboard(metric, 100);
 
     if (!leaders || leaders.length === 0) {
         list.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--text-secondary);">No data available yet.</div>';
