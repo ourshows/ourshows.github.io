@@ -1138,9 +1138,7 @@ a {
         justify-content: center;
     }
 
-    .logo {
-        font-size: 1.3rem;
-    }
+    /* .logo moved to up to .nav-content block for consolidation */
 
     .hero-title {
         font-size: 2rem;
@@ -1233,6 +1231,14 @@ a {
     /* Navbar */
     .nav-content {
         padding: 0.5rem 0;
+        gap: 0.5rem;
+        /* Reduced from 2rem to use space */
+    }
+
+    .logo {
+        margin-right: 0;
+        /* Stop pushing everything to the edge */
+        font-size: 1.3rem;
     }
 
     .nav-links {
@@ -1430,13 +1436,13 @@ a {
 
     /* Mobile Top Profile Button */
     .mobile-profile-btn {
-        font-size: 1.8rem;
+        font-size: 1.5rem;
         color: var(--text-primary);
         display: flex;
         align-items: center;
         justify-content: center;
-        width: 40px;
-        height: 40px;
+        width: 35px;
+        height: 35px;
         border-radius: 50%;
         margin-left: auto;
         /* Push to right if flex container doesn't split */
@@ -1448,16 +1454,31 @@ a {
     .mobile-actions {
         display: flex;
         align-items: center;
-        gap: 0.8rem;
+        gap: 0.4rem;
+        overflow-x: auto;
+        white-space: nowrap;
+        padding-right: 0.5rem;
+        /* Padding to ensure last item isn't cut off */
+        scrollbar-width: none;
+        /* Firefox */
+        -ms-overflow-style: none;
+        /* IE/Edge */
+        max-width: 100%;
+        /* Ensure it respects container width */
+    }
+
+    .mobile-actions::-webkit-scrollbar {
+        display: none;
+        /* Chrome/Safari */
     }
 
     .mobile-icon-btn {
         background: transparent;
         border: none;
         color: var(--text-primary);
-        font-size: 1.4rem;
+        font-size: 1.2rem;
         cursor: pointer;
-        padding: 0.4rem;
+        padding: 0.3rem;
         transition: transform 0.2s, color 0.2s;
         display: flex;
         align-items: center;
@@ -1481,13 +1502,13 @@ a {
         border-radius: 20px;
         padding: 0.4rem 0.8rem 0.4rem 2rem;
         color: var(--text-primary);
-        width: 120px;
+        width: 115px;
         transition: width 0.3s ease;
         font-size: 0.9rem;
     }
 
     .mobile-search-wrapper input:focus {
-        width: 180px;
+        width: 160px;
         background: var(--bg-dark);
         border-color: var(--primary-color);
         outline: none;

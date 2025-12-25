@@ -151,7 +151,7 @@ document.addEventListener('DOMContentLoaded', () => {
             newsBtn.href = 'news.html';
             newsBtn.className = 'mobile-profile-btn';
             newsBtn.innerHTML = '<i class="fas fa-newspaper"></i>';
-            newsBtn.style.marginRight = '0.8rem'; // Spacing
+            newsBtn.style.marginRight = '0.4rem'; // Spacing
 
             // D. Profile Button
             const profileBtn = document.createElement('a');

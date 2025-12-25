@@ -134,28 +134,45 @@
 
         <div class="badges-section">
             <h2 class="section-title">Achievements</h2>
-            <div class="badges-grid">
-                <div class="badge" title="Watched 10 movies in a week">
-                    <i class="fas fa-couch"></i>
-                    <span>Binge Watcher</span>
+            <div class="badges-grid" id="badgesContainer">
+                <p style="color: var(--text-secondary);">Loading achievements...</p>
+            </div>
+        </div>
+
+        <!-- Leaderboard Section -->
+        <div class="content-section" style="margin-top: 4rem;">
+            <div class="section-header">
+                <h2 class="section-title">Global Leaderboard</h2>
+                <div class="section-actions">
+                    <button class="filter-chip active" data-metric="totalHours">Hours</button>
+                    <button class="filter-chip" data-metric="totalMovies">Movies</button>
+                    <button class="filter-chip" data-metric="totalSeries">Series</button>
                 </div>
-                <div class="badge" title="Watched 5 Horror movies">
-                    <i class="fas fa-ghost"></i>
-                    <span>Fearless</span>
-                </div>
-                <div class="badge locked" title="Watch 100 movies (Locked)">
-                    <i class="fas fa-film"></i>
-                    <span>Cinephile</span>
-                </div>
-                <div class="badge locked" title="Review 50 items (Locked)">
-                    <i class="fas fa-pen-nib"></i>
-                    <span>Critic</span>
-                </div>
+            </div>
+
+            <div class="glass-panel" style="overflow: hidden;">
+                <table class="leaderboard-table" style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="border-bottom: 1px solid var(--glass-border); text-align: left;">
+                            <th style="padding: 1rem;">Rank</th>
+                            <th style="padding: 1rem;">User</th>
+                            <th style="padding: 1rem;">Level</th>
+                            <th style="padding: 1rem; text-align: right;">Score</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboardBody">
+                        <!-- Injected via JS -->
+                        <tr>
+                            <td colspan="4" style="padding: 2rem; text-align: center; color: var(--text-secondary);">
+                                Loading leaderboard...</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 
-    <script src="stats.js"></script>
+    <script type="module" src="stats.js"></script>
 </body>
 
 </html>

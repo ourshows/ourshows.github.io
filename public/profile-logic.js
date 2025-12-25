@@ -1,5 +1,5 @@
 
-import { db, auth, getDocs, collection, updateProfile, setDoc, doc, query, orderBy, limit, where } from '../firebase-wrapper.js';
+import { db, auth, getDocs, collection, updateProfile, setDoc, doc, query, orderBy, limit, where } from './firebase-config.js';
 
 // --- Shared Stats Logic ---
 export async function fetchUserStats(userId) {
