@@ -677,6 +677,24 @@
             }
         };
 
+        window.logout = async () => {
+            if (confirm('Are you sure you want to logout?')) {
+                try {
+                    await auth.signOut();
+                    // Clear local storage as well via auth.js logic if needed, 
+                    // but onAuthStateChanged will trigger redirect usually.
+                    // Let's manually force redirect to be safe.
+                    localStorage.removeItem('isLoggedIn');
+                    localStorage.removeItem('userEmail');
+                    localStorage.removeItem('userName');
+                    window.location.href = 'login.html';
+                } catch (error) {
+                    console.error('Logout error:', error);
+                    alert('Error logging out');
+                }
+            }
+        };
+
         // Initialize
         onAuthStateChanged(auth, async (user) => {
             if (!user) {
@@ -778,7 +796,6 @@
     </script>
     <script src="public-config.js"></script>
     <script src="auth.js"></script>
-    <script type="module" src="profile.js"></script>
     <script type="module" src="ai.js"></script>
     <script src="public/mobile-nav.js"></script>
 </body>
