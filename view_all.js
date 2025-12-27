@@ -1,4 +1,25 @@
 import { auth, db, addDoc, setDoc, doc, getDoc, serverTimestamp, collection, onAuthStateChanged, query, where, orderBy, getDocs } from './firebase-wrapper.js';
+import { openMovieModal as sharedOpenStats, closeModal as sharedClose, switchTab as sharedSwitch, calculateVerdict, getVerdictColor, loadUserReviews } from './public/modal-logic.js';
+
+// --- MODAL WRAPPERS ---
+async function openMovieModal(id, type = 'movie') {
+    const context = {
+        currentUser: currentUser,
+        fetchTMDB: fetchTMDB,
+        db: db
+    };
+    await sharedOpenStats(id, type, context);
+}
+
+function closeModal() {
+    sharedClose();
+    currentMovieId = null;
+    currentMovieData = null;
+}
+
+function switchTab(tabName) {
+    sharedSwitch(tabName);
+}
 
 let currentPage = 1;
 let currentCategory = '';
@@ -289,372 +310,6 @@ function renderGrid(items) {
     });
 }
 
-// --- Modal Logic ---
-
-async function openMovieModal(id, type = 'movie') {
-    currentMovieId = id;
-    const modal = document.getElementById('movieModal');
-    modal.style.display = 'block';
-    document.body.style.overflow = 'hidden';
-
-    // Fetch movie details
-    const details = await fetchTMDB(`/ ${type}/${id}`, { append_to_response: 'videos,credits,reviews,similar,external_ids' });
-    if (!details) return;
-
-    currentMovieData = details;
-    currentMovieData.media_type = type;
-
-    // Update modal header
-    document.getElementById('modalPoster').src = `${window.APP_CONFIG.TMDB_IMAGE_SMALL_URL}${details.poster_path}`;
-    document.getElementById('modalTitle').textContent = details.title || details.name;
-    // document.getElementById('modalRating').textContent = details.vote_average ? details.vote_average.toFixed(1) : 'N/A';
-    document.getElementById('modalYear').textContent = (details.release_date || details.first_air_date || '').split('-')[0];
-    document.getElementById('modalRuntime').textContent = details.runtime ? `${details.runtime} min` : '';
-    // Update Overview (Text version)
-    document.getElementById('modalOverviewText').textContent = details.overview;
-
-    // Load sections
-    loadTrailer(details.videos);
-    loadGenres(details.genres);
-    loadCast(details.credits);
-    loadReviews(details.reviews, id);
-    loadSimilar(details.similar);
-
-    // Reset and Hide new tabs
-    const tabBtnSeasons = document.getElementById('tabBtnSeasons');
-    const tabBtnFranchise = document.getElementById('tabBtnFranchise');
-    const modalSeasons = document.getElementById('modalSeasons');
-    const modalFranchise = document.getElementById('modalFranchise');
-
-    if (tabBtnSeasons) tabBtnSeasons.style.display = 'none';
-    if (tabBtnFranchise) tabBtnFranchise.style.display = 'none';
-    if (modalSeasons) modalSeasons.innerHTML = '';
-    if (modalFranchise) modalFranchise.innerHTML = '';
-
-    // Handle Seasons (TV)
-    if (type === 'tv' && details.seasons && tabBtnSeasons && modalSeasons) {
-        tabBtnSeasons.style.display = 'block';
-        const seasonContent = details.seasons.filter(s => s.season_number > 0).map(s => `
-            <div class="season-card glass-panel" style="display: flex; gap: 1rem; padding: 1rem;">
-                <img src="${s.poster_path ? 'https://image.tmdb.org/t/p/w200' + s.poster_path : 'https://placehold.co/100x150'}" 
-                     style="width: 100px; height: 150px; object-fit: cover; border-radius: 8px;">
-                <div class="season-info">
-                    <h3>${s.name}</h3>
-                    <p>${s.air_date ? s.air_date.substring(0, 4) : 'TBA'} | ${s.episode_count} Episodes</p>
-                    <p style="font-size: 0.9rem; color: #ccc; margin-top: 0.5rem;">${s.overview || 'No overview available.'}</p>
-                </div>
-            </div>
-        `).join('');
-        modalSeasons.innerHTML = seasonContent;
-    }
-
-    // Handle Franchise (Movies)
-    if (type === 'movie' && details.belongs_to_collection && tabBtnFranchise && modalFranchise) {
-        try {
-            const collectionId = details.belongs_to_collection.id;
-            const collectionData = await fetchTMDB(`/collection/${collectionId}`);
-            if (collectionData && collectionData.parts && collectionData.parts.length > 0) {
-                tabBtnFranchise.style.display = 'block';
-                const sortedParts = collectionData.parts.sort((a, b) => new Date(a.release_date) - new Date(b.release_date));
-
-                const franchiseContent = sortedParts.map(movie => `
-                    <div class="movie-card" onclick="openMovieModal(${movie.id}, 'movie')" style="cursor: pointer; position: relative;">
-                         <img src="${movie.poster_path ? 'https://image.tmdb.org/t/p/w200' + movie.poster_path : 'https://placehold.co/150x225'}" 
-                              alt="${movie.title}" 
-                              style="width: 100%; border-radius: 8px; transition: transform 0.3s;">
-                         <div style="margin-top: 5px; font-size: 0.9rem;">${movie.title} (${movie.release_date ? movie.release_date.split('-')[0] : 'TBA'})</div>
-                         ${movie.id === id ? '<span style="position: absolute; top: 10px; right: 10px; background: var(--primary-color); padding: 2px 6px; border-radius: 4px; font-size: 0.7rem;">Current</span>' : ''}
-                    </div>
-                 `).join('');
-                modalFranchise.innerHTML = franchiseContent;
-            }
-        } catch (e) { console.error("Error fetching collection:", e); }
-    }
-
-    // INJECT VERDICT BADGE AND GAUGE
-    // Extract IMDb rating from external_ids if available
-    const imdbRating = details.external_ids?.imdb_rating || null;
-    const verdict = calculateVerdict(details, imdbRating, []);
-    // Render Gauge (Text Only)
-    renderVerdictMeter(details, verdict);
-
-    // Reset Buttons
-    const watchLaterBtn = document.getElementById('modalWatchLaterBtn');
-    const watchedBtn = document.getElementById('modalWatchedBtn');
-
-    if (watchLaterBtn) {
-        watchLaterBtn.style.background = 'rgba(255, 255, 255, 0.1)';
-        watchLaterBtn.style.color = 'white';
-        watchLaterBtn.innerHTML = '<i class="fas fa-clock"></i> Watch Later';
-        watchLaterBtn.style.borderColor = 'rgba(255, 255, 255, 0.2)';
-    }
-    if (watchedBtn) {
-        watchedBtn.style.background = 'rgba(255, 255, 255, 0.1)';
-        watchedBtn.style.color = 'white';
-        watchedBtn.innerHTML = '<i class="fas fa-check"></i> Watched';
-        watchedBtn.style.borderColor = 'rgba(255, 255, 255, 0.2)';
-    }
-
-    // Check Persistent State
-    if (currentUser) {
-        try {
-            const watchedDoc = await getDoc(doc(db, 'users', currentUser.uid, 'watched', String(id)));
-            if (watchedDoc.exists()) {
-                if (watchedBtn) {
-                    watchedBtn.style.background = '#22c55e';
-                    watchedBtn.style.color = '#fff';
-                    watchedBtn.innerHTML = '<i class="fas fa-check"></i> Watched';
-                    watchedBtn.style.borderColor = '#22c55e';
-                }
-            }
-
-            const watchlistDoc = await getDoc(doc(db, 'users', currentUser.uid, 'watchlist', String(id)));
-            if (watchlistDoc.exists()) {
-                if (watchLaterBtn) {
-                    watchLaterBtn.style.background = '#eab308';
-                    watchLaterBtn.style.color = '#000';
-                    watchLaterBtn.innerHTML = '<i class="fas fa-check"></i> Added';
-                    watchLaterBtn.style.borderColor = '#eab308';
-                }
-            }
-        } catch (e) {
-            console.error("Error checking item state:", e);
-        }
-    }
-}
-
-function closeModal() {
-    document.getElementById('movieModal').style.display = 'none';
-    document.body.style.overflow = 'auto';
-    currentMovieId = null;
-    currentMovieData = null;
-}
-
-function switchTab(tabName) {
-    document.querySelectorAll('.tab-content').forEach(tab => tab.style.display = 'none');
-    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    document.getElementById(`tab-${tabName}`).style.display = 'block';
-
-    // Activate button
-    const buttons = document.querySelectorAll('.tab-btn');
-    buttons.forEach(btn => {
-        if (btn.textContent.toLowerCase().includes(tabName.toLowerCase()) ||
-            btn.onclick.toString().includes(tabName)) {
-            btn.classList.add('active');
-        }
-    });
-}
-
-function loadTrailer(videos) {
-    const trailerContainer = document.getElementById('modalTrailer');
-    if (!videos || !videos.results || videos.results.length === 0) {
-        trailerContainer.innerHTML = '';
-        return;
-    }
-    const trailer = videos.results.find(v => v.type === 'Trailer' && v.site === 'YouTube') || videos.results[0];
-    if (trailer) {
-        trailerContainer.innerHTML = `
-            <div style="margin-bottom: 2rem;">
-                <h3>Trailer</h3>
-                <iframe width="100%" height="400" src="https://www.youtube.com/embed/${trailer.key}" 
-                    frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                    allowfullscreen style="border-radius: 12px; margin-top: 1rem;"></iframe>
-            </div>
-        `;
-    }
-}
-
-function loadGenres(genres) {
-    const genresContainer = document.getElementById('modalGenres');
-    if (!genres || genres.length === 0) {
-        genresContainer.innerHTML = '';
-        return;
-    }
-    genresContainer.innerHTML = `
-        <div style="margin-bottom: 1.5rem;">
-            <strong>Genres:</strong> ${genres.map(g => g.name).join(', ')}
-        </div>
-    `;
-}
-
-function loadCast(credits) {
-    const castContainer = document.getElementById('modalCast');
-    if (!credits || !credits.cast || credits.cast.length === 0) {
-        castContainer.innerHTML = '<p>No cast information available.</p>';
-        return;
-    }
-    castContainer.innerHTML = credits.cast.slice(0, 12).map(person => `
-        <div class="cast-card" style="cursor: pointer;" onclick="window.location.href='cast.html?id=${person.id}'">
-            <img src="${person.profile_path ? window.APP_CONFIG.TMDB_IMAGE_SMALL_URL + person.profile_path : 'https://placehold.co/150x225?text=No+Image'}" 
-                alt="${person.name}">
-            <div style="font-weight: 600; font-size: 0.9rem;">${person.name}</div>
-            <div style="font-size: 0.8rem; color: var(--text-secondary);">${person.character}</div>
-        </div>
-    `).join('');
-}
-
-// Verdict Logic
-function calculateVerdict(details, imdbRating = null, reviews = []) {
-    const tmdbRating = details.vote_average || 0;
-
-    // Use combined verdict calculator if available
-    if (typeof window.calculateCombinedVerdict === 'function') {
-        return window.calculateCombinedVerdict(tmdbRating, imdbRating, reviews);
-    }
-
-    // Fallback to TMDB-only calculation
-    const rating = tmdbRating;
-    const votes = details.vote_count || 0;
-    const popularity = details.popularity || 0;
-
-    if (rating >= 8.0 && (votes >= 500 || popularity >= 100)) {
-        return { text: "Perfection", class: "verdict-perfection", finalRating: rating.toFixed(1) };
-    }
-    if (rating >= 6.8) {
-        return { text: "Go for it", class: "verdict-go", finalRating: rating.toFixed(1) };
-    }
-    if (rating >= 5.0) {
-        return { text: "One time watch", class: "verdict-once", finalRating: rating.toFixed(1) };
-    }
-    return { text: "Skip", class: "verdict-skip", finalRating: rating.toFixed(1) };
-}
-
-function renderVerdictMeter(details, verdict) {
-    const containers = [
-        document.getElementById('pcVerdictMeter'),
-        document.getElementById('mobileVerdictMeter')
-    ];
-
-    const rating = details.vote_average || 0;
-
-    // Text-Only Verdict
-    const html = `
-        <div class="verdict-label" style="color: ${getVerdictColor(verdict.text)}">${verdict.text}</div>
-        <div class="verdict-subtext">${rating.toFixed(1)}/10 based on TMDB</div>
-    `;
-
-    containers.forEach(container => {
-        if (container) container.innerHTML = html;
-    });
-}
-
-function getVerdictColor(text) {
-    if (text === 'Perfection') return '#ffd700';
-    if (text === 'Go for it') return '#22c55e';
-    if (text === 'One time watch') return '#f59e0b';
-    return '#ef4444'; // Skip
-}
-
-function getVerdictFromRating(rating) {
-    const numRating = parseFloat(rating);
-    if (isNaN(numRating)) return { text: 'N/A', class: '' };
-    if (numRating >= 8.0) return { text: 'Perfection', class: 'verdict-perfection' };
-    if (numRating >= 6.8) return { text: 'Go for it', class: 'verdict-go' };
-    if (numRating >= 5.0) return { text: 'One time watch', class: 'verdict-once' };
-    return { text: 'Skip', class: 'verdict-skip' };
-}
-
-// Reviews
-async function loadReviews(tmdbReviews, movieId) {
-    const reviewsContainer = document.getElementById('modalReviews');
-    reviewsContainer.innerHTML = '<p style="text-align:center;">Loading reviews...</p>';
-
-    let firebaseReviews = [];
-    try {
-        if (movieId) {
-            const q = query(
-                collection(db, 'reviews'),
-                where('movieId', '==', String(movieId)),
-                orderBy('timestamp', 'desc')
-            );
-            const snapshot = await getDocs(q);
-            firebaseReviews = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data(),
-                source: 'ourshow'
-            }));
-        }
-    } catch (e) {
-        console.error("Error fetching firebase reviews:", e);
-    }
-
-    const tmdbResults = (tmdbReviews && tmdbReviews.results) ? tmdbReviews.results.map(r => ({
-        id: r.id,
-        author: r.author,
-        content: r.content,
-        rating: r.author_details.rating,
-        avatar_path: r.author_details.avatar_path,
-        source: 'tmdb',
-        timestamp: new Date(r.created_at || 0)
-    })) : [];
-
-    const combined = [...firebaseReviews, ...tmdbResults];
-
-    if (combined.length === 0) {
-        reviewsContainer.innerHTML = '<p>No reviews yet. Be the first to review!</p>';
-        return;
-    }
-
-    reviewsContainer.innerHTML = combined.slice(0, 10).map(review => {
-        const author = review.source === 'ourshow' ? review.username : review.author;
-        const rating = review.source === 'ourshow' ? review.rating : review.rating;
-        const content = review.source === 'ourshow' ? review.review : review.content;
-
-        let verdictHTML = '';
-        if (rating) {
-            let v = { text: 'N/A', class: '' };
-            if (typeof rating === 'string') {
-                if (rating === 'Perfection') v = { text: 'Perfection', class: 'verdict-perfection' };
-                else if (rating === 'Go For It' || rating === 'Go for it') v = { text: 'Go for it', class: 'verdict-go' };
-                else if (rating === 'One Time Watch' || rating === 'One time watch') v = { text: 'One time watch', class: 'verdict-once' };
-                else if (rating === 'Pass' || rating === 'Skip') v = { text: 'Skip', class: 'verdict-skip' };
-                else {
-                    v = getVerdictFromRating(rating);
-                }
-            } else {
-                v = getVerdictFromRating(rating);
-            }
-            if (v.text !== 'N/A') {
-                verdictHTML = `<span class="review-verdict-badge ${v.class}" style="font-size: 0.7rem; padding: 2px 6px;">${v.text}</span>`;
-            }
-        }
-
-        let avatarUrl = 'https://secure.gravatar.com/avatar/ad516503a11cd5ca435acc9bb6523536?s=128';
-        if (review.source === 'tmdb' && review.avatar_path) {
-            if (review.avatar_path.startsWith('/https')) avatarUrl = review.avatar_path.substring(1);
-            else avatarUrl = `${window.APP_CONFIG.TMDB_IMAGE_SMALL_URL}${review.avatar_path}`;
-        }
-
-        const maxLength = 200;
-        const isLong = content.length > maxLength;
-        const shortContent = isLong ? content.substring(0, maxLength) + '...' : content;
-        const reviewId = `review-viewall-${review.id || Math.random().toString(36).substr(2, 9)}`;
-
-        return `
-            <div class="review-card" id="${reviewId}" style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; ${review.source === 'ourshow' ? 'border-left: 3px solid var(--primary-color);' : ''}">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                    <strong style="display:flex; gap:0.5rem; align-items:center;">
-                        <img class="review-avatar" src="${avatarUrl}" alt="${author}" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;"> ${author}
-                    </strong>
-                    ${verdictHTML}
-                </div>
-                <div class="review-header-actions" style="display: flex; justify-content: flex-end; margin-top: -1.5rem; margin-bottom: 0.5rem;">
-                     ${(currentUser && review.userId === currentUser.uid) ? `
-                        <div class="review-actions">
-                            <button onclick="editReview('${review.id}', '${encodeURIComponent(content)}', '${rating}')" style="background:none; border:none; color: var(--text-secondary); cursor: pointer; margin-right:5px;"><i class="fas fa-edit"></i></button>
-                            <button onclick="deleteReview('${review.id}')" style="background:none; border:none; color: #ef4444; cursor: pointer;"><i class="fas fa-trash"></i></button>
-                        </div>
-                    ` : ''}
-                </div>
-                <div class="review-content" style="color: var(--text-secondary); line-height: 1.6;">
-                    <span class="content-short">${shortContent}</span>
-                    ${isLong ? `<span class="content-full" style="display:none;">${content}</span>
-                                <span class="read-more-btn" style="color:var(--primary-color); cursor:pointer; margin-left:5px;" onclick="toggleReview('${reviewId}')">Read More</span>` : ''}
-                </div>
-            </div>
-        `;
-    }).join('');
-}
 
 let editingReviewId = null;
 
@@ -675,7 +330,7 @@ window.deleteReview = async function (id) {
     try {
         await deleteDoc(doc(db, 'reviews', id));
         alert('Review deleted.');
-        await loadReviews(currentMovieData.reviews, currentMovieId);
+        await loadUserReviews(currentMovieId, currentMovieData.reviews, db);
     } catch (e) {
         console.error("Delete Error:", e);
         alert("Failed to delete review.");
@@ -683,39 +338,7 @@ window.deleteReview = async function (id) {
 };
 
 
-function loadSimilar(similar) {
-    const similarContainer = document.getElementById('modalSimilar');
-    if (!similar || !similar.results || similar.results.length === 0) {
-        similarContainer.innerHTML = '<p>No similar titles found.</p>';
-        return;
-    }
-    // Reuse renderGrid logic but for similar container. 
-    // Since renderGrid targets 'mediaGrid', we inline here or reuse if we made it generic.
-    // For simplicity, inline similar rendering:
-    similarContainer.innerHTML = '';
 
-    // We want a scrollable row typically, but modalSimilar in view_all.html likely expects a grid or scroller.
-    // view_all.html uses "media-scroller" class for modalSimilar. 
-    // renderGrid uses grid. Let's make similar a scroller.
-
-    similar.results.slice(0, 10).forEach(item => {
-        if (!item.poster_path) return;
-        const card = document.createElement('div');
-        card.className = 'media-card';
-        // card.style.minWidth = '160px'; // Removed for grid layout
-        card.innerHTML = `
-            <div class="media-poster-container">
-            <img class="media-poster" src="${window.APP_CONFIG.TMDB_IMAGE_SMALL_URL}${item.poster_path}" loading="lazy" alt="${item.title || item.name}">
-            </div>
-            <div class="media-info">
-                <div class="media-title">${item.title || item.name}</div>
-                <div class="media-year">${(item.release_date || item.first_air_date || '').split('-')[0]}</div>
-            </div>
-        `;
-        card.onclick = () => openMovieModal(item.id, item.media_type || 'movie');
-        similarContainer.appendChild(card);
-    });
-}
 
 function rateMovie(rating) {
     userRating = rating;
@@ -777,7 +400,7 @@ async function submitReview() {
         document.querySelectorAll('.rating-btn').forEach(btn => btn.classList.remove('selected'));
 
         // Reload reviews
-        await loadReviews(currentMovieData.reviews, currentMovieId);
+        await loadUserReviews(currentMovieId, currentMovieData.reviews, db);
         switchTab('reviews'); // Show the reviews tab to display the new review
     } catch (error) {
         console.error('Error submitting review:', error);
@@ -1019,3 +642,20 @@ async function addToCollectionConfirm(collectionId) {
 function closeAddToCollectionModal() {
     document.getElementById('addToCollectionModal').style.display = 'none';
 }
+
+// Expose functions to window
+window.openMovieModal = openMovieModal;
+window.closeModal = closeModal;
+window.switchTab = switchTab;
+window.watchNow = watchNow;
+window.addToWatchLater = addToWatchLater;
+window.markAsWatched = markAsWatched;
+window.openAddToCollectionModal = openAddToCollectionModal;
+window.addToCollectionConfirm = addToCollectionConfirm;
+window.closeAddToCollectionModal = closeAddToCollectionModal;
+window.submitReview = submitReview;
+window.deleteReview = deleteReview;
+window.askAI = askAI;
+
+if (typeof rateMovie !== 'undefined') window.rateMovie = rateMovie;
+if (typeof editReview !== 'undefined') window.editReview = editReview;

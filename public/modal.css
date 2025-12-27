@@ -321,13 +321,23 @@
 
 /* Similar Movies Grid */
 .similar-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 1.5rem;
-    padding: 1rem 0;
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important;
+    gap: 1rem !important;
+    width: 100% !important;
+    margin-top: 1rem;
+    flex-direction: unset !important;
+    overflow-x: unset !important;
 }
 
 .similar-grid .media-card {
-    width: 100%;
-    /* Override fixed width */
+    cursor: pointer;
+    transition: transform 0.2s;
+    min-width: unset !important;
+    flex-shrink: unset !important;
+    width: 100% !important;
+}
+
+.similar-grid .media-card:hover {
+    transform: scale(1.05);
 }

@@ -388,7 +388,7 @@
             <div class="modal-body">
                 <div class="modal-poster-container">
                     <img id="modalPoster" src="" alt="Movie Poster" class="modal-poster">
-                    <!-- Verdict Meter (PC Only) -->
+                    <!-- PC Verdict Meter (below poster) -->
                     <div id="pcVerdictMeter" class="verdict-meter-container pc-only"></div>
                 </div>
                 <div class="modal-info">
@@ -466,7 +466,6 @@
 
                     <!-- Similar Tab -->
                     <div id="tab-similar" class="tab-content">
-                        <h3>Similar Movies</h3>
                         <div class="similar-grid" id="modalSimilar"></div>
                     </div>
 
@@ -501,7 +500,7 @@
         <link rel="stylesheet" href="public/modal.css">
 
         <!-- Add to Collection Modal -->
-        <div id="addToCollectionModal" class="modal" style="z-index: 3000;">
+        <div id="addToCollectionModal" class="modal" style="display: none; z-index: 3000;">
             <div class="modal-content" style="max-width: 400px;">
                 <span class="close-modal"
                     onclick="document.getElementById('addToCollectionModal').style.display='none'">&times;</span>

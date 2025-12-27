@@ -1,5 +1,30 @@
+import { auth, db, onAuthStateChanged, collection, addDoc, getDocs, getDoc, deleteDoc, updateDoc, doc, setDoc, serverTimestamp, query, where, orderBy } from './firebase-wrapper.js';
+import { openMovieModal as sharedOpenStats, closeModal as sharedClose, switchTab as sharedSwitch, calculateVerdict, getVerdictColor, loadUserReviews } from './public/modal-logic.js';
 
-import { auth, db, addDoc, setDoc, doc, getDoc, deleteDoc, serverTimestamp, collection, onAuthStateChanged, getDocs, query, where, orderBy } from './firebase-wrapper.js';
+// --- MODAL WRAPPERS ---
+async function openMovieModal(id, type = 'movie') {
+    const context = {
+        currentUser: currentUser,
+        fetchTMDB: fetchTMDB,
+        db: db
+    };
+    await sharedOpenStats(id, type, context);
+}
+
+function closeModal() {
+    sharedClose();
+    currentMovieId = null;
+    currentMovieData = null;
+}
+
+function switchTab(tabName) {
+    sharedSwitch(tabName);
+}
+
+// Expose to window
+window.openMovieModal = openMovieModal;
+window.closeModal = closeModal;
+window.switchTab = switchTab;
 
 // 1. Configuration & State
 const appState = {
@@ -65,7 +90,7 @@ function setupFilters() {
             const value = e.target.dataset.value;
 
             // Update UI
-            document.querySelectorAll(`.filter-btn[data-filter="${filterType}"]`).forEach(b => b.classList.remove('active'));
+            document.querySelectorAll(`.filter - btn[data - filter="${filterType}"]`).forEach(b => b.classList.remove('active'));
             e.target.classList.add('active');
 
             // Update State
@@ -96,7 +121,7 @@ async function fetchTMDB(endpoint, params = {}) {
 
     try {
         const response = await fetch(url);
-        if (!response.ok) throw new Error(`TMDB API Error: ${response.status}`);
+        if (!response.ok) throw new Error(`TMDB API Error: ${response.status} `);
         return await response.json();
     } catch (error) {
         console.error('Fetch Error:', error);
@@ -187,7 +212,7 @@ function renderGrid(items, mediaType) {
         const title = item.title || item.name;
         const date = item.release_date || item.first_air_date || '';
         const year = date.split('-')[0];
-        const watchLink = `watchanddownload.html?id=${item.id}&type=${mediaType}`;
+        const watchLink = `watchanddownload.html ? id = ${item.id}& type=${mediaType} `;
 
         // Calculate verdict for poster
         const verdict = calculateVerdict(item);
@@ -214,7 +239,7 @@ function renderGrid(items, mediaType) {
                     <span>${mediaType === 'tv' ? 'TV' : 'Movie'}</span>
                 </div>
             </div>
-        `;
+`;
 
         // Make whole card clickable for details
         card.onclick = () => openMovieModal(item.id, mediaType);
@@ -237,379 +262,7 @@ function setupInfiniteScroll() {
     observer.observe(sentinel);
 }
 
-// --- MODAL LOGIC (Adapted from view_all.js/main.js) ---
 
-async function openMovieModal(id, type = 'movie') {
-    currentMovieId = id;
-    const modal = document.getElementById('movieModal');
-    modal.style.display = 'block';
-    document.body.style.overflow = 'hidden';
-
-    // Fetch details
-    const details = await fetchTMDB(`/${type}/${id}`, { append_to_response: 'videos,credits,reviews,similar,external_ids' });
-    if (!details) return;
-
-    currentMovieData = details;
-    currentMovieData.media_type = type;
-
-    // Verdict Calculation
-    // Use the fetched details + current reviews (if any, but we fetch reviews later async... so initial verdict might be just TMDB)
-    // Ideally we wait for reviews? But users want instant "Perfection".
-    // We can update it once reviews load. For now, use details.vote_average as base.
-
-    // NOTE: calculateVerdict might need `reviews` array. 
-    // `details.reviews` usually comes from append_to_response if enabled.
-    // TMDB append returns `reviews: { results: [...] }`.
-    const reviewsArr = (details.reviews && details.reviews.results) ? details.reviews.results : [];
-    const verdict = calculateVerdict(details, details.external_ids?.imdb_rating, reviewsArr); // Assuming this function exists globally
-
-    // Update Header
-    const imgBase = (window.PUBLIC_CONFIG && window.PUBLIC_CONFIG.TMDB_IMAGE_SMALL_URL) || "https://image.tmdb.org/t/p/w500";
-    document.getElementById('modalPoster').src = `${imgBase}${details.poster_path}`;
-    document.getElementById('modalTitle').textContent = details.title || details.name;
-
-    // Enhanced Rating Display (Verdict)
-    const ratingContainer = document.getElementById('modalRating').parentElement; // The parent <span> containing the star
-    ratingContainer.innerHTML = `<span class="${verdict.class}">${verdict.text}</span> <span style="font-size:0.8rem; opacity:0.7; vertical-align: middle;">(${verdict.finalRating})</span>`;
-
-    document.getElementById('modalYear').textContent = (details.release_date || details.first_air_date || '').split('-')[0];
-    document.getElementById('modalRuntime').textContent = details.runtime ? `${details.runtime} min` : '';
-    document.getElementById('modalOverview').textContent = details.overview;
-
-    // Load Sections
-    loadTrailer(details.videos);
-    loadGenres(details.genres);
-    loadCast(details.credits);
-    // Load Reviews (Async)
-    loadReviews(details.reviews, id);
-    loadSimilar(details.similar);
-
-    // Reset and Hide new tabs
-    document.getElementById('tabBtnSeasons').style.display = 'none';
-    document.getElementById('tabBtnFranchise').style.display = 'none';
-    document.getElementById('modalSeasons').innerHTML = '';
-    document.getElementById('modalFranchise').innerHTML = '';
-
-    // Handle Seasons (TV)
-    if (type === 'tv' && details.seasons) {
-        document.getElementById('tabBtnSeasons').style.display = 'block';
-        const seasonContent = details.seasons.filter(s => s.season_number > 0).map(s => `
-            <div class="season-card glass-panel" style="display: flex; gap: 1rem; padding: 1rem;">
-                <img src="${s.poster_path ? 'https://image.tmdb.org/t/p/w200' + s.poster_path : 'https://placehold.co/100x150'}" 
-                     style="width: 100px; height: 150px; object-fit: cover; border-radius: 8px;">
-                <div class="season-info">
-                    <h3>${s.name}</h3>
-                    <p>${s.air_date ? s.air_date.substring(0, 4) : 'TBA'} | ${s.episode_count} Episodes</p>
-                    <p style="font-size: 0.9rem; color: #ccc; margin-top: 0.5rem;">${s.overview || 'No overview available.'}</p>
-                </div>
-            </div>
-        `).join('');
-        document.getElementById('modalSeasons').innerHTML = seasonContent;
-    }
-
-    // Handle Franchise (Movies)
-    if (type === 'movie' && details.belongs_to_collection) {
-        try {
-            const collectionId = details.belongs_to_collection.id;
-            const collectionData = await fetchTMDB(`/collection/${collectionId}`);
-            if (collectionData && collectionData.parts && collectionData.parts.length > 0) {
-                document.getElementById('tabBtnFranchise').style.display = 'block';
-                const sortedParts = collectionData.parts.sort((a, b) => new Date(a.release_date) - new Date(b.release_date));
-
-                const franchiseContent = sortedParts.map(movie => `
-                    <div class="movie-card" onclick="openMovieModal(${movie.id}, 'movie')" style="cursor: pointer; position: relative;">
-                         <img src="${movie.poster_path ? 'https://image.tmdb.org/t/p/w200' + movie.poster_path : 'https://placehold.co/150x225'}" 
-                              alt="${movie.title}" 
-                              style="width: 100%; border-radius: 8px; transition: transform 0.3s;">
-                         <div style="margin-top: 5px; font-size: 0.9rem;">${movie.title} (${movie.release_date ? movie.release_date.split('-')[0] : 'TBA'})</div>
-                         ${movie.id === id ? '<span style="position: absolute; top: 10px; right: 10px; background: var(--primary-color); padding: 2px 6px; border-radius: 4px; font-size: 0.7rem;">Current</span>' : ''}
-                    </div>
-                 `).join('');
-                document.getElementById('modalFranchise').innerHTML = franchiseContent;
-            }
-        } catch (e) { console.error("Error fetching collection:", e); }
-    }
-
-    // Switch to Overview tab by default
-    switchTab('overview');
-
-    // Reset Buttons
-    const watchLaterBtn = document.getElementById('modalWatchLaterBtn');
-    const watchedBtn = document.getElementById('modalWatchedBtn');
-
-    if (watchLaterBtn) {
-        watchLaterBtn.style.background = 'rgba(255, 255, 255, 0.1)';
-        watchLaterBtn.style.color = 'white';
-        watchLaterBtn.innerHTML = '<i class="fas fa-plus"></i> My List';
-        watchLaterBtn.style.borderColor = 'rgba(255, 255, 255, 0.2)';
-    }
-    if (watchedBtn) {
-        watchedBtn.style.background = 'rgba(255, 255, 255, 0.1)';
-        watchedBtn.style.color = 'white';
-        watchedBtn.innerHTML = '<i class="fas fa-check"></i> Mark Watched';
-        watchedBtn.style.borderColor = 'rgba(255, 255, 255, 0.2)';
-    }
-
-    // Check Persistent State
-    if (currentUser) {
-        try {
-            const watchedDoc = await getDoc(doc(db, 'users', currentUser.uid, 'watched', String(id)));
-            if (watchedDoc.exists()) {
-                if (watchedBtn) {
-                    watchedBtn.style.background = '#22c55e';
-                    watchedBtn.style.color = '#fff';
-                    watchedBtn.innerHTML = '<i class="fas fa-check"></i> Watched';
-                    watchedBtn.style.borderColor = '#22c55e';
-                }
-            }
-
-            const watchlistDoc = await getDoc(doc(db, 'users', currentUser.uid, 'watchlist', String(id)));
-            if (watchlistDoc.exists()) {
-                if (watchLaterBtn) {
-                    watchLaterBtn.style.background = '#eab308';
-                    watchLaterBtn.style.color = '#000';
-                    watchLaterBtn.innerHTML = '<i class="fas fa-check"></i> Added';
-                    watchLaterBtn.style.borderColor = '#eab308';
-                }
-            }
-        } catch (e) {
-            console.error("Error checking item state:", e);
-        }
-    }
-}
-
-// --- VERDICT SYSTEMS ---
-
-function calculateVerdict(details, imdbRating = null, reviews = []) {
-    const tmdbRating = details.vote_average || 0;
-
-    // Use combined verdict calculator if available
-    if (typeof window.calculateCombinedVerdict === 'function') {
-        return window.calculateCombinedVerdict(tmdbRating, imdbRating, reviews);
-    }
-
-    // Fallback to TMDB-only calculation
-    const rating = tmdbRating;
-    const votes = details.vote_count || 0;
-    const popularity = details.popularity || 0;
-
-    if (rating >= 8.0 && (votes >= 500 || popularity >= 100)) {
-        return { text: "Perfection", class: "verdict-perfection" };
-    }
-    if (rating >= 6.8) {
-        return { text: "Go for it", class: "verdict-go" };
-    }
-    if (rating >= 5.0) {
-        return { text: "One time watch", class: "verdict-once" };
-    }
-    return { text: "Skip", class: "verdict-skip" };
-}
-
-function getVerdictColor(text) {
-    if (text === 'Perfection') return '#ffd700';
-    if (text === 'Go for it') return '#22c55e';
-    if (text === 'One time watch') return '#f59e0b';
-    return '#ef4444'; // Skip
-}
-
-function renderVerdictMeter(details, verdict) {
-    const containers = [
-        document.getElementById('pcVerdictMeter'),
-        document.getElementById('mobileVerdictMeter')
-    ];
-
-    const rating = details.vote_average || 0;
-    const rotation = (rating / 10) * 180 - 90;
-
-    const html = `
-        <div class="verdict-gauge">
-            <div class="gauge-needle" style="transform: translateX(-50%) rotate(${rotation}deg)"></div>
-        </div>
-        <div class="verdict-label" style="color: ${getVerdictColor(verdict.text)}">${verdict.text}</div>
-        <div class="verdict-subtext">${rating.toFixed(1)}/10 based on TMDB</div>
-    `;
-
-    containers.forEach(container => {
-        if (container) container.innerHTML = html;
-    });
-}
-
-function closeModal() {
-    document.getElementById('movieModal').style.display = 'none';
-    document.body.style.overflow = 'auto';
-    currentMovieId = null;
-    currentMovieData = null;
-}
-
-function switchTab(tabName) {
-    document.querySelectorAll('.tab-content').forEach(tab => tab.style.display = 'none');
-    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    document.getElementById(`tab-${tabName}`).style.display = 'block';
-
-    const buttons = document.querySelectorAll('.tab-btn');
-    buttons.forEach(btn => {
-        if (btn.textContent.toLowerCase().includes(tabName.toLowerCase()) ||
-            (tabName === 'overview' && btn.textContent === 'Overview') ||
-            (tabName === 'cast' && btn.textContent === 'Cast & Crew') ||
-            (tabName === 'reviews' && btn.textContent === 'Reviews') ||
-            (tabName === 'similar' && btn.textContent === 'Similar') ||
-            (tabName === 'ai' && btn.textContent === 'Ask AI')) {
-            btn.classList.add('active');
-        }
-    }); // Simple active class matching
-}
-
-function loadTrailer(videos) {
-    const container = document.getElementById('modalTrailer');
-    if (!videos || !videos.results || videos.results.length === 0) {
-        container.innerHTML = '';
-        return;
-    }
-    const trailer = videos.results.find(v => v.type === 'Trailer' && v.site === 'YouTube') || videos.results[0];
-    if (trailer) {
-        container.innerHTML = `
-            <div style="margin-bottom: 2rem;">
-                <h3>Trailer</h3>
-                <iframe width="100%" height="300" src="https://www.youtube.com/embed/${trailer.key}" 
-                    frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                    allowfullscreen style="border-radius: 12px; margin-top: 1rem;"></iframe>
-            </div>
-        `;
-    } else {
-        container.innerHTML = '';
-    }
-}
-
-function loadGenres(genres) {
-    const container = document.getElementById('modalGenres');
-    if (!genres || genres.length === 0) {
-        container.innerHTML = '';
-        return;
-    }
-    container.innerHTML = `<strong>Genres:</strong> ${genres.map(g => g.name).join(', ')}`;
-}
-
-function loadCast(credits) {
-    const container = document.getElementById('modalCast');
-    if (!credits || !credits.cast || credits.cast.length === 0) {
-        container.innerHTML = '<p>No cast information available.</p>';
-        return;
-    }
-    const imgBase = (window.PUBLIC_CONFIG && window.PUBLIC_CONFIG.TMDB_IMAGE_SMALL_URL) || "https://image.tmdb.org/t/p/w500";
-    container.innerHTML = credits.cast.slice(0, 10).map(person => `
-        <div class="cast-card" style="min-width: 100px; cursor: pointer;" onclick="window.location.href='cast.html?id=${person.id}'">
-            <img src="${person.profile_path ? imgBase + person.profile_path : 'https://placehold.co/150x225?text=No+Image'}" 
-                alt="${person.name}" style="width:100%; border-radius:8px;">
-            <div style="font-weight: 600; font-size: 0.9rem; margin-top:0.5rem;">${person.name}</div>
-            <div style="font-size: 0.8rem; color: var(--text-secondary);">${person.character}</div>
-        </div>
-    `).join('');
-}
-
-// --- Review Helpers ---
-function getVerdictFromRating(rating) {
-    if (!rating) return { text: 'N/A', class: '' };
-    if (rating >= 8.0) return { text: 'Perfection', class: 'verdict-perfection' };
-    if (rating >= 6.8) return { text: 'Go for it', class: 'verdict-go' };
-    if (rating >= 5.0) return { text: 'One time watch', class: 'verdict-once' };
-    return { text: 'Skip', class: 'verdict-skip' };
-}
-
-async function loadReviews(tmdbReviews, movieId) {
-    const container = document.getElementById('modalReviews');
-    container.innerHTML = '<p style="text-align:center;">Loading reviews...</p>';
-
-    // 1. Fetch Firebase Reviews
-    let firebaseReviews = [];
-    try {
-        if (!movieId) throw new Error('No Movie ID');
-        const q = query(
-            collection(db, 'reviews'),
-            where('movieId', '==', String(movieId)),
-            orderBy('timestamp', 'desc')
-        );
-        const snapshot = await getDocs(q);
-        firebaseReviews = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-            source: 'ourshow'
-        }));
-    } catch (e) { console.error(e); }
-
-    // 2. Process TMDB Reviews
-    const tmdbResults = (tmdbReviews && tmdbReviews.results) ? tmdbReviews.results.map(r => ({
-        id: r.id,
-        author: r.author,
-        content: r.content,
-        rating: r.author_details.rating,
-        avatar_path: r.author_details.avatar_path,
-        source: 'tmdb',
-        timestamp: new Date(r.created_at || 0)
-    })) : [];
-
-    // 3. Merge
-    const combined = [...firebaseReviews, ...tmdbResults];
-
-    if (combined.length === 0) {
-        container.innerHTML = '<p>No reviews yet.</p>';
-        return;
-    }
-
-    container.innerHTML = combined.slice(0, 10).map(review => {
-        // Data Mapping (similar to main.js)
-        const author = review.source === 'ourshow' ? review.username : review.author;
-        const rating = review.source === 'ourshow' ? review.rating : review.rating;
-        const content = review.source === 'ourshow' ? review.review : review.content;
-
-        // Verdict Logic
-        let verdictHTML = '';
-        if (rating) {
-            let v = { text: 'N/A', class: '' };
-            const numRating = parseFloat(rating);
-            if (!isNaN(numRating) && typeof rating !== 'string') {
-                v = getVerdictFromRating(numRating);
-            } else if (typeof rating === 'string') {
-                if (rating === 'Perfection') v = { text: 'Perfection', class: 'verdict-perfection' };
-                else if (rating === 'Go for it') v = { text: 'Go for it', class: 'verdict-go' };
-                else if (rating === 'One time watch' || rating === 'One Time Watch') v = { text: 'One time watch', class: 'verdict-once' };
-                else if (rating === 'Pass') v = { text: 'Pass', class: 'verdict-pass' };
-                else if (!isNaN(numRating)) v = getVerdictFromRating(numRating);
-            }
-            if (v.text !== 'N/A') {
-                verdictHTML = `<span class="review-verdict-badge ${v.class}" style="font-size: 0.7rem; padding: 2px 6px;">${v.text}</span>`;
-            }
-        }
-
-        const maxChars = 200;
-        const isLong = content.length > maxChars;
-        const shortContent = isLong ? content.substring(0, maxChars) + '...' : content;
-        const reviewId = `review-disc-${review.id || Math.random()}`;
-
-        return `
-        <div class="review-card" id="${reviewId}" style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; ${review.source === 'ourshow' ? 'border-left: 3px solid var(--primary-color);' : ''}">
-            <div class="review-header" style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                <div style="font-weight: 600; color: var(--primary-color);">
-                    ${author} 
-                    <span style="color: var(--text-secondary); font-size: 0.8rem; font-weight: 400;">• ${new Date(review.timestamp).toLocaleDateString()}</span>
-                </div>
-                <div style="display: flex; gap: 0.5rem; align-items: center;">
-                    ${verdictHTML}
-                    ${(currentUser && review.userId === currentUser.uid) ? `
-                        <div class="review-actions">
-                            <button onclick="editReview('${review.id}', '${encodeURIComponent(content)}', '${rating}')" style="background:none; border:none; color: var(--text-secondary); cursor: pointer; margin-right:5px;"><i class="fas fa-edit"></i></button>
-                            <button onclick="deleteReview('${review.id}')" style="background:none; border:none; color: #ef4444; cursor: pointer;"><i class="fas fa-trash"></i></button>
-                        </div>
-                    ` : ''}
-                </div>
-            </div>
-            <div class="review-content" style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.5;">
-                <span class="content-short">${shortContent}</span>
-                ${isLong ? `<span class="content-full" style="display:none;">${content}</span>
-                            <span class="read-more-btn" onclick="toggleReview('${reviewId}')">Read More</span>` : ''}
-            </div>
-        </div>
-    `}).join('');
-}
 
 let editingReviewId = null;
 
@@ -629,7 +282,7 @@ window.deleteReview = async function (id) {
     try {
         await deleteDoc(doc(db, 'reviews', id));
         alert('Review deleted.');
-        await loadReviews(currentMovieData.reviews, currentMovieId);
+        await loadUserReviews(currentMovieId, currentMovieData.reviews, db);
     } catch (e) {
         console.error("Delete Error:", e);
         alert("Failed to delete review.");
@@ -692,13 +345,14 @@ function loadSimilar(similar) {
     container.appendChild(scrollContainer);
 }
 
-function rateMovie(rating) {
+window.rateMovie = function (rating) {
     userRating = rating;
     document.querySelectorAll('.rating-btn').forEach(btn => btn.classList.remove('selected'));
-    document.querySelector(`.rating-btn[data-rating="${rating}"]`).classList.add('selected');
+    const selectedBtn = document.querySelector(`.rating-btn[data-rating="${rating}"]`);
+    if (selectedBtn) selectedBtn.classList.add('selected');
 }
 
-async function submitReview() {
+window.submitReview = async function () {
     const reviewText = document.getElementById('reviewText').value;
     if (!userRating) { alert('Please select a rating!'); return; }
     if (!reviewText.trim()) { alert('Please write a review!'); return; }
@@ -742,7 +396,7 @@ async function submitReview() {
         document.getElementById('reviewText').value = '';
         userRating = null;
         document.querySelectorAll('.rating-btn').forEach(btn => btn.classList.remove('selected'));
-        await loadReviews(currentMovieData.reviews, currentMovieId);
+        await loadUserReviews(currentMovieId, currentMovieData.reviews, db);
         switchTab('reviews');
     } catch (e) {
         console.error("Review Error:", e);
@@ -750,7 +404,7 @@ async function submitReview() {
     }
 }
 
-async function markAsWatched() {
+window.markAsWatched = async function () {
     if (!currentUser) { alert('Login required'); window.location.href = 'login.html'; return; }
     try {
         // Prepare Stats Data
@@ -788,7 +442,7 @@ async function markAsWatched() {
     } catch (e) { console.error(e); alert('Error adding to watched'); }
 }
 
-async function addToWatchLater() {
+window.addToWatchLater = async function () {
     if (!currentUser) { alert('Login required'); window.location.href = 'login.html'; return; }
     try {
         await setDoc(doc(db, 'users', currentUser.uid, 'watchlist', String(currentMovieId)), {
@@ -811,7 +465,7 @@ async function addToWatchLater() {
 }
 
 // --- Collections ---
-async function openAddToCollectionModal() {
+window.openAddToCollectionModal = async function () {
     console.log('openAddToCollectionModal called');
     if (!currentUser) {
         console.log('User not logged in');
@@ -859,7 +513,7 @@ async function openAddToCollectionModal() {
     }
 }
 
-async function addToCollectionConfirm(collectionId) {
+window.addToCollectionConfirm = async function (collectionId) {
     if (!currentUser || !currentMovieId) {
         console.error("Missing user or movie ID:", { currentUser, currentMovieId });
         alert("System Error: Use Discover page to set movie ID.");
@@ -887,13 +541,13 @@ async function addToCollectionConfirm(collectionId) {
     }
 }
 
-function watchNow() {
+window.watchNow = function () {
     if (currentMovieId) {
         window.location.href = `watchanddownload.html?id=${currentMovieId}&type=${currentMovieData?.media_type || 'movie'}`;
     }
 }
 
-async function askAI() {
+window.askAI = async function () {
     const questionInput = document.getElementById('aiQuestion');
     const question = questionInput.value.trim();
     if (!question) return;

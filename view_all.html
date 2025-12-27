@@ -131,17 +131,17 @@
             <span class="close-modal" onclick="closeModal()">&times;</span>
             <div class="modal-body">
                 <div class="modal-poster-container">
-                    <img id="modalPoster" src="" alt="Poster" class="modal-poster">
-                    <!-- Verdict Meter (Universal - visible on mobile below poster) -->
-                    <div id="pcVerdictMeter" class="verdict-meter-container"></div>
+                    <img id="modalPoster" src="" alt="Movie Poster" class="modal-poster">
+                    <!-- PC Verdict Meter (below poster) -->
+                    <div id="pcVerdictMeter" class="verdict-meter-container pc-only"></div>
                 </div>
-
                 <div class="modal-info">
-                    <h2 id="modalTitle" style="margin-bottom: 1rem;"></h2>
-                    <div class="modal-meta" style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
-                        <span class="rating-badge" id="modalRating" style="color: #ffd700;">★ N/A</span>
-                        <span id="modalYear"></span>
-                        <span id="modalRuntime"></span>
+                    <!-- Modal Header -->
+                    <h2 id="modalTitle" style="margin-bottom: 1rem;">Movie Title</h2>
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
+                        <span style="color: #ffd700;">★ <span id="modalRating">N/A</span></span>
+                        <span id="modalYear">Year</span>
+                        <span id="modalRuntime">Runtime</span>
                     </div>
 
                     <!-- Tab Navigation -->
@@ -231,8 +231,7 @@
                     </div>
 
                     <!-- Similar Tab -->
-                    <div id="tab-similar" class="tab-content" style="display: none;">
-                        <h3>Similar Titles</h3>
+                    <div id="tab-similar" class="tab-content">
                         <div id="modalSimilar" class="similar-grid"></div>
                     </div>
 
