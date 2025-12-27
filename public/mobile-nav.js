@@ -228,7 +228,7 @@ function renderSuggestions(results, container) {
         div.onmouseover = () => div.style.background = 'rgba(255,255,255,0.1)';
         div.onmouseout = () => div.style.background = 'transparent';
 
-        const posterPath = item.poster_path ? `https://image.tmdb.org/t/p/w92${item.poster_path}` : 'https://via.placeholder.com/92x138?text=No+Img';
+        const posterPath = item.poster_path ? `https://image.tmdb.org/t/p/w92${item.poster_path}` : 'https://placehold.co/92x138?text=No+Img';
         const title = item.title || item.name;
         const year = (item.release_date || item.first_air_date || '').split('-')[0];
 

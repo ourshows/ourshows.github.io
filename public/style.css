@@ -796,10 +796,62 @@ a {
     line-height: 1.2;
 }
 
-.suggestion-title b {
-    color: var(--primary-color);
-    font-weight: 700;
+
+/* Verdict Text Animations & Styles */
+@keyframes glowText {
+    0% {
+        text-shadow: 0 0 5px currentColor;
+    }
+
+    50% {
+        text-shadow: 0 0 15px currentColor, 0 0 25px currentColor;
+        transform: scale(1.05);
+    }
+
+    100% {
+        text-shadow: 0 0 5px currentColor;
+    }
 }
+
+.verdict-perfection {
+    color: #ffd700;
+    /* Gold */
+    font-weight: 800;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    animation: glowText 2s infinite ease-in-out;
+    display: inline-block;
+}
+
+.verdict-go {
+    color: #4ade80;
+    /* Green */
+    font-weight: 700;
+    font-size: 1.05rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    animation: glowText 2.5s infinite ease-in-out;
+    display: inline-block;
+}
+
+.verdict-once {
+    color: #fb923c;
+    /* Orange */
+    font-weight: 700;
+    text-transform: uppercase;
+    text-shadow: 0 0 10px rgba(251, 146, 60, 0.5);
+    display: inline-block;
+}
+
+.verdict-pass {
+    color: #ef4444;
+    /* Red */
+    font-weight: 700;
+    text-transform: uppercase;
+    display: inline-block;
+}
+
 
 .glass-button.blue {
     background: #3b82f6;

@@ -640,7 +640,7 @@
         </div>
     </div>
 
-    <script src="auth.js"></script>
+
     <script type="module">
         import { onAuthStateChanged, auth } from './firebase-wrapper.js';
         import { fetchUserStats, getUnlockedBadges, updateUserProfile } from './public/profile-logic.js';
@@ -755,19 +755,20 @@
 
                 const genreList = document.getElementById('genreList');
                 genreList.innerHTML = '';
+                // Use Flex wrap for chips instead of grid
+                genreList.style.display = 'flex';
+                genreList.style.flexWrap = 'wrap';
+                genreList.style.gap = '0.75rem';
+                genreList.className = ''; // Remove stats-grid class
+
                 stats.favoriteGenres.forEach(g => {
-                    const card = document.createElement('div');
-                    card.className = 'stat-card';
-                    card.innerHTML = `
-                        <div class="stat-icon" style="background: rgba(236, 72, 153, 0.2); color: #ec4899;">
-                            <i class="fas fa-tag"></i>
-                        </div>
-                        <div class="stat-info">
-                            <h3>${g.name}</h3>
-                            <p>${g.count}</p>
-                        </div>
+                    const chip = document.createElement('div');
+                    chip.style.cssText = 'background: rgba(255, 255, 255, 0.05); padding: 0.8rem 1.2rem; border-radius: 99px; border: 1px solid var(--glass-border); display: flex; align-items: center; gap: 0.5rem;';
+                    chip.innerHTML = `
+                        <span style="font-weight: 600; font-size: 0.95rem;">${g.name}</span>
+                        <span style="background: var(--primary-color); padding: 2px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: bold;">${g.count}</span>
                     `;
-                    genreList.appendChild(card);
+                    genreList.appendChild(chip);
                 });
             }
 

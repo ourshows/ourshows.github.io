@@ -235,7 +235,7 @@ window.openCollection = async function (type, isCustom = false, ownerId = null) 
 
             card.innerHTML = `
                 <div class="media-poster-container">
-                    <img class="media-poster" src="${window.PUBLIC_CONFIG?.TMDB_IMAGE_SMALL_URL || window.APP_CONFIG?.TMDB_IMAGE_SMALL_URL || 'https://image.tmdb.org/t/p/w500'}${poster}" loading="lazy" alt="${title}" onerror="this.src='https://via.placeholder.com/200x300?text=No+Image'">
+                    <img class="media-poster" src="${window.PUBLIC_CONFIG?.TMDB_IMAGE_SMALL_URL || window.APP_CONFIG?.TMDB_IMAGE_SMALL_URL || 'https://image.tmdb.org/t/p/w500'}${poster}" loading="lazy" alt="${title}" onerror="this.src='https://placehold.co/200x300?text=No+Image'">
                     <div class="card-rating-badge">★ ${rating}</div>
                     ${(isCustom && isOwner) ? `<button class="remove-btn" onclick="removeFromCollection(event, '${type}', '${doc.id}')" style="position: absolute; top: 5px; right: 5px; background: rgba(220, 38, 38, 0.9); border: none; color: white; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.5);"><i class="fas fa-trash-alt" style="font-size: 12px;"></i></button>` : ''}
                 </div>

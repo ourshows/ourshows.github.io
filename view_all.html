@@ -151,6 +151,10 @@
                         <button class="tab-btn" onclick="switchTab('cast')">Cast & Crew</button>
                         <button class="tab-btn" onclick="switchTab('reviews')">Reviews</button>
                         <button class="tab-btn" onclick="switchTab('similar')">Similar</button>
+                        <button class="tab-btn" id="tabBtnSeasons" onclick="switchTab('seasons')"
+                            style="display: none;">Seasons</button>
+                        <button class="tab-btn" id="tabBtnFranchise" onclick="switchTab('franchise')"
+                            style="display: none;">Franchise</button>
                         <button class="tab-btn" onclick="switchTab('ai')">Ask AI</button>
                     </div>
 
@@ -232,6 +236,19 @@
                         <div id="modalSimilar" class="similar-grid"></div>
                     </div>
 
+                    <!-- Seasons Tab -->
+                    <div id="tab-seasons" class="tab-content" style="display: none;">
+                        <h3>Seasons & Episodes</h3>
+                        <div class="seasons-grid" id="modalSeasons"
+                            style="display: flex; flex-direction: column; gap: 1rem;"></div>
+                    </div>
+
+                    <!-- Franchise Tab -->
+                    <div id="tab-franchise" class="tab-content" style="display: none;">
+                        <h3>Franchise & Spinoffs</h3>
+                        <div class="similar-grid" id="modalFranchise"></div>
+                    </div>
+
                     <!-- AI Chat Tab -->
                     <div id="tab-ai" class="tab-content" style="display: none;">
                         <h3>Ask AI About This Movie</h3>
@@ -265,7 +282,7 @@
 
     <script src="public-config.js"></script>
     <script type="module" src="ai.js"></script>
-    <script src="view_all.js" type="module"></script>
+    <script src="view_all.js?v=2" type="module"></script>
 </body>
 
 </html>

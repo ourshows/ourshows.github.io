@@ -510,10 +510,14 @@
 
     <script src="public-config.js"></script>
 
-    <script src="firebase-config.js" type="module"></script>
+    <!-- <script src="firebase-config.js" type="module"></script> -->
+    <script type="module">
+        import './public/firebase-config-v2.js';
+    </script>
     <script src="auth.js"></script>
+    <script src="public/verdict-calculator.js"></script>
     <script src="ai.js" type="module"></script>
-    <script src="search.js?v=2" type="module"></script>
+    <script src="search.js?v=9" type="module"></script>
 
     <script>
         // Simple Theme & Mobile Menu (if not imported centrally)

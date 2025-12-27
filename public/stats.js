@@ -1,5 +1,5 @@
 
-import { auth, onAuthStateChanged } from './firebase-config.js';
+import { auth, onAuthStateChanged } from './firebase-config-v2.js';
 import { fetchUserStats, getUnlockedBadges, fetchLeaderboard } from './profile-logic.js';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -50,6 +50,10 @@ async function loadUserStats(userId) {
     // Refresh Leaderboard to ensure sync with just-updated DB
     loadLeaderboard(document.querySelector('.filter-chip.active').dataset.metric);
 
+    // C. Store Stats for Filtering & Render Initial
+    window.currentUserStats = stats;
+    filterGenres('all');
+
     // B. Render Badges
     const badgesContainer = document.getElementById('badgesContainer');
     const unlockedBadges = getUnlockedBadges(stats);
@@ -63,6 +67,38 @@ async function loadUserStats(userId) {
                 <span>${badge.name}</span>
             </div>
         `).join('');
+    }
+}
+
+// Global function to handle filtered rendering
+window.filterGenres = function (type) {
+    const stats = window.currentUserStats;
+    if (!stats) return;
+
+    // Update Chips
+    document.querySelectorAll('.section-actions .filter-chip').forEach(btn => btn.classList.remove('active'));
+    if (type === 'all') document.getElementById('genreFilterAll').classList.add('active');
+    if (type === 'movie') document.getElementById('genreFilterMovies').classList.add('active');
+    if (type === 'tv') document.getElementById('genreFilterSeries').classList.add('active');
+
+    // Select Data
+    let genres = stats.favoriteGenres;
+    if (type === 'movie') genres = stats.favoriteGenresMovies;
+    if (type === 'tv') genres = stats.favoriteGenresSeries;
+
+    // Render
+    const genresContainer = document.getElementById('topGenresContainer');
+    if (genresContainer) {
+        if (genres && genres.length > 0) {
+            genresContainer.innerHTML = genres.map(g => `
+                <div style="background: rgba(255, 255, 255, 0.05); padding: 1rem 1.5rem; border-radius: 99px; border: 1px solid var(--glass-border); display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="font-weight: 600;">${g.name}</span>
+                    <span style="background: var(--primary-color); padding: 2px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: bold;">${g.count}</span>
+                </div>
+            `).join('');
+        } else {
+            genresContainer.innerHTML = '<p style="color: var(--text-secondary);">No genres found for this category yet.</p>';
+        }
     }
 }
 
@@ -97,7 +133,7 @@ async function loadLeaderboard(metric) {
                 </td>
                 <td style="padding: 1rem;">
                     <div style="display: flex; align-items: center; gap: 0.75rem;">
-                        <img src="${user.photo || 'https://via.placeholder.com/40'}" 
+                        <img src="${user.photo || 'https://placehold.co/40'}" 
                              style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid var(--glass-border);">
                         <span style="font-weight: 600; color: var(--text-primary);">${user.name}</span>
                         ${isCurrentUser ? '<span style="font-size: 0.7rem; background: var(--primary-color); padding: 2px 6px; border-radius: 4px; color: white;">YOU</span>' : ''}

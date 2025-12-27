@@ -1,4 +1,4 @@
-import { auth, db, onAuthStateChanged, collection, addDoc, getDocs, getDoc, deleteDoc, doc, setDoc, serverTimestamp, query, where, orderBy } from './firebase-wrapper.js';
+import { auth, db, onAuthStateChanged, collection, addDoc, getDocs, getDoc, deleteDoc, updateDoc, doc, setDoc, serverTimestamp, query, where, orderBy } from './firebase-wrapper.js';
 
 // Global variables
 let currentMovieId = null;
@@ -212,11 +212,12 @@ function renderResults(items) {
         const title = item.title || item.name;
         const posterUrl = item.poster_path
             ? `${window.APP_CONFIG.TMDB_IMAGE_SMALL_URL}${item.poster_path}`
-            : 'https://via.placeholder.com/200x300';
+            : 'https://placehold.co/200x300';
         const year = (item.release_date || item.first_air_date || '').split('-')[0];
+        const watchLink = `watchanddownload.html?id=${item.id}&type=${item.media_type}`;
 
-        // Calculate verdict for poster
-        const verdict = calculateVerdict(item);
+        // Calculate verdict for poster (IMDb rating not available in list view)
+        const verdict = calculateVerdict(item, null, []);
 
         card.innerHTML = `
             <div class="media-poster-container">
@@ -253,7 +254,7 @@ async function openMovieModal(id, type = 'movie') {
     document.body.style.overflow = 'hidden';
 
     // Fetch movie details
-    const details = await fetchTMDB(`/${type}/${id}`, { append_to_response: 'videos,credits,reviews,similar' });
+    const details = await fetchTMDB(`/${type}/${id}`, { append_to_response: 'videos,credits,reviews,similar,external_ids' });
     if (!details) return;
 
     currentMovieData = details;
@@ -262,7 +263,7 @@ async function openMovieModal(id, type = 'movie') {
     // Update modal header
     document.getElementById('modalPoster').src = `${window.APP_CONFIG.TMDB_IMAGE_SMALL_URL}${details.poster_path}`;
     document.getElementById('modalTitle').textContent = details.title || details.name;
-    document.getElementById('modalRating').textContent = details.vote_average ? details.vote_average.toFixed(1) : 'N/A';
+    // document.getElementById('modalRating').textContent = details.vote_average ? details.vote_average.toFixed(1) : 'N/A';
     document.getElementById('modalYear').textContent = (details.release_date || details.first_air_date || '').split('-')[0];
     document.getElementById('modalRuntime').textContent = details.runtime ? `${details.runtime} min` : '';
     document.getElementById('modalOverview').textContent = details.overview;
@@ -284,7 +285,7 @@ async function openMovieModal(id, type = 'movie') {
         document.getElementById('tabBtnSeasons').style.display = 'block';
         const seasonContent = details.seasons.filter(s => s.season_number > 0).map(s => `
             <div class="season-card glass-panel" style="display: flex; gap: 1rem; padding: 1rem;">
-                <img src="${s.poster_path ? 'https://image.tmdb.org/t/p/w200' + s.poster_path : 'https://via.placeholder.com/100x150'}" 
+                <img src="${s.poster_path ? 'https://image.tmdb.org/t/p/w200' + s.poster_path : 'https://placehold.co/100x150'}" 
                      style="width: 100px; height: 150px; object-fit: cover; border-radius: 8px;">
                 <div class="season-info">
                     <h3>${s.name}</h3>
@@ -307,7 +308,7 @@ async function openMovieModal(id, type = 'movie') {
 
                 const franchiseContent = sortedParts.map(movie => `
                     <div class="movie-card" onclick="openMovieModal(${movie.id}, 'movie')" style="cursor: pointer; position: relative;">
-                         <img src="${movie.poster_path ? 'https://image.tmdb.org/t/p/w200' + movie.poster_path : 'https://via.placeholder.com/150x225'}" 
+                         <img src="${movie.poster_path ? 'https://image.tmdb.org/t/p/w200' + movie.poster_path : 'https://placehold.co/150x225'}" 
                               alt="${movie.title}" 
                               style="width: 100%; border-radius: 8px; transition: transform 0.3s;">
                          <div style="margin-top: 5px; font-size: 0.9rem;">${movie.title} (${movie.release_date ? movie.release_date.split('-')[0] : 'TBA'})</div>
@@ -332,20 +333,13 @@ async function openMovieModal(id, type = 'movie') {
     loadSimilar(details.similar);
 
     // INJECT VERDICT BADGE AND GAUGE
-    const verdict = calculateVerdict(details);
+    // Extract IMDb rating from external_ids if available
+    const imdbRating = details.external_ids?.imdb_rating || null;
+    const verdict = calculateVerdict(details, imdbRating, []);
 
-    // Update Badge (Header)
-    const ratingEl = document.getElementById('modalRating');
-    const existingBadge = ratingEl.parentNode.querySelector('.verdict-badge');
-    if (existingBadge) existingBadge.remove();
-    const badge = document.createElement('span');
-    badge.className = `verdict-badge ${verdict.class}`;
-    badge.textContent = verdict.text;
-    badge.style.marginLeft = '0.5rem';
-    badge.style.fontSize = '0.8rem';
-    badge.style.padding = '2px 6px';
-    badge.style.borderRadius = '4px';
-    ratingEl.parentNode.appendChild(badge);
+    // Enhanced Rating Display (Verdict)
+    const ratingContainer = document.getElementById('modalRating').parentElement; // The parent <span> containing the star
+    ratingContainer.innerHTML = `<span class="${verdict.class}">${verdict.text}</span> <span style="font-size:0.8rem; opacity:0.7; vertical-align: middle;">(${verdict.finalRating})</span>`;
 
     // Render Verdict Meter
     renderVerdictMeter(details, verdict);
@@ -411,25 +405,29 @@ async function openMovieModal(id, type = 'movie') {
 
 // --- VERDICT SYSTEMS ---
 
-function calculateVerdict(details) {
-    const rating = details.vote_average || 0;
+function calculateVerdict(details, imdbRating = null, reviews = []) {
+    const tmdbRating = details.vote_average || 0;
+
+    // Use combined verdict calculator if available
+    if (typeof window.calculateCombinedVerdict === 'function') {
+        return window.calculateCombinedVerdict(tmdbRating, imdbRating, reviews);
+    }
+
+    // Fallback to TMDB-only calculation
+    const rating = tmdbRating;
     const votes = details.vote_count || 0;
     const popularity = details.popularity || 0;
 
-    // "Perfection": High rating + High engagement
     if (rating >= 8.0 && (votes >= 500 || popularity >= 100)) {
-        return { text: "Perfection", class: "verdict-perfection" };
+        return { text: "Perfection", class: "verdict-perfection", finalRating: rating.toFixed(1) };
     }
-    // "Go for it": Good rating
     if (rating >= 6.8) {
-        return { text: "Go for it", class: "verdict-go" };
+        return { text: "Go for it", class: "verdict-go", finalRating: rating.toFixed(1) };
     }
-    // "One time watch": Average
     if (rating >= 5.0) {
-        return { text: "One time watch", class: "verdict-once" };
+        return { text: "One time watch", class: "verdict-once", finalRating: rating.toFixed(1) };
     }
-    // "Skip": Low rating
-    return { text: "Skip", class: "verdict-skip" };
+    return { text: "Skip", class: "verdict-skip", finalRating: rating.toFixed(1) };
 }
 
 function getVerdictColor(text) {
@@ -520,6 +518,18 @@ async function markAsWatched() {
                 btn.style.borderColor = 'rgba(255, 255, 255, 0.2)';
             }
         } else {
+            // Prepare Stats Data
+            let runtime = currentMovieData.runtime || 0;
+            let episodeRuntime = 0;
+            let numberOfEpisodes = 0;
+
+            if (currentMovieData.media_type === 'tv') {
+                if (currentMovieData.episode_run_time && currentMovieData.episode_run_time.length > 0) {
+                    episodeRuntime = currentMovieData.episode_run_time[0];
+                }
+                numberOfEpisodes = currentMovieData.number_of_episodes || 0;
+            }
+
             // DO
             await setDoc(docRef, {
                 movieId: currentMovieId,
@@ -528,7 +538,10 @@ async function markAsWatched() {
                 rating: currentMovieData.vote_average,
                 mediaType: currentMovieData.media_type || 'movie',
                 genres: currentMovieData.genres || [],
-                timestamp: serverTimestamp()
+                timestamp: serverTimestamp(),
+                runtime: runtime,
+                episodeRuntime: episodeRuntime,
+                numberOfEpisodes: numberOfEpisodes
             });
             alert('Added to Watched List');
             if (btn) {
@@ -603,44 +616,129 @@ async function submitReview() {
     if (!currentUser) { alert('Please log in!'); window.location.href = 'login.html'; return; }
 
     try {
-        await addDoc(collection(db, 'reviews'), {
-            userId: currentUser.uid,
-            username: currentUser.displayName || currentUser.email,
-            movieId: currentMovieId,
-            movieTitle: currentMovieData.title || currentMovieData.name,
-            rating: userRating,
-            review: reviewText.trim(),
-            timestamp: serverTimestamp()
-        });
-        alert('Review submitted!');
+        console.log('Submitting review for movieId:', String(currentMovieId), 'Type:', typeof String(currentMovieId));
+
+        if (editingReviewId) {
+            // Update existing review
+            await updateDoc(doc(db, 'reviews', editingReviewId), {
+                rating: userRating,
+                review: reviewText.trim(),
+                timestamp: serverTimestamp()
+            });
+            alert('Review updated successfully!');
+            editingReviewId = null;
+        } else {
+            // Create new review
+            await addDoc(collection(db, 'reviews'), {
+                userId: currentUser.uid,
+                username: currentUser.displayName || currentUser.email,
+                movieId: String(currentMovieId), // Convert to string to match query
+                movieTitle: currentMovieData.title || currentMovieData.name,
+                rating: userRating,
+                review: reviewText.trim(),
+                timestamp: serverTimestamp()
+            });
+            alert('Review submitted!');
+        }
+
+        console.log('Review submitted successfully!');
         document.getElementById('reviewText').value = '';
         userRating = null;
         document.querySelectorAll('.rating-btn').forEach(btn => btn.classList.remove('selected'));
+
+        // Reset submit button
+        const submitBtn = document.querySelector('.add-review-section button[onclick="submitReview()"]');
+        if (submitBtn) {
+            submitBtn.textContent = 'Submit Review';
+            submitBtn.style.background = '';
+        }
+
         await loadReviews(currentMovieData.reviews, currentMovieId);
+        switchTab('reviews'); // Show the reviews tab to display the new review
     } catch (error) {
         console.error('Error submitting review:', error);
         alert('Failed to submit review.');
     }
 }
 
+// Delete Review
+async function deleteReview(reviewId) {
+    if (!confirm('Are you sure you want to delete this review?')) return;
+
+    try {
+        await deleteDoc(doc(db, 'reviews', reviewId));
+        alert('Review deleted successfully!');
+        await loadReviews(currentMovieData.reviews, currentMovieId);
+    } catch (error) {
+        console.error('Error deleting review:', error);
+        alert('Failed to delete review.');
+    }
+}
+
+// Edit Review
+let editingReviewId = null;
+function editReview(reviewId, currentRating, currentText) {
+    editingReviewId = reviewId;
+    userRating = currentRating;
+
+    // Set the rating button as selected
+    document.querySelectorAll('.rating-btn').forEach(btn => {
+        btn.classList.remove('selected');
+        if (btn.getAttribute('data-rating') === currentRating) {
+            btn.classList.add('selected');
+        }
+    });
+
+    // Set the review text
+    document.getElementById('reviewText').value = currentText;
+
+    // Change submit button text
+    const submitBtn = document.querySelector('.add-review-section button[onclick="submitReview()"]');
+    if (submitBtn) {
+        submitBtn.textContent = 'Update Review';
+        submitBtn.style.background = '#f59e0b';
+    }
+
+    // Switch to reviews tab and scroll to review section
+    switchTab('reviews');
+    setTimeout(() => {
+        document.querySelector('.add-review-section').scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+}
+
 // --- Collections ---
 async function openAddToCollectionModal() {
-    if (!currentUser) { alert('Please log in.'); window.location.href = 'login.html'; return; }
+    console.log('openAddToCollectionModal called');
+    if (!currentUser) {
+        console.log('User not logged in');
+        alert('Please log in.');
+        window.location.href = 'login.html';
+        return;
+    }
+
+    console.log('Current User:', currentUser.uid);
     const modal = document.getElementById('addToCollectionModal');
     const list = document.getElementById('userCollectionsList');
     if (modal) modal.style.display = 'block';
 
-    list.innerHTML = '<div>Loading...</div>';
+    list.innerHTML = '<div>Loading collections...</div>';
 
     try {
-        const snap = await getDocs(collection(db, 'users', currentUser.uid, 'custom_collections'));
+        console.log('Fetching collections from:', `users/${currentUser.uid}/custom_collections`);
+        const collectionRef = collection(db, 'users', currentUser.uid, 'custom_collections');
+        const snap = await getDocs(collectionRef);
+        console.log('Collections snapshot:', snap.size, 'docs found');
+
         list.innerHTML = '';
         if (snap.empty) {
+            console.log('No collections found');
             list.innerHTML = '<div style="padding:1rem;">No custom collections. <a href="collection.html">Create one</a></div>';
             return;
         }
+
         snap.forEach(doc => {
             const data = doc.data();
+            console.log('Rendering collection:', data.name);
             const btn = document.createElement('button');
             btn.className = 'glass-button';
             btn.style.textAlign = 'left';
@@ -650,26 +748,36 @@ async function openAddToCollectionModal() {
         });
     } catch (err) {
         console.error("Error loading collections:", err);
-        list.innerHTML = '<div style="color:red;">Error loading collections.</div>';
+        list.innerHTML = `<div style="color:red;">Error loading collections: ${err.message}</div>`;
     }
 }
 
 async function addToCollectionConfirm(collectionId) {
-    if (!currentUser || !currentMovieId) return;
+    if (!currentUser || !currentMovieId) {
+        console.error('Missing user or movie ID:', { currentUser, currentMovieId });
+        alert('Error: Missing required data');
+        return;
+    }
+
     try {
-        await addDoc(collection(db, 'users', currentUser.uid, 'custom_collections', collectionId, 'items'), {
-            movieId: currentMovieId,
+        console.log('Adding to collection:', { collectionId, movieId: currentMovieId, movieData: currentMovieData });
+
+        // Use setDoc with movieId as document ID to prevent duplicates
+        await setDoc(doc(db, 'users', currentUser.uid, 'custom_collections', collectionId, 'items', String(currentMovieId)), {
+            movieId: String(currentMovieId),
             movieTitle: currentMovieData.title || currentMovieData.name,
             posterPath: currentMovieData.poster_path,
             rating: currentMovieData.vote_average,
             mediaType: currentMovieData.media_type || 'movie',
             addedAt: serverTimestamp()
         });
+
+        console.log('Successfully added to collection!');
         alert('Added to collection!');
         document.getElementById('addToCollectionModal').style.display = 'none';
     } catch (err) {
         console.error("Error adding to collection:", err);
-        alert('Failed to add to collection.');
+        alert('Failed to add to collection: ' + err.message);
     }
 }
 
@@ -761,7 +869,7 @@ function loadCast(credits) {
     }
     container.innerHTML = credits.cast.slice(0, 12).map(p => `
         <div class="cast-card" style="cursor: pointer;" onclick="window.location.href='cast.html?id=${p.id}'">
-            <img src="${p.profile_path ? window.APP_CONFIG.TMDB_IMAGE_SMALL_URL + p.profile_path : 'https://via.placeholder.com/150x225'}" alt="${p.name}">
+            <img src="${p.profile_path ? window.APP_CONFIG.TMDB_IMAGE_SMALL_URL + p.profile_path : 'https://placehold.co/150x225'}" alt="${p.name}">
             <div style="font-weight: 600; font-size: 0.9rem;">${p.name}</div>
             <div style="font-size: 0.8rem; color: var(--text-secondary);">${p.character}</div>
         </div>
@@ -786,17 +894,20 @@ async function loadReviews(tmdbReviews, movieId) {
     let firebaseReviews = [];
     try {
         if (!movieId) throw new Error('No Movie ID');
+        console.log('Loading reviews for movieId:', String(movieId), 'Type:', typeof String(movieId));
         const q = query(
             collection(db, 'reviews'),
             where('movieId', '==', String(movieId)),
             orderBy('timestamp', 'desc')
         );
         const snapshot = await getDocs(q);
+        console.log('Firebase reviews found:', snapshot.docs.length);
         firebaseReviews = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data(),
             source: 'ourshow'
         }));
+        console.log('Firebase reviews:', firebaseReviews);
     } catch (e) { console.error(e); }
 
     // 2. Process TMDB Reviews
@@ -848,11 +959,27 @@ async function loadReviews(tmdbReviews, movieId) {
         const shortContent = isLong ? content.substring(0, maxChars) + '...' : content;
         const reviewId = `review-srch-${review.id || Math.random()}`;
 
+        // Check if this is the current user's review
+        const isOwnReview = review.source === 'ourshow' && currentUser && review.userId === currentUser.uid;
+        const actionButtons = isOwnReview ? `
+            <div style="display: flex; gap: 0.5rem; margin-left: auto;">
+                <button class="glass-button" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;" onclick="editReview('${review.id}', '${rating}', \`${content.replace(/`/g, '\\`')}\`)">
+                    <i class="fas fa-edit"></i> Edit
+                </button>
+                <button class="glass-button" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; background: rgba(239, 68, 68, 0.2);" onclick="deleteReview('${review.id}')">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
+            </div>
+        ` : '';
+
         return `
         <div class="review-card" id="${reviewId}" style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; ${review.source === 'ourshow' ? 'border-left: 3px solid var(--primary-color);' : ''}">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; align-items: center;">
-                <strong>${author}</strong>
-                ${verdictHTML}
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <strong>${author}</strong>
+                    ${verdictHTML}
+                </div>
+                ${actionButtons}
             </div>
             <div class="review-content" style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.5;">
                 <span class="content-short">${shortContent}</span>
@@ -912,6 +1039,7 @@ function loadSimilar(similar) {
 // Window Assignments
 window.switchTab = switchTab;
 window.closeModal = closeModal;
+window.switchTab = switchTab;
 window.openMovieModal = openMovieModal;
 window.watchNow = watchNow;
 window.addToWatchLater = addToWatchLater;
@@ -921,7 +1049,6 @@ window.addToCollectionConfirm = addToCollectionConfirm;
 window.closeAddToCollectionModal = closeAddToCollectionModal;
 window.rateMovie = rateMovie;
 window.submitReview = submitReview;
+window.deleteReview = deleteReview;
+window.editReview = editReview;
 // No redundant askAI here
-
-
-

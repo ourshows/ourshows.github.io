@@ -66,7 +66,7 @@ function renderHeader(details) {
 
     const profilePath = details.profile_path
         ? `${imgSmall}${details.profile_path}`
-        : 'https://via.placeholder.com/300x450?text=No+Image';
+        : 'https://placehold.co/300x450?text=No+Image';
 
     const bio = details.biography || "No biography available.";
     const isLongBio = bio.length > 500;

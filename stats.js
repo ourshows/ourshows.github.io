@@ -77,7 +77,10 @@ async function calculateStats() {
     let movieMinutes = 0;
     let seriesMinutes = 0;
 
-    let genresCount = new Set();
+
+
+    let genreCounts = { all: {}, movie: {}, tv: {} };
+    // let genresCount = new Set(); // Old unique count logic, replaced by genreCounts.all keys size
     let highRatedCount = 0; // > 8.5
     let lowRatedCount = 0; // < 4
     let weekendWatchCount = 0;
@@ -99,7 +102,16 @@ async function calculateStats() {
         const details = await fetchTMDBDetails(item.movieId, type);
 
         if (details) {
-            if (details.genres) details.genres.forEach(g => genresCount.add(g.id));
+            if (details.genres) {
+                const itemType = type === 'movie' ? 'movie' : 'tv';
+                details.genres.forEach(g => {
+                    const name = g.name;
+                    if (name) {
+                        genreCounts.all[name] = (genreCounts.all[name] || 0) + 1;
+                        genreCounts[itemType][name] = (genreCounts[itemType][name] || 0) + 1;
+                    }
+                });
+            }
             if (details.vote_average >= 8.5) highRatedCount++;
             if (details.vote_average <= 4.0 && details.vote_average > 0) lowRatedCount++;
 
@@ -148,12 +160,68 @@ async function calculateStats() {
         totalSeries,
         totalHours,
         streak,
-        uniqueGenres: genresCount.size,
+        uniqueGenres: Object.keys(genreCounts.all || {}).length,
         highRatedCount,
         lowRatedCount,
         weekendWatchCount,
         nightOwlCount
     });
+
+    // Top Genres Logic
+    const getTopGenres = (counts) => Object.entries(counts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([name, count]) => ({ name, count }));
+
+    window.currentUserStats = {
+        favoriteGenres: getTopGenres(genreCounts.all),
+        favoriteGenresMovies: getTopGenres(genreCounts.movie),
+        favoriteGenresSeries: getTopGenres(genreCounts.tv)
+    };
+
+    filterGenres('all');
+}
+
+// Global Filter Function
+window.filterGenres = function (type) {
+    const stats = window.currentUserStats;
+    if (!stats) return;
+
+    // Update Chips
+    const chips = ['genreFilterAll', 'genreFilterMovies', 'genreFilterSeries'];
+    chips.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.style.background = 'transparent';
+            el.style.color = 'var(--text-secondary)';
+            if ((type === 'all' && id === 'genreFilterAll') ||
+                (type === 'movie' && id === 'genreFilterMovies') ||
+                (type === 'tv' && id === 'genreFilterSeries')) {
+                el.style.background = 'rgba(255,255,255,0.1)';
+                el.style.color = 'white';
+            }
+        }
+    });
+
+    // Select Data
+    let genres = stats.favoriteGenres;
+    if (type === 'movie') genres = stats.favoriteGenresMovies;
+    if (type === 'tv') genres = stats.favoriteGenresSeries;
+
+    // Render
+    const genresContainer = document.getElementById('topGenresContainer');
+    if (genresContainer) {
+        if (genres && genres.length > 0) {
+            genresContainer.innerHTML = genres.map(g => `
+                <div style="background: rgba(255, 255, 255, 0.05); padding: 0.8rem 1.2rem; border-radius: 99px; border: 1px solid var(--glass-border); display: flex; align-items: center; gap: 0.5rem; animation: fadeIn 0.5s;">
+                    <span style="font-weight: 600;">${g.name}</span>
+                    <span style="background: var(--primary-color); padding: 2px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: bold;">${g.count}</span>
+                </div>
+            `).join('');
+        } else {
+            genresContainer.innerHTML = '<p style="color: var(--text-secondary);">No genres found for this category yet.</p>';
+        }
+    }
 }
 
 function calculateStreak() {

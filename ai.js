@@ -362,7 +362,7 @@ async function displayMovieCards(recommendations) {
         const card = document.createElement('div');
         card.className = 'movie-card-mini';
 
-        let posterSrc = 'https://via.placeholder.com/200x300?text=No+Image';
+        let posterSrc = 'https://placehold.co/200x300?text=No+Image';
         let movieId = '';
         let mediaType = 'movie';
 
@@ -377,7 +377,7 @@ async function displayMovieCards(recommendations) {
         }
 
         card.innerHTML = `
-            <img src="${posterSrc}" alt="${rec.title}" onerror="this.src='https://via.placeholder.com/200x300?text=${encodeURIComponent(rec.title)}'">
+            <img src="${posterSrc}" alt="${rec.title}" onerror="this.src='https://placehold.co/200x300?text=${encodeURIComponent(rec.title)}'">
             <div class="info">
                 <div class="title" title="${rec.title}">${rec.title}</div>
             </div>

@@ -249,6 +249,26 @@
             </div>
         </div>
 
+        <!-- Top Genres -->
+        <div class="stats-hero" style="background: rgba(255, 255, 255, 0.03); padding: 2rem; margin-bottom: 3rem;">
+            <div
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                <h2 class="section-title" style="margin: 0; font-size: 1.5rem;"><i class="fas fa-chart-pie"
+                        style="color: var(--accent-color);"></i> Top Genres</h2>
+                <div class="section-actions" style="display: flex; gap: 0.5rem;">
+                    <button class="filter-chip active" id="genreFilterAll" onclick="filterGenres('all')"
+                        style="background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border); color: white; padding: 0.5rem 1rem; border-radius: 20px; cursor: pointer;">All</button>
+                    <button class="filter-chip" id="genreFilterMovies" onclick="filterGenres('movie')"
+                        style="background: transparent; border: 1px solid var(--glass-border); color: var(--text-secondary); padding: 0.5rem 1rem; border-radius: 20px; cursor: pointer;">Movies</button>
+                    <button class="filter-chip" id="genreFilterSeries" onclick="filterGenres('tv')"
+                        style="background: transparent; border: 1px solid var(--glass-border); color: var(--text-secondary); padding: 0.5rem 1rem; border-radius: 20px; cursor: pointer;">Series</button>
+                </div>
+            </div>
+            <div id="topGenresContainer" style="display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;">
+                <p style="color: var(--text-secondary);">Loading genres...</p>
+            </div>
+        </div>
+
         <!-- Achievements -->
         <div class="badges-section">
             <h2 class="section-title">Achievements <span style="font-size: 0.9rem; opacity: 0.6; font-weight: 400;"
@@ -265,7 +285,7 @@
     </div>
 
     <script src="public-config.js"></script>
-    <script src="stats.js" type="module"></script>
+    <script src="stats.js?v=3" type="module"></script>
     <script src="auth.js"></script>
 
     <script>

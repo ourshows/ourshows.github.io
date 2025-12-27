@@ -1,5 +1,5 @@
 
-import { db, auth, getDocs, collection, updateProfile, setDoc, doc, query, orderBy, limit, where } from './firebase-config.js';
+import { db, auth, getDocs, collection, updateProfile, setDoc, doc, query, orderBy, limit, where } from './firebase-config-v2.js';
 
 // --- Shared Stats Logic ---
 export async function fetchUserStats(userId) {
@@ -21,13 +21,16 @@ export async function fetchUserStats(userId) {
             // We also save displayName/photoURL for the leaderboard display
             try {
                 const user = auth.currentUser;
+                const topGenre = (stats.favoriteGenres && stats.favoriteGenres.length > 0) ? stats.favoriteGenres[0].name : null;
+
                 setDoc(userRef, {
                     stats: {
                         totalMovies: stats.totalMovies,
                         totalSeries: stats.totalSeries,
                         totalHours: stats.totalHours,
                         level: stats.level.currentLevel,
-                        levelTitle: stats.level.title
+                        levelTitle: stats.level.title,
+                        topGenre: topGenre
                     },
                     displayName: user ? (user.displayName || 'Anonymous') : 'Anonymous',
                     photoURL: user ? user.photoURL : null,
@@ -57,10 +60,19 @@ export function calculateStatsFromItems(items) {
         const type = item.mediaType || 'movie';
         if (type === 'movie') {
             totalMovies++;
-            totalMinutes += 120; // Avg
+            // Use saved runtime or fallback to 120
+            totalMinutes += (item.runtime ? Number(item.runtime) : 120);
         } else {
             totalSeries++;
-            totalMinutes += 450; // Avg season
+            // Calculate TV minutes: (epRuntime * numEps) OR fallback to 450
+            let duration = 450;
+            if (item.episodeRuntime && item.numberOfEpisodes) {
+                duration = Number(item.episodeRuntime) * Number(item.numberOfEpisodes);
+            } else if (item.runtime) {
+                // Fallback if someone saved 'runtime' for a show accidentally or as total
+                duration = Number(item.runtime);
+            }
+            totalMinutes += duration;
         }
     });
 
@@ -80,19 +92,26 @@ export function calculateStatsFromItems(items) {
     const levelData = calculateLevel(totalHours);
 
     // Favorite Genres Calculation
-    const genreCounts = {};
+    const genreCounts = { all: {}, movie: {}, tv: {} };
+
     items.forEach(item => {
         if (item.genres && Array.isArray(item.genres)) {
+            const itemType = item.mediaType === 'movie' ? 'movie' : 'tv';
             item.genres.forEach(g => {
-                const name = typeof g === 'string' ? g : g.name; // Handle potential object/string difference
-                if (name) genreCounts[name] = (genreCounts[name] || 0) + 1;
+                const name = typeof g === 'string' ? g : g.name;
+                if (name) {
+                    // All
+                    genreCounts.all[name] = (genreCounts.all[name] || 0) + 1;
+                    // Specific
+                    genreCounts[itemType][name] = (genreCounts[itemType][name] || 0) + 1;
+                }
             });
         }
     });
 
-    const sortedGenres = Object.entries(genreCounts)
+    const getTopGenres = (counts) => Object.entries(counts)
         .sort((a, b) => b[1] - a[1])
-        .slice(0, 3) // Top 3
+        .slice(0, 3)
         .map(([name, count]) => ({ name, count }));
 
     return {
@@ -103,7 +122,9 @@ export function calculateStatsFromItems(items) {
         itemsCount: items.length,
         recentActivity: sortedByDate,
         level: levelData,
-        favoriteGenres: sortedGenres
+        favoriteGenres: getTopGenres(genreCounts.all),
+        favoriteGenresMovies: getTopGenres(genreCounts.movie),
+        favoriteGenresSeries: getTopGenres(genreCounts.tv)
     };
 }
 

@@ -122,13 +122,13 @@ function renderCards(items) {
         const card = document.createElement('div');
         card.className = 'media-card';
 
-        const posterUrl = item.posterPath ? `${baseUrl}${item.posterPath}` : 'https://via.placeholder.com/200x300?text=No+Poster';
+        const posterUrl = item.posterPath ? `${baseUrl}${item.posterPath}` : 'https://placehold.co/200x300?text=No+Poster';
         const rating = item.rating ? Number(item.rating).toFixed(1) : 'N/A';
         const mediaType = item.mediaType || 'movie';
 
         card.innerHTML = `
             <div class="media-poster-container">
-                <img class="media-poster" src="${posterUrl}" loading="lazy" alt="${item.movieTitle}" onerror="this.src='https://via.placeholder.com/200x300?text=No+Image'">
+                <img class="media-poster" src="${posterUrl}" loading="lazy" alt="${item.movieTitle}" onerror="this.src='https://placehold.co/200x300?text=No+Image'">
                 <div class="card-rating-badge">★ ${rating}</div>
                 <div class="card-overlay">
                      <button class="card-download-btn" onclick="event.stopPropagation(); window.location.href='watchanddownload.html?id=${item.movieId}&type=${mediaType}'">
@@ -158,7 +158,7 @@ function openLocalModal(item) {
     const baseUrl = window.PUBLIC_CONFIG?.TMDB_IMAGE_SMALL_URL ||
         window.APP_CONFIG?.TMDB_IMAGE_SMALL_URL ||
         'https://image.tmdb.org/t/p/w500';
-    const posterUrl = item.posterPath ? `${baseUrl}${item.posterPath}` : 'https://via.placeholder.com/200x300';
+    const posterUrl = item.posterPath ? `${baseUrl}${item.posterPath}` : 'https://placehold.co/200x300';
 
     // Fix: Only use standard DOM methods
     const mp = document.getElementById('modalPoster');
