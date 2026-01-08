@@ -1,5 +1,5 @@
 import { auth, db, onAuthStateChanged, collection, addDoc, getDocs, getDoc, deleteDoc, updateDoc, doc, setDoc, serverTimestamp, query, where, orderBy } from './firebase-wrapper.js';
-import { openMovieModal as sharedOpenStats, closeModal as sharedClose, switchTab as sharedSwitch, calculateVerdict, getVerdictColor, loadUserReviews } from './public/modal-logic.js';
+import { openMovieModal as sharedOpenStats, closeModal as sharedClose, switchTab as sharedSwitch, calculateVerdict, getVerdictColor, loadUserReviews, watchNow, startWatchParty, addToWatchLater, markAsWatched, openAddToCollectionModal, closeAddToCollectionModal, addToCollectionConfirm } from './public/modal-logic.js';
 
 // --- MODAL WRAPPERS ---
 async function openMovieModal(id, type = 'movie') {
@@ -163,11 +163,12 @@ window.filterResults = function (filter) {
 
     // Update active button state
     document.querySelectorAll('.filter-chip').forEach(btn => {
-        if (btn.textContent.toLowerCase().includes(filter === 'all' ? 'all' : (filter === 'movie' ? 'movie' : 'tv'))) {
-            btn.classList.add('active');
-        } else {
-            btn.classList.remove('active');
-        }
+        const btnText = btn.textContent.toLowerCase();
+        if (filter === 'all' && btnText.includes('all')) btn.classList.add('active');
+        else if (filter === 'movie' && btnText.includes('movies')) btn.classList.add('active');
+        else if (filter === 'tv' && btnText.includes('tv')) btn.classList.add('active');
+        else if (filter === 'person' && btnText.includes('actors')) btn.classList.add('active');
+        else btn.classList.remove('active');
     });
 
     renderResults(allResults);
@@ -196,9 +197,10 @@ async function performSearch(query) {
         }
 
         // Filter out people or incomplete data
+        // Filter out incomplete data, allow person type
         const validResults = data.results.filter(item =>
-            (item.media_type === 'movie' || item.media_type === 'tv') &&
-            item.poster_path
+            (item.media_type === 'movie' || item.media_type === 'tv' || item.media_type === 'person') &&
+            (item.poster_path || item.profile_path)
         );
 
         if (validResults.length === 0) {
@@ -235,20 +237,23 @@ function renderResults(items) {
         const card = document.createElement('div');
         card.className = 'media-card';
 
+        const isPerson = item.media_type === 'person';
         const title = item.title || item.name;
-        const posterUrl = item.poster_path
-            ? `${window.APP_CONFIG.TMDB_IMAGE_SMALL_URL}${item.poster_path}`
-            : 'https://placehold.co/200x300';
-        const year = (item.release_date || item.first_air_date || '').split('-')[0];
-        const watchLink = `watchanddownload.html?id=${item.id}&type=${item.media_type}`;
+        // Use profile_path for person, poster_path for others
+        const posterPath = isPerson ? item.profile_path : item.poster_path;
+        const posterUrl = posterPath
+            ? `${window.APP_CONFIG.TMDB_IMAGE_SMALL_URL}${posterPath}`
+            : 'https://placehold.co/200x300?text=No+Image';
 
-        // Calculate verdict for poster (IMDb rating not available in list view)
-        const verdict = calculateVerdict(item, null, []);
+        const year = isPerson ? 'Cast' : ((item.release_date || item.first_air_date || '').split('-')[0]);
 
-        card.innerHTML = `
-            <div class="media-poster-container">
-                <img class="media-poster" src="${posterUrl}" loading="lazy" alt="${title}">
-                <div class="card-rating-badge" style="color: ${getVerdictColor(verdict.text)};">${verdict.text}</div>
+        let verdictHTML = '';
+        let overlayButtons = '';
+
+        if (!isPerson) {
+            const verdict = calculateVerdict(item, null, []);
+            verdictHTML = `<div class="card-rating-badge" style="color: ${getVerdictColor(verdict.text)};">${verdict.text}</div>`;
+            overlayButtons = `
                 <div class="card-overlay">
                     <button class="card-download-btn" onclick="event.stopPropagation(); window.location.href='watchanddownload.html?id=${item.id}&type=${item.media_type}'">
                         <i class="fas fa-play"></i> Watch
@@ -256,18 +261,38 @@ function renderResults(items) {
                     <button class="card-download-btn" style="margin-top: 0.5rem;" onclick="event.stopPropagation(); openMovieModal('${item.id}', '${item.media_type}')">
                         <i class="fas fa-info-circle"></i> Details
                     </button>
-                </div>
+                </div>`;
+        } else {
+            // Person Overlay (maybe just view profile)
+            overlayButtons = `
+                <div class="card-overlay">
+                    <button class="card-download-btn" onclick="event.stopPropagation(); window.location.href='cast.html?id=${item.id}'">
+                        <i class="fas fa-user"></i> View Profile
+                    </button>
+                </div>`;
+        }
+
+        card.innerHTML = `
+            <div class="media-poster-container">
+                <img class="media-poster" src="${posterUrl}" loading="lazy" alt="${title}">
+                ${verdictHTML}
+                ${overlayButtons}
             </div>
             <div class="media-info">
                 <div class="media-title" title="${title}">${title}</div>
                 <div class="media-meta">
                     <span>${year}</span>
-                    <span>${item.media_type === 'tv' ? 'TV Show' : 'Movie'}</span>
+                    <span>${isPerson ? 'Person' : (item.media_type === 'tv' ? 'TV Show' : 'Movie')}</span>
                 </div>
             </div>
         `;
 
-        card.onclick = () => openMovieModal(item.id, item.media_type);
+        if (isPerson) {
+            card.onclick = () => window.location.href = `cast.html?id=${item.id}`;
+        } else {
+            card.onclick = () => openMovieModal(item.id, item.media_type);
+        }
+
         container.appendChild(card);
     });
 }
@@ -380,84 +405,7 @@ function editReview(reviewId, currentRating, currentText) {
     }, 100);
 }
 
-// --- Collections ---
-async function openAddToCollectionModal() {
-    console.log('openAddToCollectionModal called');
-    if (!currentUser) {
-        console.log('User not logged in');
-        alert('Please log in.');
-        window.location.href = 'login.html';
-        return;
-    }
 
-    console.log('Current User:', currentUser.uid);
-    const modal = document.getElementById('addToCollectionModal');
-    const list = document.getElementById('userCollectionsList');
-    if (modal) modal.style.display = 'block';
-
-    list.innerHTML = '<div>Loading collections...</div>';
-
-    try {
-        console.log('Fetching collections from:', `users/${currentUser.uid}/custom_collections`);
-        const collectionRef = collection(db, 'users', currentUser.uid, 'custom_collections');
-        const snap = await getDocs(collectionRef);
-        console.log('Collections snapshot:', snap.size, 'docs found');
-
-        list.innerHTML = '';
-        if (snap.empty) {
-            console.log('No collections found');
-            list.innerHTML = '<div style="padding:1rem;">No custom collections. <a href="collection.html">Create one</a></div>';
-            return;
-        }
-
-        snap.forEach(doc => {
-            const data = doc.data();
-            console.log('Rendering collection:', data.name);
-            const btn = document.createElement('button');
-            btn.className = 'glass-button';
-            btn.style.textAlign = 'left';
-            btn.innerHTML = `<i class="fas fa-folder"></i> ${data.name}`;
-            btn.onclick = () => addToCollectionConfirm(doc.id);
-            list.appendChild(btn);
-        });
-    } catch (err) {
-        console.error("Error loading collections:", err);
-        list.innerHTML = `<div style="color:red;">Error loading collections: ${err.message}</div>`;
-    }
-}
-
-async function addToCollectionConfirm(collectionId) {
-    if (!currentUser || !currentMovieId) {
-        console.error('Missing user or movie ID:', { currentUser, currentMovieId });
-        alert('Error: Missing required data');
-        return;
-    }
-
-    try {
-        console.log('Adding to collection:', { collectionId, movieId: currentMovieId, movieData: currentMovieData });
-
-        // Use setDoc with movieId as document ID to prevent duplicates
-        await setDoc(doc(db, 'users', currentUser.uid, 'custom_collections', collectionId, 'items', String(currentMovieId)), {
-            movieId: String(currentMovieId),
-            movieTitle: currentMovieData.title || currentMovieData.name,
-            posterPath: currentMovieData.poster_path,
-            rating: currentMovieData.vote_average,
-            mediaType: currentMovieData.media_type || 'movie',
-            addedAt: serverTimestamp()
-        });
-
-        console.log('Successfully added to collection!');
-        alert('Added to collection!');
-        document.getElementById('addToCollectionModal').style.display = 'none';
-    } catch (err) {
-        console.error("Error adding to collection:", err);
-        alert('Failed to add to collection: ' + err.message);
-    }
-}
-
-window.closeAddToCollectionModal = function () {
-    document.getElementById('addToCollectionModal').style.display = 'none';
-}
 
 
 
@@ -506,49 +454,7 @@ if (!window.askAI) {
     }
 }
 
-// --- Helper Loaders ---
-function loadTrailer(videos) {
-    const container = document.getElementById('modalTrailer');
-    if (!container) return;
-    if (!videos || !videos.results || videos.results.length === 0) {
-        container.innerHTML = '';
-        return;
-    }
-    const trailer = videos.results.find(v => v.type === 'Trailer' && v.site === 'YouTube') || videos.results[0];
-    if (trailer) {
-        container.innerHTML = `
-            <div style="margin-bottom: 2rem;">
-                <h3>Trailer</h3>
-                <iframe width="100%" height="400" src="https://www.youtube.com/embed/${trailer.key}" 
-                    frameborder="0" allow="accelerometer" allowfullscreen style="border-radius: 12px; margin-top: 1rem;"></iframe>
-            </div>`;
-    }
-}
 
-function loadGenres(genres) {
-    const container = document.getElementById('modalGenres');
-    if (!genres || genres.length === 0) {
-        container.innerHTML = '';
-        return;
-    }
-    container.innerHTML = `<div style="margin-bottom: 1.5rem;"><strong>Genres:</strong> ${genres.map(g => g.name).join(', ')}</div>`;
-}
-
-function loadCast(credits) {
-    const container = document.getElementById('modalCast');
-    if (!container) return;
-    if (!credits || !credits.cast || credits.cast.length === 0) {
-        container.innerHTML = '<p>No cast info.</p>';
-        return;
-    }
-    container.innerHTML = credits.cast.slice(0, 12).map(p => `
-        <div class="cast-card" style="cursor: pointer;" onclick="window.location.href='cast.html?id=${p.id}'">
-            <img src="${p.profile_path ? window.APP_CONFIG.TMDB_IMAGE_SMALL_URL + p.profile_path : 'https://placehold.co/150x225'}" alt="${p.name}">
-            <div style="font-weight: 600; font-size: 0.9rem;">${p.name}</div>
-            <div style="font-size: 0.8rem; color: var(--text-secondary);">${p.character}</div>
-        </div>
-    `).join('');
-}
 
 // --- Review Helpers ---
 function getVerdictFromRating(rating) {
@@ -685,30 +591,7 @@ if (!window.toggleReview) {
     };
 }
 
-function loadSimilar(similar) {
-    const container = document.getElementById('modalSimilar');
-    if (!container) return;
-    if (!similar || !similar.results || similar.results.length === 0) {
-        container.innerHTML = '<p>No similar titles.</p>';
-        return;
-    }
-    container.innerHTML = '';
-    similar.results.slice(0, 10).forEach(item => {
-        if (!item.poster_path) return;
-        const card = document.createElement('div');
-        card.className = 'media-card';
-        card.style.minWidth = '140px';
-        const title = item.title || item.name;
-        card.innerHTML = `
-            <div class="media-poster-container" style="height: 210px;">
-                <img class="media-poster" src="${window.APP_CONFIG.TMDB_IMAGE_SMALL_URL}${item.poster_path}" loading="lazy">
-            </div>
-            <div class="media-info"><div class="media-title" style="font-size: 0.9rem;">${title}</div></div>
-        `;
-        card.onclick = () => openMovieModal(item.id, item.media_type);
-        container.appendChild(card);
-    });
-}
+
 
 // Window Assignments
 window.switchTab = switchTab;
@@ -716,6 +599,7 @@ window.closeModal = closeModal;
 window.switchTab = switchTab;
 window.openMovieModal = openMovieModal;
 window.watchNow = watchNow;
+window.startWatchParty = startWatchParty;
 window.addToWatchLater = addToWatchLater;
 window.markAsWatched = markAsWatched;
 window.openAddToCollectionModal = openAddToCollectionModal;

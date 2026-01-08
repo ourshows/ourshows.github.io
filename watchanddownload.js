@@ -149,19 +149,22 @@ function renderStreamingLinks(data) {
     // --- Define ALL Sources ---
     const allSources = {
         hollywood: [
-            { url: 'https://netmirror.app/', label: 'NetMirror', sub: 'Netflix & Prime Free', icon: 'fa-tv', cs: '#e50914', ce: '#b20710' },
             { url: 'https://cineb.rs/', label: 'Cineb.gg', sub: 'Hollywood & Series', icon: 'fa-play-circle', cs: '#3b82f6', ce: '#2563eb' },
+            { url: 'https://netmirror.app/', label: 'NetMirror', sub: 'Netflix & Prime Free', icon: 'fa-tv', cs: '#e50914', ce: '#b20710' },
             { url: 'https://katmoviehd.pictures/', label: 'KatMovieHD', sub: 'Download Quality', icon: 'fa-film', cs: '#ef4444', ce: '#dc2626' }
         ],
         desi: [
+            { url: 'https://cineb.rs/', label: 'Cineb.gg', sub: 'Hollywood & Series', icon: 'fa-play-circle', cs: '#3b82f6', ce: '#2563eb' },
             { url: 'https://moviesbaba.net/', label: 'MoviesBaba', sub: 'Desi Movies & Web Series', icon: 'fa-star', cs: '#f59e0b', ce: '#d97706' },
             { url: 'https://desicinema.pk/', label: 'DesiCinema', sub: 'Bollywood & Punjabi', icon: 'fa-star', cs: '#f59e0b', ce: '#d97706' },
             { url: 'https://netmirror.app/', label: 'NetMirror', sub: 'Netflix & Prime Free', icon: 'fa-tv', cs: '#e50914', ce: '#b20710' }
         ],
         anime: [
+            { url: 'https://cineb.rs/', label: 'Cineb.gg', sub: 'Best for Anime', icon: 'fa-play-circle', cs: '#3b82f6', ce: '#2563eb' },
             { url: 'https://pikahd.eu/', label: 'PikaHD', sub: 'Best for Anime', icon: 'fa-dragon', cs: '#8b5cf6', ce: '#7c3aed' }
         ],
         drama: [
+            { url: 'https://cineb.rs/', label: 'Cineb.gg', sub: 'Asian Drama', icon: 'fa-play-circle', cs: '#3b82f6', ce: '#2563eb' },
             { url: 'https://katdrama.net/', label: 'KatDrama', sub: 'Drama Series', icon: 'fa-heart', cs: '#ec4899', ce: '#db2777' },
             { url: 'https://kisskh.co/List?type=History', label: 'KissKH', sub: 'Asian Drama', icon: 'fa-heart', cs: '#d946ef', ce: '#c026d3' },
             { url: 'https://kissasian.com.vc/', label: 'KissAsian', sub: 'Asian Drama', icon: 'fa-heart', cs: '#be185d', ce: '#9d174d' },
@@ -211,6 +214,17 @@ function renderStreamingLinks(data) {
         <h4 style="font-size: 1rem; color: #94a3b8; margin-bottom: 1rem; font-weight: 500;">
             <i class="fas fa-globe"></i> Streaming Options
         </h4>
+
+        <!-- Watch Party Highlight -->
+        <a href="https://cineby.gd/" target="_blank" class="action-btn"
+            style="background: linear-gradient(135deg, #7c3aed, #db2777); padding: 1.2rem; border-radius: 12px; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: center; gap: 1rem; width: 100%; box-sizing: border-box; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);">
+            <i class="fas fa-users" style="font-size: 1.5rem;"></i>
+            <div style="text-align: left;">
+                <div style="font-size: 1.1rem; font-weight: 800;">Start Watch Party</div>
+                <div style="font-size: 0.8rem; opacity: 0.9;">Watch together on Cineby.gd</div>
+            </div>
+        </a>
+
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem;">
             ${recommendedHTML}
         </div>

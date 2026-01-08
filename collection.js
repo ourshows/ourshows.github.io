@@ -1,4 +1,5 @@
 import { auth, db, onAuthStateChanged, collection, collectionGroup, doc, setDoc, addDoc, deleteDoc, getDoc, getDocs, serverTimestamp, query, where, orderBy, limit } from './firebase-wrapper.js';
+import { openMovieModal as sharedOpenStats, closeModal as sharedClose, switchTab as sharedSwitch, calculateVerdict, getVerdictColor, loadUserReviews, watchNow, startWatchParty, addToWatchLater, markAsWatched, openAddToCollectionModal, closeAddToCollectionModal, addToCollectionConfirm } from './public/modal-logic.js';
 
 console.log("Collection Script Module Loaded");
 
@@ -247,8 +248,7 @@ window.openCollection = async function (type, isCustom = false, ownerId = null) 
 
             card.onclick = (e) => {
                 if (!e.target.closest('.remove-btn')) {
-                    if (window.openMovieModalGlobal) window.openMovieModalGlobal(item.movieId || item.id, item.mediaType || 'movie');
-                    else console.warn("Layout modal not found");
+                    openMovieModal(item.movieId || item.id, item.mediaType || 'movie');
                 }
             };
             if (grid) grid.appendChild(card);
@@ -264,6 +264,7 @@ window.openCollection = async function (type, isCustom = false, ownerId = null) 
 // --- AUTH LISTENER ---
 onAuthStateChanged(auth, async (user) => {
     currentUser = user;
+    window.currentModalContext = { currentUser: user, fetchTMDB, db }; // Set Shared Context
     if (user) {
         await loadCollections();
     } else {
@@ -430,4 +431,50 @@ async function loadCommunityCollections() {
             grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 1rem;">Error loading community lists.</div>';
         }
     }
+}
+// --- Shared Modal Wrappers ---
+async function openMovieModal(id, type = 'movie') {
+    const context = { currentUser: auth.currentUser, fetchTMDB, db };
+    await sharedOpenStats(id, type, context);
+}
+
+function closeModal() { sharedClose(); }
+function switchTab(name) { sharedSwitch(name); }
+
+// Expose to window
+window.openMovieModal = openMovieModal;
+window.closeModal = closeModal;
+window.switchTab = switchTab;
+window.watchNow = watchNow;
+window.startWatchParty = startWatchParty;
+window.addToWatchLater = addToWatchLater;
+window.markAsWatched = markAsWatched;
+window.openAddToCollectionModal = openAddToCollectionModal;
+window.addToCollectionConfirm = addToCollectionConfirm;
+window.closeAddToCollectionModal = closeAddToCollectionModal;
+
+// --- API Helper (Required for Shared Modal) ---
+async function fetchTMDB(endpoint, params = {}) {
+    if (window.PUBLIC_CONFIG && (window.PUBLIC_CONFIG.TMDB_KEY || window.PUBLIC_CONFIG.TMDB_API_KEY)) {
+        const apiKey = window.PUBLIC_CONFIG.TMDB_KEY || window.PUBLIC_CONFIG.TMDB_API_KEY;
+        const baseUrl = window.PUBLIC_CONFIG.TMDB_BASE_URL || "https://api.themoviedb.org/3";
+        const url = new URL(`${baseUrl}${endpoint}`);
+        url.searchParams.append('api_key', apiKey);
+        Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
+        try {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(res.status);
+            return await res.json();
+        } catch (e) {
+            console.error(e);
+            return null;
+        }
+    }
+    const url = new URL('/api/tmdb', window.location.origin);
+    url.searchParams.append('endpoint', endpoint);
+    Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
+    try {
+        const res = await fetch(url);
+        return await res.json();
+    } catch (e) { return null; }
 }

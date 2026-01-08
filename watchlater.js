@@ -1,4 +1,5 @@
 import { auth, db, onAuthStateChanged, collection, getDocs, doc, deleteDoc, setDoc, serverTimestamp } from './firebase-wrapper.js';
+import { openMovieModal as sharedOpenStats, closeModal as sharedClose, switchTab as sharedSwitch, calculateVerdict, getVerdictColor, loadUserReviews, watchNow, startWatchParty, addToWatchLater, markAsWatched, openAddToCollectionModal, closeAddToCollectionModal, addToCollectionConfirm } from './public/modal-logic.js';
 
 
 
@@ -20,6 +21,8 @@ let currentItems = []; // Store loaded items for filtering
 
 onAuthStateChanged(auth, async (user) => {
     updateAuthUI(user);
+    // Set Shared Context
+    window.currentModalContext = { currentUser: user, fetchTMDB, db };
     if (user) {
         await loadWatchLaterList(user.uid);
     } else {
@@ -144,77 +147,58 @@ function renderCards(items) {
             </div>
         `;
 
-        card.onclick = () => openLocalModal(item);
+        card.onclick = () => openMovieModal(item.movieId, item.mediaType || 'movie');
 
         container.appendChild(card);
     });
 }
 
 // Modal Logic
-let currentItem = null;
-
-function openLocalModal(item) {
-    const modal = document.getElementById('movieModal');
-    const baseUrl = window.PUBLIC_CONFIG?.TMDB_IMAGE_SMALL_URL ||
-        window.APP_CONFIG?.TMDB_IMAGE_SMALL_URL ||
-        'https://image.tmdb.org/t/p/w500';
-    const posterUrl = item.posterPath ? `${baseUrl}${item.posterPath}` : 'https://placehold.co/200x300';
-
-    // Fix: Only use standard DOM methods
-    const mp = document.getElementById('modalPoster');
-    if (mp) mp.src = posterUrl;
-
-    document.getElementById('modalTitle').textContent = item.movieTitle;
-    document.getElementById('modalRating').textContent = item.rating ? Number(item.rating).toFixed(1) : 'N/A';
-    document.getElementById('modalYear').textContent = '';
-    document.getElementById('modalOverview').textContent = 'Added on: ' + (item.timestamp ? new Date(item.timestamp.seconds * 1000).toLocaleDateString() : 'Unknown date');
-
-    currentItem = item;
-
-    modal.style.display = 'block';
-    document.body.style.overflow = 'hidden';
+// --- Shared Modal Wrappers ---
+async function openMovieModal(id, type = 'movie') {
+    const context = { currentUser: auth.currentUser, fetchTMDB, db };
+    await sharedOpenStats(id, type, context);
 }
 
-window.closeModal = function () {
-    document.getElementById('movieModal').style.display = 'none';
-    document.body.style.overflow = 'auto';
-    currentItem = null;
-}
+function closeModal() { sharedClose(); }
+function switchTab(name) { sharedSwitch(name); }
 
-window.watchNow = function () {
-    if (currentItem) {
-        window.location.href = `watchanddownload.html?id=${currentItem.movieId}&type=${currentItem.mediaType || 'movie'}`;
+// Expose to window
+window.openMovieModal = openMovieModal;
+window.closeModal = closeModal;
+window.switchTab = switchTab;
+window.watchNow = watchNow;
+window.startWatchParty = startWatchParty;
+window.addToWatchLater = addToWatchLater;
+window.markAsWatched = markAsWatched;
+window.openAddToCollectionModal = openAddToCollectionModal;
+window.addToCollectionConfirm = addToCollectionConfirm;
+window.closeAddToCollectionModal = closeAddToCollectionModal;
+
+// --- API Helper (Required for Shared Modal) ---
+async function fetchTMDB(endpoint, params = {}) {
+    if (window.PUBLIC_CONFIG && (window.PUBLIC_CONFIG.TMDB_KEY || window.PUBLIC_CONFIG.TMDB_API_KEY)) {
+        const apiKey = window.PUBLIC_CONFIG.TMDB_KEY || window.PUBLIC_CONFIG.TMDB_API_KEY;
+        const baseUrl = window.PUBLIC_CONFIG.TMDB_BASE_URL || "https://api.themoviedb.org/3";
+        const url = new URL(`${baseUrl}${endpoint}`);
+        url.searchParams.append('api_key', apiKey);
+        Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
+        try {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(res.status);
+            return await res.json();
+        } catch (e) {
+            console.error(e);
+            return null;
+        }
     }
-}
-
-window.removeFromWatchLater = function () {
-    if (currentItem) {
-        removeItem(currentItem.id);
-        closeModal();
-    }
-}
-
-window.moveToWatched = async function () {
-    if (!currentItem || !auth.currentUser) return;
-
+    const url = new URL('/api/tmdb', window.location.origin);
+    url.searchParams.append('endpoint', endpoint);
+    Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
     try {
-        // Add to watched
-        const docId = `${currentItem.mediaType || 'movie'}_${currentItem.movieId}`;
-        await setDoc(doc(db, 'users', auth.currentUser.uid, 'watched', docId), {
-            ...currentItem, // Copies all props, including mediaType
-            timestamp: serverTimestamp()
-        });
-
-        // Remove from watch later
-        await deleteDoc(doc(db, 'users', auth.currentUser.uid, 'watchlist', currentItem.id));
-
-        alert('Moved to Watched History!');
-        closeModal();
-        loadWatchLaterList(auth.currentUser.uid);
-    } catch (error) {
-        console.error("Error moving to watched:", error);
-        alert('Failed to move item.');
-    }
+        const res = await fetch(url);
+        return await res.json();
+    } catch (e) { return null; }
 }
 
 window.removeItem = async function (docId) {

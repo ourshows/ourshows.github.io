@@ -1,5 +1,5 @@
 import { auth, db, addDoc, setDoc, doc, getDoc, serverTimestamp, collection, onAuthStateChanged, query, where, orderBy, getDocs } from './firebase-wrapper.js';
-import { openMovieModal as sharedOpenStats, closeModal as sharedClose, switchTab as sharedSwitch, calculateVerdict, getVerdictColor, loadUserReviews } from './public/modal-logic.js';
+import { openMovieModal as sharedOpenStats, closeModal as sharedClose, switchTab as sharedSwitch, calculateVerdict, getVerdictColor, loadUserReviews, watchNow, startWatchParty, addToWatchLater, markAsWatched, openAddToCollectionModal, closeAddToCollectionModal, addToCollectionConfirm } from './public/modal-logic.js';
 
 // --- MODAL WRAPPERS ---
 async function openMovieModal(id, type = 'movie') {
@@ -408,88 +408,7 @@ async function submitReview() {
     }
 }
 
-async function markAsWatched() {
-    if (!currentUser) {
-        alert('Please log in to mark as watched!');
-        window.location.href = 'login.html';
-        return;
-    }
-    try {
-        // Prepare Stats Data
-        let runtime = currentMovieData.runtime || 0;
-        let episodeRuntime = 0;
-        let numberOfEpisodes = 0;
 
-        if (currentMovieData.media_type === 'tv') {
-            if (currentMovieData.episode_run_time && currentMovieData.episode_run_time.length > 0) {
-                episodeRuntime = currentMovieData.episode_run_time[0];
-            }
-            numberOfEpisodes = currentMovieData.number_of_episodes || 0;
-        }
-
-        await setDoc(doc(db, 'users', currentUser.uid, 'watched', String(currentMovieId)), {
-            movieId: currentMovieId,
-            movieTitle: currentMovieData.title || currentMovieData.name,
-            posterPath: currentMovieData.poster_path,
-            rating: currentMovieData.vote_average,
-            mediaType: currentMovieData.media_type || 'movie',
-            genres: currentMovieData.genres || [],
-            timestamp: serverTimestamp(),
-            runtime: runtime,
-            episodeRuntime: episodeRuntime,
-            numberOfEpisodes: numberOfEpisodes
-        });
-        alert('Added to watched list!');
-        const btn = document.getElementById('modalWatchedBtn');
-        if (btn) {
-            btn.style.background = '#22c55e'; // Green
-            btn.style.color = '#fff';
-            btn.innerHTML = '<i class="fas fa-check"></i> Watched';
-            btn.style.borderColor = '#22c55e';
-        }
-    } catch (error) {
-        console.error('Error marking as watched:', error);
-        alert('Failed to add to watched list. Please try again.');
-    }
-}
-
-async function addToWatchLater() {
-    if (!currentUser) {
-        alert('Please log in to add to watch later!');
-        window.location.href = 'login.html';
-        return;
-    }
-    try {
-        await setDoc(doc(db, 'users', currentUser.uid, 'watchlist', String(currentMovieId)), {
-            movieId: currentMovieId,
-            movieTitle: currentMovieData.title || currentMovieData.name,
-            posterPath: currentMovieData.poster_path,
-            rating: currentMovieData.vote_average,
-            mediaType: currentMovieData.media_type || 'movie',
-            timestamp: serverTimestamp()
-        });
-        alert('Added to watch later!');
-        const btn = document.getElementById('modalWatchLaterBtn');
-        if (btn) {
-            btn.style.background = '#eab308'; // Yellow
-            btn.style.color = '#000';
-            btn.innerHTML = '<i class="fas fa-check"></i> Added';
-            btn.style.borderColor = '#eab308';
-        }
-    } catch (error) {
-        console.error('Error adding to watch later:', error);
-        alert('Failed to add to watch later. Please try again.');
-    }
-}
-
-function watchNow() {
-    if (!currentMovieId || !currentMovieData) {
-        alert('Movie information not available');
-        return;
-    }
-    const mediaType = currentMovieData.media_type || 'movie';
-    window.location.href = `watchanddownload.html?id=${currentMovieId}&type=${mediaType}`;
-}
 
 async function askAI() {
     const questionInput = document.getElementById('aiQuestion');
@@ -564,90 +483,14 @@ async function askAI() {
     chatContainer.scrollTop = chatContainer.scrollHeight;
 }
 
-// --- Collections ---
-async function openAddToCollectionModal() {
-    console.log('openAddToCollectionModal called');
-    if (!currentUser) {
-        console.log('User not logged in');
-        alert('Please log in.');
-        window.location.href = 'login.html';
-        return;
-    }
 
-    console.log('Current User:', currentUser.uid);
-    const modal = document.getElementById('addToCollectionModal');
-    const list = document.getElementById('userCollectionsList');
-    if (modal) modal.style.display = 'block';
-
-    if (list) list.innerHTML = '<div>Loading collections...</div>';
-
-    try {
-        console.log('Fetching collections from:', `users/${currentUser.uid}/custom_collections`);
-        const collectionRef = collection(db, 'users', currentUser.uid, 'custom_collections');
-        const snap = await getDocs(collectionRef);
-        console.log('Collections snapshot:', snap.size, 'docs found');
-
-        if (list) list.innerHTML = '';
-        if (snap.empty) {
-            console.log('No collections found');
-            if (list) list.innerHTML = '<div style="padding:1rem;">No custom collections. <a href="collection.html">Create one</a></div>';
-            return;
-        }
-
-        snap.forEach(doc => {
-            const data = doc.data();
-            console.log('Rendering collection:', data.name);
-            const btn = document.createElement('button');
-            btn.className = 'glass-button';
-            btn.style.textAlign = 'left';
-            btn.innerHTML = `<i class="fas fa-folder"></i> ${data.name}`;
-            btn.onclick = () => addToCollectionConfirm(doc.id);
-            if (list) list.appendChild(btn);
-        });
-    } catch (err) {
-        console.error("Error loading collections:", err);
-        if (list) list.innerHTML = `<div style="color:red;">Error loading collections: ${err.message}</div>`;
-    }
-}
-
-async function addToCollectionConfirm(collectionId) {
-    if (!currentUser || !currentMovieId) {
-        console.error('Missing user or movie ID:', { currentUser, currentMovieId });
-        alert('Error: Missing required data');
-        return;
-    }
-
-    try {
-        console.log('Adding to collection:', { collectionId, movieId: currentMovieId, movieData: currentMovieData });
-
-        // Use setDoc with movieId as document ID to prevent duplicates
-        await setDoc(doc(db, 'users', currentUser.uid, 'custom_collections', collectionId, 'items', String(currentMovieId)), {
-            movieId: String(currentMovieId),
-            movieTitle: currentMovieData.title || currentMovieData.name,
-            posterPath: currentMovieData.poster_path,
-            rating: currentMovieData.vote_average,
-            mediaType: currentMovieData.media_type || 'movie',
-            addedAt: serverTimestamp()
-        });
-
-        console.log('Successfully added to collection!');
-        alert('Added to collection!');
-        document.getElementById('addToCollectionModal').style.display = 'none';
-    } catch (err) {
-        console.error("Error adding to collection:", err);
-        alert('Failed to add to collection: ' + err.message);
-    }
-}
-
-function closeAddToCollectionModal() {
-    document.getElementById('addToCollectionModal').style.display = 'none';
-}
 
 // Expose functions to window
 window.openMovieModal = openMovieModal;
 window.closeModal = closeModal;
 window.switchTab = switchTab;
 window.watchNow = watchNow;
+window.startWatchParty = startWatchParty;
 window.addToWatchLater = addToWatchLater;
 window.markAsWatched = markAsWatched;
 window.openAddToCollectionModal = openAddToCollectionModal;

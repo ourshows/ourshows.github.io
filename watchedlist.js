@@ -1,4 +1,5 @@
 import { auth, db, onAuthStateChanged, collection, getDocs, doc, deleteDoc, setDoc, serverTimestamp } from './firebase-wrapper.js';
+import { openMovieModal as sharedOpenStats, closeModal as sharedClose, switchTab as sharedSwitch, calculateVerdict, getVerdictColor, loadUserReviews, watchNow, startWatchParty, addToWatchLater, markAsWatched, openAddToCollectionModal, closeAddToCollectionModal, addToCollectionConfirm } from './public/modal-logic.js';
 
 
 
@@ -261,12 +262,13 @@ let watchedItemsGlobal = []; // Store loaded items for filtering
 // Auth State
 onAuthStateChanged(auth, async (user) => {
     updateAuthUI(user);
+    currentUser = user; // Ensure global var is set
+    window.currentModalContext = { currentUser, fetchTMDB, db }; // Set Shared Context
     if (user) {
         await loadWatchedList(user.uid);
     } else {
         showEmptyState();
         document.getElementById('loading').style.display = 'none';
-        // Optionally redirect or show "Login to view"
     }
     if (window.ourShowLoader) window.ourShowLoader.hide();
 });
@@ -392,100 +394,61 @@ function renderCards(items) {
             </div>
         `;
 
-        card.onclick = () => openLocalModal(item);
+        card.onclick = () => openMovieModal(item.movieId, item.mediaType || 'movie');
 
         container.appendChild(card);
     });
 }
 
 // Modal Logic
-let currentItemToRemove = null;
-let currentItemToUpdate = null; // Store for updating counts
+// --- Shared Modal Wrappers ---
+async function openMovieModal(id, type = 'movie') {
+    const context = { currentUser, fetchTMDB, db };
+    await sharedOpenStats(id, type, context);
+}
 
-window.updateWatchedCount = async function () {
-    if (!currentUser || !currentItemToUpdate) return;
+function closeModal() { sharedClose(); }
+function switchTab(name) { sharedSwitch(name); }
 
-    const newVal = document.getElementById('customSeasonsInput').value;
-    const seasons = newVal ? parseInt(newVal) : null;
+// Expose to window
+window.openMovieModal = openMovieModal;
+window.closeModal = closeModal;
+window.switchTab = switchTab;
+window.watchNow = watchNow;
+window.startWatchParty = startWatchParty;
+window.addToWatchLater = addToWatchLater;
+window.markAsWatched = markAsWatched;
+window.openAddToCollectionModal = openAddToCollectionModal;
+window.addToCollectionConfirm = addToCollectionConfirm;
+window.closeAddToCollectionModal = closeAddToCollectionModal;
 
-    if (newVal && (isNaN(seasons) || seasons < 1)) {
-        alert("Please enter a valid number of seasons.");
-        return;
+// --- API Helper (Required for Shared Modal) ---
+async function fetchTMDB(endpoint, params = {}) {
+    if (window.PUBLIC_CONFIG && (window.PUBLIC_CONFIG.TMDB_KEY || window.PUBLIC_CONFIG.TMDB_API_KEY)) {
+        const apiKey = window.PUBLIC_CONFIG.TMDB_KEY || window.PUBLIC_CONFIG.TMDB_API_KEY;
+        const baseUrl = window.PUBLIC_CONFIG.TMDB_BASE_URL || "https://api.themoviedb.org/3";
+        const url = new URL(`${baseUrl}${endpoint}`);
+        url.searchParams.append('api_key', apiKey);
+        Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
+        try {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(res.status);
+            return await res.json();
+        } catch (e) {
+            console.error(e);
+            return null;
+        }
     }
-
+    const url = new URL('/api/tmdb', window.location.origin);
+    url.searchParams.append('endpoint', endpoint);
+    Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
     try {
-        const updateData = {
-            customSeasons: seasons
-        };
-
-        // Use merge: true implicitly by using setDoc with existing ID or updateDoc? 
-        // We imported setDoc. Let's use setDoc with merge.
-        // Wait, we need to import setDoc with merge or just update the field.
-        // Actually, we can use setDoc with { merge: true } but we need to check imports.
-        // We imported setDoc. We can just overwrite with existing data + change? No, safer to merge.
-        // Let's re-import 'updateDoc' if possible, or just use setDoc with merge if supported by wrapper.
-        // Wrapper exports setDoc. Usually setDoc(ref, data, {merge:true}).
-
-        await setDoc(doc(db, 'users', currentUser.uid, 'watched', currentItemToUpdate.id), updateData, { merge: true });
-
-        alert("Watch stats updated!");
-        loadWatchedList(currentUser.uid); // Refresh
-        closeModal();
-    } catch (e) {
-        console.error("Error updating stats:", e);
-        alert("Failed to update.");
-    }
+        const res = await fetch(url);
+        return await res.json();
+    } catch (e) { return null; }
 }
 
-function openLocalModal(item) {
-    const modal = document.getElementById('movieModal');
-    const baseUrl = window.PUBLIC_CONFIG?.TMDB_IMAGE_SMALL_URL ||
-        window.APP_CONFIG?.TMDB_IMAGE_SMALL_URL ||
-        'https://image.tmdb.org/t/p/w500';
-    const posterUrl = item.posterPath ? `${baseUrl}${item.posterPath}` : 'https://placehold.co/200x300';
 
-    document.getElementById('modalPoster').src = posterUrl;
-    document.getElementById('modalTitle').textContent = item.movieTitle;
-    document.getElementById('modalRating').textContent = item.rating ? Number(item.rating).toFixed(1) : 'N/A';
-
-    document.getElementById('modalYear').textContent = '';
-    document.getElementById('modalOverview').textContent = 'Watched on: ' + (item.timestamp ? new Date(item.timestamp.seconds * 1000).toLocaleDateString() : 'Unknown date');
-
-    currentItemToRemove = item.id;
-    currentItemToUpdate = item; // Store full item
-
-    // Setup input for TV
-    const inputContainer = document.getElementById('seasonsInputContainer');
-    if (item.mediaType === 'tv') {
-        inputContainer.style.display = 'block';
-        document.getElementById('customSeasonsInput').value = item.customSeasons || '';
-        document.getElementById('customSeasonsInput').placeholder = 'All';
-    } else {
-        inputContainer.style.display = 'none';
-    }
-
-    // Setup Watch Now button
-    const watchBtn = document.querySelector('#movieModal .glass-button.primary');
-    if (watchBtn) watchBtn.onclick = () => window.location.href = `watchanddownload.html?id=${item.movieId}&type=${item.mediaType || 'movie'}`;
-
-    modal.style.display = 'flex'; // Changed to flex for centering if needed, or keep block logic from CSS
-    // Check original
-    modal.style.display = 'block';
-    document.body.style.overflow = 'hidden';
-}
-
-window.closeModal = function () {
-    document.getElementById('movieModal').style.display = 'none';
-    document.body.style.overflow = 'auto';
-    currentItemToRemove = null;
-}
-
-window.removeFromWatched = function () {
-    if (currentItemToRemove) {
-        removeMovie(currentItemToRemove);
-        closeModal();
-    }
-}
 
 window.removeMovie = async function (docId) {
     if (!auth.currentUser) return;

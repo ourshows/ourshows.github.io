@@ -1,5 +1,5 @@
 
-import { doc, getDoc, collection, query, where, orderBy, getDocs } from '../firebase-wrapper.js';
+import { doc, getDoc, collection, query, where, orderBy, getDocs, setDoc, deleteDoc, serverTimestamp, addDoc } from '../firebase-wrapper.js';
 
 // Configuration
 const IMG_BASE_SMALL = (window.PUBLIC_CONFIG && window.PUBLIC_CONFIG.TMDB_IMAGE_SMALL_URL) || "https://image.tmdb.org/t/p/w500";
@@ -7,11 +7,16 @@ const IMG_BASE_SMALL = (window.PUBLIC_CONFIG && window.PUBLIC_CONFIG.TMDB_IMAGE_
 /**
  * SHARED MODAL LOGIC
  * Exports: openMovieModal, closeModal, switchTab, calculateVerdict, getVerdictColor
+ * Actions: watchNow, startWatchParty, addToWatchLater, markAsWatched, openAddToCollectionModal, closeAddToCollectionModal, addToCollectionConfirm
  */
 
 export async function openMovieModal(id, type = 'movie', context) {
     const { currentUser, fetchTMDB, db } = context;
     if (!fetchTMDB) { console.error("fetchTMDB required in context"); return; }
+
+    // Set Global Context for actions
+    window.currentMovieId = id;
+    window.currentModalContext = context;
 
     const modal = document.getElementById('movieModal');
     if (!modal) return;
@@ -33,10 +38,13 @@ export async function openMovieModal(id, type = 'movie', context) {
         return;
     }
 
-    // 4. Populate UI
+    window.currentMovieData = details;
+    window.currentMovieData.media_type = type;
+
+    // 5. Populate UI
     populateModal(details, type, context);
 
-    // 5. Async Loads (Franchise, User Reviews, User Stats)
+    // 6. Async Loads (Franchise, User Reviews, User Stats)
     if (type === 'movie' && details.belongs_to_collection) {
         loadFranchise(details.belongs_to_collection.id, id, fetchTMDB);
     }
@@ -48,16 +56,14 @@ export async function openMovieModal(id, type = 'movie', context) {
     if (currentUser && db) {
         checkUserInteractions(id, currentUser.uid, db);
     }
-
-
-
-    return details;
 }
 
 export function closeModal() {
     const modal = document.getElementById('movieModal');
     if (modal) modal.style.display = 'none';
     document.body.style.overflow = 'auto';
+    window.currentMovieId = null;
+    window.currentMovieData = null;
 
     // Stop Videos
     const trailerContainer = document.getElementById('modalTrailer');
@@ -74,11 +80,208 @@ export function switchTab(tabName) {
     document.querySelectorAll('.tab-btn').forEach(btn => {
         const txt = btn.textContent.toLowerCase();
         if (txt.includes(tabName.toLowerCase()) ||
-            (tabName === 'overview' && txt === 'overview')) {
+            (tabName === 'overview' && txt === 'overview') ||
+            (tabName === 'ai' && txt === 'ask ai')) {
             btn.classList.add('active');
         }
     });
 }
+
+// --- Actions ---
+
+export function watchNow() {
+    const { currentMovieData, currentMovieId } = window;
+    if (!currentMovieId || !currentMovieData) {
+        alert('Movie information not available');
+        return;
+    }
+    const mediaType = currentMovieData.media_type || 'movie';
+    window.location.href = `watchanddownload.html?id=${currentMovieId}&type=${mediaType}`;
+}
+
+export function startWatchParty() {
+    // Open Cineby.gd in new tab
+    window.open('https://cineby.gd', '_blank');
+}
+
+export async function addToWatchLater() {
+    const { currentUser, db } = window.currentModalContext || {};
+    if (!currentUser || !db) {
+        alert('Please log in to add to watch later!');
+        window.location.href = 'login.html';
+        return;
+    }
+    const { currentMovieId, currentMovieData } = window;
+
+    const btn = document.getElementById('modalWatchLaterBtn');
+    try {
+        const docRef = doc(db, 'users', currentUser.uid, 'watchlist', String(currentMovieId));
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            // UNDO: Remove from watchlist
+            await deleteDoc(docRef);
+            if (btn) {
+                btn.style.background = 'rgba(255, 255, 255, 0.1)';
+                btn.style.color = 'white';
+                btn.innerHTML = '<i class="fas fa-plus"></i> My List';
+                btn.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+            }
+        } else {
+            // DO: Add to watchlist
+            await setDoc(docRef, {
+                movieId: currentMovieId,
+                movieTitle: currentMovieData.title || currentMovieData.name,
+                posterPath: currentMovieData.poster_path,
+                rating: currentMovieData.vote_average,
+                mediaType: currentMovieData.media_type || 'movie',
+                genres: currentMovieData.genres || [],
+                timestamp: serverTimestamp()
+            });
+            if (btn) {
+                btn.style.background = '#eab308'; // Yellow
+                btn.style.color = '#000';
+                btn.innerHTML = '<i class="fas fa-check"></i> Added';
+                btn.style.borderColor = '#eab308';
+            }
+        }
+    } catch (error) {
+        console.error('Error toggling watch later status:', error);
+    }
+}
+
+export async function markAsWatched() {
+    const { currentUser, db } = window.currentModalContext || {};
+    if (!currentUser || !db) {
+        alert('Please log in to mark as watched!');
+        window.location.href = 'login.html';
+        return;
+    }
+    const { currentMovieId, currentMovieData } = window;
+
+    const btn = document.getElementById('modalWatchedBtn');
+    try {
+        const docRef = doc(db, 'users', currentUser.uid, 'watched', String(currentMovieId));
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            // UNDO: Remove from watched
+            await deleteDoc(docRef);
+            if (btn) {
+                btn.style.background = 'rgba(255, 255, 255, 0.1)';
+                btn.style.color = 'white';
+                btn.innerHTML = '<i class="fas fa-check"></i> Mark Watched';
+                btn.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+            }
+        } else {
+            // Prepare Data
+            let runtime = currentMovieData.runtime || 0;
+            let episodeRuntime = 0;
+            let numberOfEpisodes = 0;
+
+            if (currentMovieData.media_type === 'tv') {
+                if (currentMovieData.episode_run_time && currentMovieData.episode_run_time.length > 0) {
+                    episodeRuntime = currentMovieData.episode_run_time[0];
+                }
+                numberOfEpisodes = currentMovieData.number_of_episodes || 0;
+            }
+
+            // DO: Add to watched
+            await setDoc(docRef, {
+                movieId: currentMovieId,
+                movieTitle: currentMovieData.title || currentMovieData.name,
+                posterPath: currentMovieData.poster_path,
+                rating: currentMovieData.vote_average,
+                mediaType: currentMovieData.media_type || 'movie',
+                genres: currentMovieData.genres || [],
+                timestamp: serverTimestamp(),
+                runtime: runtime,
+                episodeRuntime: episodeRuntime,
+                numberOfEpisodes: numberOfEpisodes
+            });
+            if (btn) {
+                btn.style.background = '#22c55e'; // Green
+                btn.style.color = '#fff';
+                btn.innerHTML = '<i class="fas fa-check"></i> Watched';
+                btn.style.borderColor = '#22c55e';
+            }
+        }
+    } catch (error) {
+        console.error('Error toggling watched status:', error);
+    }
+}
+
+export async function openAddToCollectionModal() {
+    const { currentUser, db } = window.currentModalContext || {};
+    if (!currentUser) {
+        alert('Please log in.');
+        window.location.href = 'login.html';
+        return;
+    }
+
+    const modal = document.getElementById('addToCollectionModal');
+    const list = document.getElementById('userCollectionsList');
+    if (modal) modal.style.display = 'block';
+
+    if (list) list.innerHTML = '<div>Loading collections...</div>';
+
+    try {
+        const collectionRef = collection(db, 'users', currentUser.uid, 'custom_collections');
+        const snap = await getDocs(collectionRef);
+
+        if (list) list.innerHTML = '';
+        if (snap.empty) {
+            if (list) list.innerHTML = '<div style="padding:1rem;">No custom collections. <a href="collection.html">Create one</a></div>';
+            return;
+        }
+
+        snap.forEach(doc => {
+            const data = doc.data();
+            const btn = document.createElement('button');
+            btn.className = 'glass-button';
+            btn.style.textAlign = 'left';
+            btn.innerHTML = `<i class="fas fa-folder"></i> ${data.name}`;
+            btn.onclick = () => addToCollectionConfirm(doc.id);
+            if (list) list.appendChild(btn);
+        });
+    } catch (err) {
+        console.error("Error loading collections:", err);
+        if (list) list.innerHTML = `<div style="color:red;">Error loading collections: ${err.message}</div>`;
+    }
+}
+
+export function closeAddToCollectionModal() {
+    const modal = document.getElementById('addToCollectionModal');
+    if (modal) modal.style.display = 'none';
+}
+
+export async function addToCollectionConfirm(collectionId) {
+    const { currentUser, db } = window.currentModalContext || {};
+    const { currentMovieId, currentMovieData } = window;
+
+    if (!currentUser || !currentMovieId) {
+        alert('Error: Missing required data');
+        return;
+    }
+
+    try {
+        await setDoc(doc(db, 'users', currentUser.uid, 'custom_collections', collectionId, 'items', String(currentMovieId)), {
+            movieId: String(currentMovieId),
+            movieTitle: currentMovieData.title || currentMovieData.name,
+            posterPath: currentMovieData.poster_path,
+            rating: currentMovieData.vote_average,
+            mediaType: currentMovieData.media_type || 'movie',
+            addedAt: serverTimestamp()
+        });
+
+        alert('Added to collection!');
+        closeAddToCollectionModal();
+    } catch (err) {
+        console.error("Error adding to collection:", err);
+        alert('Failed to add to collection: ' + err.message);
+    }
+}
+
 
 // --- Internal Helpers ---
 
@@ -114,7 +317,7 @@ function populateModal(details, type, context) {
     setText('modalTitle', details.title || details.name);
     setText('modalYear', (details.release_date || details.first_air_date || '').split('-')[0]);
     setText('modalRuntime', details.runtime ? `${details.runtime} min` : '');
-    const overviewText = document.getElementById('modalOverview'); // Some pages use modalOverviewText
+    const overviewText = document.getElementById('modalOverview');
     if (overviewText) overviewText.textContent = details.overview;
     else setText('modalOverview', details.overview);
 
@@ -178,7 +381,15 @@ async function loadFranchise(collectionId, currentId, fetchTMDB) {
 
 async function checkUserInteractions(movieId, uid, db) {
     try {
+        if (!movieId) {
+            console.warn("checkUserInteractions: No movieId provided");
+            return;
+        }
+        console.log(`Checking status for: ${movieId} (User: ${uid})`);
+        const docPath = `users/${uid}/watched/${String(movieId)}`;
         const watchedDoc = await getDoc(doc(db, 'users', uid, 'watched', String(movieId)));
+        console.log(`Watched Status for ${movieId}: ${watchedDoc.exists()}`);
+
         if (watchedDoc.exists()) {
             const btn = document.getElementById('modalWatchedBtn');
             if (btn) {
